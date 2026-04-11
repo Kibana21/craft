@@ -91,9 +91,15 @@ export default function ArtifactDetailPage() {
   return (
     <div className="mx-auto max-w-4xl px-6 py-12">
       {/* Breadcrumb */}
-      <div className="mb-6 flex items-center gap-2 text-sm text-[#717171]">
-        <button onClick={() => router.push(`/projects/${projectId}`)} className="hover:text-[#222222]">
-          ← Back to project
+      <div className="mb-6">
+        <button
+          onClick={() => router.push(`/projects/${projectId}`)}
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#E8EAED] px-3 py-1.5 text-[13px] font-medium text-[#5F6368] transition-colors hover:border-[#DADCE0] hover:bg-[#F1F3F4] hover:text-[#1F1F1F]"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10 4L6 8l4 4" />
+          </svg>
+          Back to project
         </button>
       </div>
 

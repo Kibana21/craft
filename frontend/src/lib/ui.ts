@@ -73,6 +73,10 @@ export const btn = {
   /** Form submit — full width */
   submit:
     "w-full rounded-lg bg-[#D0103A] py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[#B80E33] disabled:opacity-60",
+
+  /** Back navigation — compact pill with left chevron */
+  back:
+    "inline-flex items-center gap-1.5 rounded-full border border-[#E8EAED] px-3 py-1.5 text-[13px] font-medium text-[#5F6368] transition-colors hover:border-[#DADCE0] hover:bg-[#F1F3F4] hover:text-[#1F1F1F]",
 } as const;
 
 // ─── Card ────────────────────────────────────────────────────────────────────

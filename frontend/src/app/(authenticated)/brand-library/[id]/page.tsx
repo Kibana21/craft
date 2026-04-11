@@ -91,9 +91,12 @@ export default function LibraryItemDetailPage() {
       {/* Back */}
       <button
         onClick={() => router.push("/brand-library")}
-        className="mb-6 text-sm text-[#717171] hover:text-[#222222]"
+        className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-[#E8EAED] px-3 py-1.5 text-[13px] font-medium text-[#5F6368] transition-colors hover:border-[#DADCE0] hover:bg-[#F1F3F4] hover:text-[#1F1F1F]"
       >
-        ← Back to Brand Library
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10 4L6 8l4 4" />
+        </svg>
+        Back to Brand Library
       </button>
 
       {/* Main card */}

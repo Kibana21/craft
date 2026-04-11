@@ -100,9 +100,12 @@ export default function NewArtifactPage() {
           <div className="mb-6 flex items-center gap-3">
             <button
               onClick={() => setSelectedType(null)}
-              className="text-sm text-[#717171] hover:text-[#222222]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#E8EAED] px-3 py-1.5 text-[13px] font-medium text-[#5F6368] transition-colors hover:border-[#DADCE0] hover:bg-[#F1F3F4] hover:text-[#1F1F1F]"
             >
-              ← Change type
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 4L6 8l4 4" />
+              </svg>
+              Change type
             </button>
             <span className="rounded-full bg-[#F7F7F7] px-3 py-1 text-sm font-medium text-[#484848]">
               {ARTIFACT_TYPES.find((t) => t.key === selectedType)?.label}
