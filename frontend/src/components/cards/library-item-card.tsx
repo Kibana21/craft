@@ -1,4 +1,5 @@
 import type { BrandLibraryItem } from "@/types/brand-library";
+import { badge, btn, card } from "@/lib/ui";
 
 const TYPE_CONFIG: Record<string, { emoji: string; bg: string }> = {
   poster:        { emoji: "🖼️", bg: "#F3E8FD" },
@@ -11,6 +12,20 @@ const TYPE_CONFIG: Record<string, { emoji: string; bg: string }> = {
   slide_deck:    { emoji: "🗂️", bg: "#F1F3F4" },
 };
 
+const STATUS_BADGE: Record<string, string> = {
+  published:      badge.green,
+  approved:       badge.green,
+  pending_review: badge.amber,
+  rejected:       badge.red,
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  published:      "Published",
+  approved:       "Approved",
+  pending_review: "Pending review",
+  rejected:       "Rejected",
+};
+
 interface LibraryItemCardProps {
   item: BrandLibraryItem;
   isAdmin?: boolean;
@@ -19,62 +34,34 @@ interface LibraryItemCardProps {
 }
 
 export function LibraryItemCard({ item, isAdmin = false, onRemix, onManage }: LibraryItemCardProps) {
-  const config = TYPE_CONFIG[item.artifact.type] || { emoji: "📄", bg: "#F1F3F4" };
-
-  const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-    published:      { label: "Published",      className: "bg-[#E6F4EA] text-[#188038]" },
-    approved:       { label: "Approved",       className: "bg-[#E6F4EA] text-[#188038]" },
-    pending_review: { label: "Pending review", className: "bg-[#FEF7E0] text-[#B45309]" },
-    rejected:       { label: "Rejected",       className: "bg-[#FCE8E6] text-[#C5221F]" },
-  };
-  const statusConfig = STATUS_CONFIG[item.status] ?? { label: item.status, className: "bg-[#F1F3F4] text-[#5F6368]" };
+  const config = TYPE_CONFIG[item.artifact.type] ?? { emoji: "📄", bg: "#F1F3F4" };
 
   return (
-    <div className="group flex items-center gap-4 rounded-xl border border-[#E8EAED] bg-white px-4 py-3.5 transition-all hover:border-[#DADCE0] hover:shadow-[0_1px_4px_rgba(32,33,36,0.08)]">
-      {/* Icon */}
-      <div
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
-        style={{ backgroundColor: config.bg }}
-      >
+    <div className={card.row}>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg" style={{ backgroundColor: config.bg }}>
         {config.emoji}
       </div>
 
-      {/* Info */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] font-medium text-[#1F1F1F]">
-          {item.artifact.name}
-        </p>
+        <p className="truncate text-[14px] font-medium text-[#1F1F1F]">{item.artifact.name}</p>
         <div className="mt-1 flex items-center gap-2">
           <span className="text-[12px] text-[#80868B]">
             {item.artifact.product || item.artifact.type} · {item.remix_count} remixes
           </span>
           {isAdmin ? (
-            <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${statusConfig.className}`}>
-              {statusConfig.label}
+            <span className={STATUS_BADGE[item.status] ?? badge.grey}>
+              {STATUS_LABEL[item.status] ?? item.status}
             </span>
           ) : (
-            <span className="rounded-full bg-[#E6F4EA] px-2 py-0.5 text-[11px] font-medium text-[#188038]">
-              Compliant
-            </span>
+            <span className={badge.green}>Compliant</span>
           )}
         </div>
       </div>
 
-      {/* Action */}
       {isAdmin ? (
-        <button
-          onClick={onManage}
-          className="shrink-0 rounded-full border border-[#DADCE0] px-3.5 py-1.5 text-[12px] font-medium text-[#3C4043] transition-colors hover:bg-[#F1F3F4]"
-        >
-          Manage
-        </button>
+        <button onClick={onManage} className={btn.outline}>Manage</button>
       ) : (
-        <button
-          onClick={onRemix}
-          className="shrink-0 rounded-full bg-[#D0103A] px-3.5 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#B80E33]"
-        >
-          Remix
-        </button>
+        <button onClick={onRemix} className={btn.brand}>Remix</button>
       )}
     </div>
   );

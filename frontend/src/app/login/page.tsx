@@ -40,9 +40,8 @@ export default function LoginPage() {
       {/* Logo */}
       <div className="mb-8 flex flex-col items-center">
         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#D0103A]">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M12 3L3 19h4l5-10 5 10h4L12 3z" fill="white" />
-            <path d="M8.5 15h7" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
           </svg>
         </div>
         <h1 className="text-[22px] font-semibold tracking-tight text-[#1F1F1F]">CRAFT</h1>
