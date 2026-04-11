@@ -2,9 +2,6 @@
 
 import { useState } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -27,52 +24,57 @@ export default function LoginPage() {
     }
   };
 
+  const quickLogin = (quickEmail: string) => {
+    setEmail(quickEmail);
+    setPassword("craft2026");
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--aia-warm-gray)]">
-      <div className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-white">
+      <div className="w-full max-w-md px-6">
         {/* Logo */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-black tracking-tight text-[var(--aia-red)]">
+        <div className="mb-12 text-center">
+          <h1 className="text-5xl font-black tracking-tight text-[#D0103A]">
             CRAFT
           </h1>
-          <p className="mt-1 text-sm text-[var(--aia-text-muted)]">
-            by AIA Singapore
+          <p className="mt-3 text-base text-[#717171]">
+            AI-powered content creation by AIA Singapore
           </p>
         </div>
 
         {/* Login card */}
-        <div className="rounded-xl border border-[var(--aia-warm-gray-dark)] bg-white p-8">
-          <h2 className="mb-6 text-center text-base font-semibold text-[var(--aia-text)]">
+        <div className="rounded-xl border border-[#EBEBEB] bg-white p-8 shadow-sm">
+          <h2 className="mb-6 text-xl font-semibold text-[#222222]">
             Sign in to your account
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label
                 htmlFor="email"
-                className="text-xs font-semibold uppercase tracking-wide text-[var(--aia-text-muted)]"
+                className="mb-1.5 block text-sm font-medium text-[#484848]"
               >
                 Email
-              </Label>
-              <Input
+              </label>
+              <input
                 id="email"
                 type="email"
                 placeholder="name@aia.com.sg"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="rounded-lg border-[var(--aia-warm-gray-dark)] focus-visible:ring-[var(--aia-red)]"
+                className="w-full rounded-lg border border-[#DDDDDD] px-4 py-3.5 text-base text-[#222222] placeholder-[#B0B0B0] transition-colors focus:border-[#222222] focus:outline-none focus:ring-0"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label
+            <div>
+              <label
                 htmlFor="password"
-                className="text-xs font-semibold uppercase tracking-wide text-[var(--aia-text-muted)]"
+                className="mb-1.5 block text-sm font-medium text-[#484848]"
               >
                 Password
-              </Label>
-              <Input
+              </label>
+              <input
                 id="password"
                 type="password"
                 placeholder="Enter your password"
@@ -80,80 +82,52 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}
-                className="rounded-lg border-[var(--aia-warm-gray-dark)] focus-visible:ring-[var(--aia-red)]"
+                className="w-full rounded-lg border border-[#DDDDDD] px-4 py-3.5 text-base text-[#222222] placeholder-[#B0B0B0] transition-colors focus:border-[#222222] focus:outline-none focus:ring-0"
               />
             </div>
 
             {error && (
-              <div className="rounded-lg bg-[var(--aia-red-light)] px-3 py-2 text-sm text-[var(--aia-red)]">
+              <div className="rounded-lg bg-[#FFF0F3] px-4 py-3 text-sm font-medium text-[#D0103A]">
                 {error}
               </div>
             )}
 
-            <Button
+            <button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-lg bg-[var(--aia-red)] text-white hover:bg-[var(--aia-red-hover)] disabled:opacity-50"
+              className="w-full rounded-lg bg-[#D0103A] px-6 py-3 text-base font-semibold text-white transition-all duration-200 hover:bg-[#B80E33] disabled:opacity-50"
             >
               {isLoading ? "Signing in..." : "Sign in"}
-            </Button>
+            </button>
           </form>
+        </div>
 
-          {/* Quick login hints for dev */}
-          <div className="mt-6 border-t border-[var(--aia-warm-gray-dark)] pt-4">
-            <p className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-[var(--aia-text-muted)]">
-              Test accounts
-            </p>
-            <div className="grid grid-cols-2 gap-2 text-xs text-[var(--aia-text-secondary)]">
+        {/* Quick login — test accounts */}
+        <div className="mt-6 rounded-xl border border-[#EBEBEB] bg-white p-6">
+          <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-[#717171]">
+            Test accounts
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { email: "sarah@aia.com.sg", name: "Sarah", role: "Brand Admin", color: "border-[#EBEBEB] hover:bg-[#FFF0F3]" },
+              { email: "david@aia.com.sg", name: "David", role: "District Leader", color: "border-[#EBEBEB] hover:bg-[#F0FFF0]" },
+              { email: "michael@aia.com.sg", name: "Michael", role: "Agency Leader", color: "border-[#EBEBEB] hover:bg-[#F0FFF0]" },
+              { email: "maya@agent.aia.com.sg", name: "Maya", role: "FSC / Agent", color: "border-[#EBEBEB] hover:bg-[#F7F7F7]" },
+            ].map((account) => (
               <button
+                key={account.email}
                 type="button"
-                onClick={() => {
-                  setEmail("sarah@aia.com.sg");
-                  setPassword("craft2026");
-                }}
-                className="rounded-md border border-[var(--aia-warm-gray-dark)] px-2 py-1.5 text-left hover:border-[var(--aia-red)] hover:bg-[var(--aia-red-light)]"
+                onClick={() => quickLogin(account.email)}
+                className={`rounded-xl border px-4 py-3 text-left transition-all duration-200 hover:shadow-sm ${account.color}`}
               >
-                <span className="font-semibold text-[var(--aia-text)]">Sarah</span>
-                <br />
-                Brand Admin
+                <span className="block text-sm font-semibold text-[#222222]">
+                  {account.name}
+                </span>
+                <span className="block text-xs text-[#717171]">
+                  {account.role}
+                </span>
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail("david@aia.com.sg");
-                  setPassword("craft2026");
-                }}
-                className="rounded-md border border-[var(--aia-warm-gray-dark)] px-2 py-1.5 text-left hover:border-[var(--aia-green)] hover:bg-[var(--aia-green-light)]"
-              >
-                <span className="font-semibold text-[var(--aia-text)]">David</span>
-                <br />
-                District Leader
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail("michael@aia.com.sg");
-                  setPassword("craft2026");
-                }}
-                className="rounded-md border border-[var(--aia-warm-gray-dark)] px-2 py-1.5 text-left hover:border-[var(--aia-green)] hover:bg-[var(--aia-green-light)]"
-              >
-                <span className="font-semibold text-[var(--aia-text)]">Michael</span>
-                <br />
-                Agency Leader
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail("maya@agent.aia.com.sg");
-                  setPassword("craft2026");
-                }}
-                className="rounded-md border border-[var(--aia-warm-gray-dark)] px-2 py-1.5 text-left hover:border-[var(--aia-purple)] hover:bg-[var(--aia-purple-light)]"
-              >
-                <span className="font-semibold text-[var(--aia-text)]">Maya</span>
-                <br />
-                FSC / Agent
-              </button>
-            </div>
+            ))}
           </div>
         </div>
       </div>

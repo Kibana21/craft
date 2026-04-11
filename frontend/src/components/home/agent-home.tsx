@@ -23,36 +23,40 @@ export function AgentHome() {
   };
 
   return (
-    <div className="mx-auto max-w-lg">
+    <div className="pb-16">
       {/* Quick Create */}
       <QuickCreateStrip />
 
-      {/* Tabs */}
-      <div className="flex border-b border-[#E2DDD4] px-4">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setTab(tab.key)}
-            className={`border-b-2 px-3 py-2.5 text-[11px] transition-colors ${
-              activeTab === tab.key
-                ? "border-[#D0103A] font-semibold text-[#1A1A18]"
-                : "border-transparent text-[#9C9A92] hover:text-[#5C5A54]"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Underline tabs */}
+      <div className="px-6 py-8">
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-8 flex gap-6 border-b border-[#EBEBEB]">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setTab(tab.key)}
+                className={`pb-3 text-sm font-medium transition-all duration-200 ${
+                  activeTab === tab.key
+                    ? "border-b-2 border-[#222222] text-[#222222] font-semibold"
+                    : "text-[#717171] hover:text-[#222222]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          <div>
+            {activeTab === "my-projects" && <MyProjectsTab />}
+            {activeTab === "team-projects" && <TeamProjectsTab />}
+            {activeTab === "brand-library" && <BrandLibraryTab />}
+          </div>
+        </div>
       </div>
 
-      {/* Tab content */}
-      <div className="p-4">
-        {activeTab === "my-projects" && <MyProjectsTab />}
-        {activeTab === "team-projects" && <TeamProjectsTab />}
-        {activeTab === "brand-library" && <BrandLibraryTab />}
-      </div>
-
-      {/* Gamification */}
-      <div className="fixed bottom-0 left-0 right-0">
+      {/* Gamification — fixed bottom */}
+      <div className="fixed bottom-0 left-0 right-0 z-40">
         <GamificationStrip />
       </div>
     </div>

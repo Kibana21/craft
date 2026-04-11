@@ -1,137 +1,177 @@
 # UI Design Standards for CRAFT
 
-Apply these rules whenever building frontend components, pages, or layouts.
+The aesthetic is **Airbnb-tier** — clean whites, confident typography, visual cards with rich previews, smooth micro-interactions, and generous breathing room. Every screen should feel like a polished consumer product, not an internal admin tool.
 
 ---
 
-## AIA Brand System
+## Design DNA (What makes it feel Airbnb)
 
-### Color palette
-```css
---aia-red: #D0103A;           /* Primary brand — CTAs, logos, active states */
---aia-red-hover: #A50C2E;     /* Red hover state */
---aia-red-light: #FFF0F3;     /* Red tinted backgrounds */
---aia-red-border: #F9C6D0;    /* Red borders */
---aia-dark: #1A1A18;          /* Creator mode nav, headings */
---aia-warm-gray: #F0EDE6;     /* Page backgrounds */
---aia-warm-gray-dark: #E2DDD4; /* Borders, dividers */
---aia-warm-gray-darker: #C8C2B6; /* Subtle borders */
---aia-text: #1A1A18;          /* Primary text */
---aia-text-secondary: #5C5A54; /* Secondary text */
---aia-text-muted: #9C9A92;    /* Muted text, labels */
---aia-green: #1B9D74;         /* Team/agent elements, success */
---aia-green-light: #E8F6F1;   /* Green tinted backgrounds */
---aia-green-border: #9FE1CB;  /* Green borders */
---aia-green-dark: #0E6B50;    /* Green text on light backgrounds */
---aia-purple: #534AB7;        /* Library/brand items */
---aia-purple-light: #EEEDFE;  /* Purple tinted backgrounds */
---aia-purple-border: #AFA9EC; /* Purple borders */
---aia-purple-dark: #3C3489;   /* Purple text */
---aia-amber: #BA7517;         /* Gamification, streaks */
---aia-amber-light: #FFFBF0;   /* Amber backgrounds */
---aia-amber-border: #FAC775;  /* Amber borders */
---aia-amber-dark: #854F0B;    /* Amber text */
---aia-white: #FFFFFF;
---aia-card-bg: #FAFAF8;       /* Subtle card backgrounds */
+1. **White is the canvas.** Page backgrounds are white `#FFFFFF`, not gray. Content sections use very subtle `#F7F7F7` only for contrast. Cards sit on white, separated by thin `#EBEBEB` borders and soft shadows.
+2. **One accent color.** AIA red `#D0103A` is used sparingly — primary CTAs, active states, the logo. Everything else is neutral. No color soup.
+3. **Typography does the heavy lifting.** Big bold headings (28-32px), comfortable body text (16px), generous line height (1.5+). The type hierarchy creates structure without needing boxes and borders.
+4. **Cards are visual.** Every card has a large image/preview area (60%+ of card height), rounded corners (12px), and lifts on hover with a subtle shadow transition. Think Airbnb listing cards.
+5. **Whitespace is generous.** 24px minimum padding on cards, 48-64px between sections, 80-100px vertical padding on page-level sections. When in doubt, add more space.
+6. **Interactions are smooth.** 200ms transitions on everything. Cards scale to 1.02 on hover. Buttons darken smoothly. No abrupt state changes.
+7. **Mobile-first layout.** Max content width 1120px. Single column on mobile, 2-3 columns on desktop. Grid gaps of 24px.
+
+## Colors
+
+```
+/* Primary */
+--craft-red: #D0103A        /* Primary CTA, logo, active */
+--craft-red-hover: #B80E33  /* Hover state */
+--craft-red-light: #FFF0F3  /* Red tint backgrounds */
+
+/* Neutrals — Airbnb-clean */
+--white: #FFFFFF             /* Page bg, card bg */
+--gray-50: #F7F7F7           /* Section bg, input bg */
+--gray-100: #F0F0F0          /* Hover states */
+--gray-200: #EBEBEB          /* Borders, dividers */
+--gray-300: #DDDDDD          /* Input borders */
+--gray-400: #B0B0B0          /* Placeholder text */
+--gray-500: #717171          /* Secondary text */
+--gray-600: #6A6A6A          /* Body text */
+--gray-700: #484848          /* Headings */
+--gray-900: #222222          /* Primary text, dark bg */
+
+/* Semantic */
+--green: #008A05             /* Success, published, active */
+--green-light: #F0FFF0
+--amber: #E07912             /* Warning, pending */
+--amber-light: #FFF8F0
+--blue: #1A73E8              /* Info, links */
+--purple: #7B2FF7            /* Library, brand */
+--purple-light: #F5F0FF
 ```
 
-### Typography
-- Font family: `-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif` (system font stack)
-- Heading weights: 700-800 (bold to extra bold)
-- Body weight: 400 (regular), 500-600 for emphasis
-- Font sizes: follow a consistent scale — 9px (micro labels), 10px (metadata), 11px (body small), 12px (body), 13px (headings), 15px (large headings), 18px+ (hero)
-- Letter spacing: use `0.06-0.1em` on uppercase micro labels
+## Typography
 
-## Component Design Language
+- Font: `'Circular', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif` (Airbnb uses Circular; fall back to system)
+- **Page title:** 28-32px, weight 800, color #222222, letter-spacing -0.02em
+- **Section heading:** 22-24px, weight 700, color #222222
+- **Card title:** 16-18px, weight 600, color #222222
+- **Body:** 16px, weight 400, color #484848, line-height 1.5
+- **Caption/meta:** 14px, weight 400, color #717171
+- **Label:** 12px, weight 600, color #717171, uppercase tracking 0.05em
+- **Minimum size:** 12px. Nothing smaller.
 
-### Cards
-- Border radius: `12px` for primary cards, `8px` for nested/smaller cards
-- Border: `1px solid var(--aia-warm-gray-dark)` default
-- Hover: border color shifts to `--aia-warm-gray-darker`
-- Colored thumbnail header on project/artifact cards (36-44px height)
-- Card body padding: `8-12px`
-- Use shadows sparingly — prefer borders over shadows for the AIA warm, flat aesthetic
+## Layout
 
-### Buttons
-- Primary: `bg-[#D0103A] text-white` with `hover:bg-[#A50C2E]`, rounded `6-8px`
-- Secondary: `bg-white border border-[#E2DDD4] text-[#1A1A18]` with hover border darkening
-- Ghost: no background, text color only, hover adds subtle background
-- Size: padding `7px 12px` minimum, font-size `11-12px`, font-weight `600`
-- Pill buttons (Quick Create): `rounded-full` or `rounded-[20px]`
+- **Page bg:** `#FFFFFF` (pure white, NOT gray)
+- **Max width:** `1120px` centered
+- **Page padding:** `px-6 lg:px-10` (24-40px)
+- **Section spacing:** `py-12 lg:py-16` (48-64px)
+- **Card grid:** `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6` (24px gaps)
+- **Nav height:** `h-20` (80px) — room to breathe
 
-### Badges
-- Role badges: Creator = `bg-red-900/30 text-[#FF6B8A]` on dark, Agent = `bg-[#E8F6F1] text-[#0E6B50] border border-[#9FE1CB]` on light
-- Official/Compliant: `bg-[#EEEDFE] text-[#3C3489] border border-[#AFA9EC]`
-- Team project: `bg-[#E8F6F1] text-[#0E6B50] border border-[#9FE1CB]`
-- Font size: `9-10px`, font-weight `700`, padding `2px 8px`, rounded full
+## Navigation
 
-### Navigation
-- **Creator mode (internal):** Dark navbar `bg-[#1A1A18]`, CRAFT logo in `#D0103A`, text in `rgba(255,255,255,0.5)`
-- **Agent mode (FSC):** Light navbar `bg-white border-b border-[#E2DDD4]`, CRAFT logo in `#D0103A`, text in `#9C9A92`
-- Tab bar: `border-bottom: 1px solid #E2DDD4`, active tab has `border-bottom: 2px solid #D0103A` and `font-weight: 600`
-- Tab font: `11px`, inactive color `#9C9A92`, active color `#1A1A18`
+**Creator mode:**
+- `bg-white border-b border-[#EBEBEB]` — clean white, NOT dark. Let the content speak.
+- Left: CRAFT logo (red, 20px, weight 900) + "Creator" pill badge
+- Center: nav links as clean text (16px, #484848, hover: #222222)
+- Right: avatar (40px circle) + dropdown
 
-### Forms
-- Input fields: `border border-[#E2DDD4] rounded-[8px] px-3 py-2`, focus ring in `#D0103A`
-- Labels: `text-[11px] font-semibold text-[#1A1A18] uppercase tracking-wide`
-- Placeholders: `text-[#9C9A92]`
-- Select dropdowns: consistent with input styling
-- Textareas: same styling, min-height `80px`
+**Agent mode:**
+- Same white nav, but with green "Agent" badge
+- Simpler — fewer nav links
 
-### Status colors
-- Compliance green (>= 90%): `bg-[#E8F6F1] text-[#0E6B50]`
-- Compliance amber (70-89%): `bg-[#FFFBF0] text-[#854F0B]`
-- Compliance red (< 70%): `bg-[#FFF0F3] text-[#D0103A]`
-- Pending/draft: `bg-[#F0EDE6] text-[#9C9A92]`
-- Published/active: `bg-[#E8F6F1] text-[#0E6B50]`
+**Why white nav?** Airbnb uses a white nav. Dark navs feel enterprise. White feels modern.
 
-## Layout Principles
+## Cards
 
-### Page structure
-- Page background: `#F0EDE6` (warm gray)
-- Content max-width: `1200px` centered for Creator mode, `600px` for Agent mode (mobile-optimized)
-- Page padding: `16px` on mobile, `24-32px` on desktop
-- Section spacing: `14-16px` vertical gap between sections
+**Standard card:**
+```
+rounded-xl border border-[#EBEBEB] bg-white overflow-hidden
+hover:shadow-lg hover:scale-[1.02] transition-all duration-200 cursor-pointer
+```
 
-### Grid patterns
-- Project cards: `grid grid-cols-2 gap-8` on desktop, single column on mobile
-- Artifact cards: `grid grid-cols-2 lg:grid-cols-3 gap-8`
-- Library items: vertical list with horizontal layout per item (thumbnail + info + action)
+**Project card:**
+- Image/color header: `h-40` minimum, full gradient or image, rounded-t-xl
+- Body: `p-4` with title (16px/600), meta line (14px/#717171)
+- No border on header — the border wraps the whole card
 
-### Two-mode design
-- **Creator mode is denser:** more tabs, analytics, management controls, smaller touch targets OK (desktop users)
-- **Agent mode is sparser:** fewer options, larger touch targets, prominent CTAs, mobile-first. The Quick Create strip and gamification bar are Agent-only elements.
-- The mode switch happens at the layout level (nav component), NOT per-page. Every page receives the user role and adjusts content accordingly.
+**Library item card:**
+- Horizontal: thumbnail (64x64 rounded-lg) + info + action button
+- OR vertical: image header (h-40) + info below (listing-card style)
 
-## Interaction Patterns
+**"+ New" card:**
+- `border-2 border-dashed border-[#DDDDDD] rounded-xl`
+- Centered: 32px plus icon + "New project" label
+- `hover:border-[#D0103A] hover:bg-[#FFF0F3]`
 
-### Loading states
-- Use skeleton loaders (not spinners) for content areas — they feel faster and prevent layout shift
-- AI generation: show a progress indicator with the step being performed ("Generating image...", "Checking compliance...")
-- Button loading: disable button, show spinner inside the button, keep button width stable
+## Buttons
 
-### Empty states
-- Centered icon (24px) + message (11px, `#9C9A92`) + CTA button
-- Be encouraging: "No projects yet — create your first campaign" not "No data found"
+**Primary:** `bg-[#D0103A] text-white rounded-lg px-6 py-3 text-base font-semibold hover:bg-[#B80E33] transition-colors duration-200 shadow-sm hover:shadow-md`
 
-### Micro-interactions
-- Card hover: border color shift (subtle, not dramatic)
-- Button hover: background color darken
-- Tab switch: instant, no animation (tabs should feel snappy)
-- Toast notifications: slide in from top-right, auto-dismiss after 5 seconds
-- Dialog/modal: backdrop blur, centered, max-width `500px`
+**Secondary:** `bg-white border border-[#222222] text-[#222222] rounded-lg px-6 py-3 text-base font-semibold hover:bg-[#F7F7F7] transition-colors`
 
-### Responsive behavior
-- Agent home screen MUST work on mobile (375px+). Creator mode can require 1024px+ but should degrade gracefully.
-- Navigation: no hamburger menus. On mobile, tabs scroll horizontally.
-- Cards: stack vertically on mobile, grid on desktop.
+**Ghost:** `text-[#222222] underline underline-offset-4 font-semibold hover:text-[#D0103A]`
 
-## Do NOT
+**Pill (filter/tag):** `rounded-full border border-[#DDDDDD] px-4 py-2 text-sm font-semibold text-[#222222] hover:border-[#222222] transition-colors` — active: `bg-[#222222] text-white border-[#222222]`
 
-- Do not use shadows heavier than `shadow-sm`. The AIA aesthetic is flat and warm, not elevated.
-- Do not use pure black (`#000000`). Use `#1A1A18` for darkest elements.
-- Do not use pure white (`#FFFFFF`) for page backgrounds. Use `#F0EDE6` (warm gray). White is for cards and inputs.
-- Do not use generic blue for links or actions. Use `#D0103A` (AIA red) for interactive elements.
-- Do not add gradients, glass effects, or heavy animations. The design is clean, professional, insurance-appropriate.
-- Do not use emojis in the UI except for the gamification streak icon (🔥).
-- Do not round corners beyond 12px on cards. This isn't a playful app — it's a professional tool.
+## Badges
+
+- **Creator:** `bg-[#FFF0F3] text-[#D0103A] border border-[#FECDD3] rounded-full px-3 py-1 text-xs font-semibold`
+- **Agent:** `bg-[#F0FFF0] text-[#008A05] border border-[#A7F3D0] rounded-full px-3 py-1 text-xs font-semibold`
+- **Official:** `bg-[#F5F0FF] text-[#7B2FF7] border border-[#C4B5FD] rounded-full`
+- **Status pills:** same pattern — light bg + darker text + subtle border
+
+## Forms
+
+- **Input:** `w-full rounded-lg border border-[#DDDDDD] px-4 py-3.5 text-base bg-white placeholder-[#B0B0B0] focus:border-[#222222] focus:ring-0 focus:outline-none transition-colors`
+- **Label:** `text-sm font-semibold text-[#222222] mb-2 block`
+- **Textarea:** same as input, `min-h-[120px]`
+- **Select:** same height as input, custom arrow
+- Inputs are taller (py-3.5) for comfortable touch targets
+
+## Tabs
+
+**Airbnb-style underline tabs (not pills):**
+```
+/* Container */
+border-b border-[#EBEBEB]
+
+/* Tab item */
+pb-3 px-1 text-sm font-semibold text-[#717171] border-b-2 border-transparent
+hover:text-[#222222] hover:border-[#DDDDDD] transition-colors
+
+/* Active */
+text-[#222222] border-b-2 border-[#222222]
+```
+
+Tabs should be underline-style (Airbnb uses this), not pills. Clean, minimal, lets content breathe.
+
+## Quick Create (Agent only)
+
+- Clean white card with subtle border, NOT pink background
+- Row of square-ish cards (100x100) with icon + label
+- `border border-[#EBEBEB] rounded-xl p-4 text-center hover:shadow-md hover:border-[#D0103A]`
+- Selected/active: red border + light red background
+
+## Gamification (Agent only)
+
+- Inline bar at bottom: white bg, thin top border
+- Clean and minimal — flame icon, text, thin progress bar
+- Not attention-grabbing — it's informational
+
+## Empty States
+
+- Centered layout with large icon (48-64px)
+- Bold heading (22px)
+- Muted description (16px, #717171)
+- Primary CTA button below
+- Generous vertical spacing (40px between elements)
+
+## DO NOT
+
+- Do NOT use gray/stone page backgrounds. White only.
+- Do NOT use dark navigation bars. White nav with border.
+- Do NOT use pill-style tabs. Use Airbnb underline tabs.
+- Do NOT use colored backgrounds on strips (pink quick create, amber gamification). Keep it white.
+- Do NOT use text below 12px.
+- Do NOT use heavy box shadows. Use `shadow-sm` default, `shadow-lg` on hover only.
+- Do NOT use stone-* or warm-gray tailwind colors. Use neutral gray scale.
+- Do NOT clutter with badges — max 2 badges per card.
+- Do NOT use gradients on backgrounds. Gradients only on card preview headers.
+</thinking>

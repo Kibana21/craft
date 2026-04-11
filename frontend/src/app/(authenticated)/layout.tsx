@@ -23,10 +23,10 @@ export default function AuthenticatedLayout({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F0EDE6]">
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="text-center">
-          <h1 className="text-xl font-black text-[#D0103A]">CRAFT</h1>
-          <p className="mt-2 text-xs text-[#9C9A92]">Loading...</p>
+          <h1 className="text-2xl font-black text-[#D0103A]">CRAFT</h1>
+          <p className="mt-2 text-sm text-[#717171]">Loading...</p>
         </div>
       </div>
     );
@@ -37,7 +37,7 @@ export default function AuthenticatedLayout({
   const isCreator = isCreatorRole(user.role);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#F0EDE6]">
+    <div className="flex min-h-screen flex-col bg-white">
       {isCreator ? <CreatorNav /> : <AgentNav />}
       <main className="flex-1">{children}</main>
     </div>

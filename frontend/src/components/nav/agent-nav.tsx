@@ -14,29 +14,31 @@ export function AgentNav() {
     .join("");
 
   return (
-    <nav className="flex items-center justify-between border-b border-[#E2DDD4] bg-white px-6 py-3">
-      <div className="flex items-center gap-3">
-        <span className="text-base font-black tracking-tight text-[#D0103A]">
-          CRAFT
-        </span>
-        <span className="rounded-full border border-[#9FE1CB] bg-[#E8F6F1] px-3 py-0.5 text-xs font-bold text-[#0E6B50]">
-          Agent
-        </span>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#D0103A] text-[10px] font-bold text-white">
-          {initials}
+    <nav className="sticky top-0 z-50 bg-white border-b border-[#EBEBEB]">
+      <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-6">
+        <div className="flex items-center gap-3">
+          <span className="text-lg font-black tracking-tight text-[#D0103A]">
+            CRAFT
+          </span>
+          <span className="rounded-full bg-[#F0FFF0] px-3 py-1 text-xs font-semibold text-[#008A05]">
+            Agent
+          </span>
         </div>
-        <span className="text-xs text-[#9C9A92]">{user.name}</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={logout}
-          className="h-7 px-2 text-[10px] text-[#9C9A92] hover:text-[#5C5A54]"
-        >
-          Sign out
-        </Button>
+
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#D0103A] text-xs font-bold text-white">
+            {initials}
+          </div>
+          <span className="text-sm text-[#484848]">{user.name}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={logout}
+            className="text-xs text-[#717171] hover:text-[#222222]"
+          >
+            Sign out
+          </Button>
+        </div>
       </div>
     </nav>
   );

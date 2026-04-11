@@ -23,17 +23,25 @@ export function CreatorHome() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl p-4">
-      {/* Tabs */}
-      <div className="mb-4 flex border-b border-[#E2DDD4]">
+    <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8">
+      {/* Header */}
+      <div className="mb-10">
+        <h1 className="text-[28px] font-bold text-[#222222]">Welcome back</h1>
+        <p className="mt-1 text-base text-[#717171]">
+          Manage your campaigns and brand content
+        </p>
+      </div>
+
+      {/* Underline tabs */}
+      <div className="mb-10 flex gap-6 border-b border-[#EBEBEB]">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setTab(tab.key)}
-            className={`border-b-2 px-4 py-2.5 text-[11px] transition-colors ${
+            className={`pb-3 text-sm font-medium transition-all duration-200 ${
               activeTab === tab.key
-                ? "border-[#D0103A] font-semibold text-[#1A1A18]"
-                : "border-transparent text-[#9C9A92] hover:text-[#5C5A54]"
+                ? "border-b-2 border-[#222222] text-[#222222] font-semibold"
+                : "text-[#717171] hover:text-[#222222]"
             }`}
           >
             {tab.label}
@@ -42,7 +50,7 @@ export function CreatorHome() {
       </div>
 
       {/* Tab content */}
-      <div className="rounded-xl border border-[#E2DDD4] bg-white p-4">
+      <div>
         {activeTab === "my-projects" && <MyProjectsTab />}
         {activeTab === "team-projects" && <TeamProjectsTab />}
         {activeTab === "brand-library" && <BrandLibraryTab />}

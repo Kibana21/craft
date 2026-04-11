@@ -23,11 +23,11 @@ export function TeamProjectsTab() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-6 lg:grid-cols-3">
         {[1, 2].map((i) => (
           <div
             key={i}
-            className="h-[74px] animate-pulse rounded-lg bg-[#E2DDD4]"
+            className="h-48 animate-pulse rounded-xl bg-[#F7F7F7]"
           />
         ))}
       </div>
@@ -36,37 +36,49 @@ export function TeamProjectsTab() {
 
   return (
     <div>
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-[11px] font-bold text-[#1A1A18]">Team Projects</h3>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-[#222222]">
+            Team Projects
+          </h2>
+          <p className="mt-0.5 text-sm text-[#717171]">
+            {isCreator
+              ? "Projects shared with colleagues — everyone contributes artifacts"
+              : "Projects your district or agency leader has added you to"}
+          </p>
+        </div>
         {isCreator && (
-          <button className="text-[10px] text-[#D0103A]">
+          <button className="rounded-lg bg-[#D0103A] px-6 py-3 text-base font-semibold text-white transition-all hover:bg-[#B80E33]">
             + New team project
           </button>
         )}
       </div>
-      <p className="mb-3 text-[10px] text-[#9C9A92]">
-        {isCreator
-          ? "Projects shared with colleagues — everyone contributes artifacts"
-          : "Projects your district or agency leader has added you to"}
-      </p>
-      <div className="grid grid-cols-2 gap-3">
+
+      <div className="grid grid-cols-2 gap-6 lg:grid-cols-3">
         {projects.map((project) => (
           <ProjectCard key={project.id} project={project} />
         ))}
         {isCreator && <NewProjectCard />}
       </div>
+
       {projects.length === 0 && (
-        <div className="mt-4 text-center">
-          <p className="text-2xl">👥</p>
-          <p className="mt-2 text-[11px] text-[#9C9A92]">
+        <div className="mt-12 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#F7F7F7] text-3xl">
+            👥
+          </div>
+          <h3 className="mt-4 text-lg font-semibold text-[#222222]">
+            No team projects
+          </h3>
+          <p className="mt-1 text-sm text-[#717171]">
             {isCreator
-              ? "No team projects yet — create one and invite members"
-              : "No team projects — your leader will add you to one"}
+              ? "Create one and invite members to collaborate"
+              : "Your leader will add you to a project soon"}
           </p>
         </div>
       )}
+
       {!isCreator && projects.length > 0 && (
-        <div className="mt-3 rounded-md border border-[#E2DDD4] bg-[#F0EDE6] px-3 py-2 text-[10px] text-[#9C9A92]">
+        <div className="mt-6 rounded-xl border border-[#EBEBEB] bg-[#F7F7F7] px-5 py-3 text-sm text-[#717171]">
           You can create your own artifacts inside these projects. Your leader
           can see everything you make here.
         </div>

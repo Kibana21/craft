@@ -23,6 +23,9 @@ from app.models.brand_library_item import BrandLibraryItem
 from app.models.brand_kit import BrandKit
 from app.models.compliance_rule import ComplianceRule
 from app.models.compliance_document import ComplianceDocument
+from app.models.compliance_check import ComplianceCheck
+from app.models.export_log import ExportLog
+from app.models.notification import Notification
 
 __all__ = [
     "Base",
@@ -48,4 +51,7 @@ __all__ = [
     "BrandKit",
     "ComplianceRule",
     "ComplianceDocument",
+    "ComplianceCheck",
+    "ExportLog",
+    "Notification",
 ]

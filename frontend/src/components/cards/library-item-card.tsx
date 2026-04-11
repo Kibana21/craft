@@ -11,15 +11,15 @@ const TYPE_ICONS: Record<string, string> = {
   slide_deck: "📋",
 };
 
-const TYPE_COLORS: Record<string, string> = {
-  poster: "#534AB7",
-  whatsapp_card: "#D0103A",
-  reel: "#1B9D74",
-  video: "#1B9D74",
-  story: "#BA7517",
-  deck: "#1C3044",
-  infographic: "#0891B2",
-  slide_deck: "#1C3044",
+const TYPE_BG: Record<string, string> = {
+  poster: "bg-violet-600",
+  whatsapp_card: "bg-red-600",
+  reel: "bg-emerald-600",
+  video: "bg-emerald-600",
+  story: "bg-amber-600",
+  deck: "bg-slate-700",
+  infographic: "bg-cyan-600",
+  slide_deck: "bg-slate-700",
 };
 
 interface LibraryItemCardProps {
@@ -36,58 +36,59 @@ export function LibraryItemCard({
   onManage,
 }: LibraryItemCardProps) {
   const icon = TYPE_ICONS[item.artifact.type] || "◻";
-  const color = TYPE_COLORS[item.artifact.type] || "#534AB7";
+  const bg = TYPE_BG[item.artifact.type] || "bg-violet-600";
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-[#E2DDD4] bg-white px-3 py-2.5 transition-colors hover:border-[#AFA9EC]">
+    <div className="group flex items-center gap-4 rounded-xl border border-[#EBEBEB] bg-white p-5 transition-all duration-200 hover:shadow-lg hover:scale-[1.02]">
       {/* Thumbnail */}
       <div
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-sm text-white"
-        style={{ backgroundColor: color }}
+        className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-xl text-lg text-white ${bg}`}
       >
         {icon}
       </div>
 
       {/* Info */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[11px] font-semibold text-[#1A1A18]">
+        <p className="truncate text-base font-semibold text-[#222222]">
           {item.artifact.name}
         </p>
-        <p className="text-[9px] text-[#9C9A92]">
+        <p className="mt-0.5 text-sm text-[#717171]">
           {item.artifact.product || item.artifact.type} · {item.remix_count} remixes
         </p>
-        {!isAdmin && (
-          <span className="mt-0.5 inline-block rounded-full border border-[#AFA9EC] bg-[#EEEDFE] px-2 py-0 text-[8px] font-bold text-[#3C3489]">
-            Official · Compliant
-          </span>
-        )}
-        {isAdmin && (
-          <span
-            className={`mt-0.5 inline-block rounded-full px-2 py-0 text-[8px] font-bold ${
-              item.status === "published"
-                ? "border border-[#9FE1CB] bg-[#E8F6F1] text-[#0E6B50]"
-                : item.status === "pending_review"
-                  ? "border border-[#FAC775] bg-[#FFFBF0] text-[#854F0B]"
-                  : "border border-[#F9C6D0] bg-[#FFF0F3] text-[#D0103A]"
-            }`}
-          >
-            {item.status.replace("_", " ")}
-          </span>
-        )}
+        <div className="mt-2 flex gap-1.5">
+          {!isAdmin && (
+            <span className="rounded-full bg-[#F0FFF0] px-2.5 py-0.5 text-[11px] font-semibold text-[#008A05]">
+              Official · Compliant
+            </span>
+          )}
+          {isAdmin && (
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                item.status === "published"
+                  ? "bg-[#F0FFF0] text-[#008A05]"
+                  : item.status === "pending_review"
+                    ? "bg-amber-50 text-amber-700"
+                    : "bg-[#FFF0F3] text-[#D0103A]"
+              }`}
+            >
+              {item.status.replace("_", " ")}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Action */}
       {isAdmin ? (
         <button
           onClick={onManage}
-          className="shrink-0 text-[10px] font-semibold text-[#D0103A]"
+          className="shrink-0 rounded-lg border border-[#222222] px-4 py-2 text-sm font-semibold text-[#222222] transition-colors hover:bg-[#F7F7F7]"
         >
           Manage
         </button>
       ) : (
         <button
           onClick={onRemix}
-          className="shrink-0 text-[10px] font-semibold text-[#D0103A]"
+          className="shrink-0 rounded-lg bg-[#D0103A] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#B80E33]"
         >
           Remix →
         </button>

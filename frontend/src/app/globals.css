@@ -49,65 +49,39 @@
 }
 
 :root {
-  /* AIA Brand Colors */
-  --aia-red: #D0103A;
-  --aia-red-hover: #A50C2E;
-  --aia-red-light: #FFF0F3;
-  --aia-red-border: #F9C6D0;
-  --aia-dark: #1A1A18;
-  --aia-warm-gray: #F0EDE6;
-  --aia-warm-gray-dark: #E2DDD4;
-  --aia-warm-gray-darker: #C8C2B6;
-  --aia-text: #1A1A18;
-  --aia-text-secondary: #5C5A54;
-  --aia-text-muted: #9C9A92;
-  --aia-green: #1B9D74;
-  --aia-green-light: #E8F6F1;
-  --aia-green-border: #9FE1CB;
-  --aia-green-dark: #0E6B50;
-  --aia-purple: #534AB7;
-  --aia-purple-light: #EEEDFE;
-  --aia-purple-border: #AFA9EC;
-  --aia-purple-dark: #3C3489;
-  --aia-amber: #BA7517;
-  --aia-amber-light: #FFFBF0;
-  --aia-amber-border: #FAC775;
-  --aia-amber-dark: #854F0B;
-  --aia-card-bg: #FAFAF8;
-
-  /* shadcn mapped to AIA palette */
-  --background: #F0EDE6;
-  --foreground: #1A1A18;
+  /* Airbnb-inspired theme — clean whites, neutral grays */
+  --background: #FFFFFF;
+  --foreground: #222222;
   --card: #FFFFFF;
-  --card-foreground: #1A1A18;
+  --card-foreground: #222222;
   --popover: #FFFFFF;
-  --popover-foreground: #1A1A18;
+  --popover-foreground: #222222;
   --primary: #D0103A;
   --primary-foreground: #FFFFFF;
-  --secondary: #F0EDE6;
-  --secondary-foreground: #1A1A18;
-  --muted: #F0EDE6;
-  --muted-foreground: #9C9A92;
-  --accent: #F0EDE6;
-  --accent-foreground: #1A1A18;
+  --secondary: #F7F7F7;
+  --secondary-foreground: #222222;
+  --muted: #F7F7F7;
+  --muted-foreground: #717171;
+  --accent: #F7F7F7;
+  --accent-foreground: #222222;
   --destructive: #D0103A;
-  --border: #E2DDD4;
-  --input: #E2DDD4;
-  --ring: #D0103A;
+  --border: #EBEBEB;
+  --input: #DDDDDD;
+  --ring: #222222;
   --chart-1: #D0103A;
-  --chart-2: #1B9D74;
-  --chart-3: #534AB7;
-  --chart-4: #BA7517;
-  --chart-5: #1A1A18;
+  --chart-2: #008A05;
+  --chart-3: #7B2FF7;
+  --chart-4: #E07912;
+  --chart-5: #222222;
   --radius: 0.75rem;
-  --sidebar: #1A1A18;
-  --sidebar-foreground: rgba(255, 255, 255, 0.5);
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #484848;
   --sidebar-primary: #D0103A;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: rgba(255, 255, 255, 0.08);
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #D0103A;
+  --sidebar-accent: #F7F7F7;
+  --sidebar-accent-foreground: #222222;
+  --sidebar-border: #EBEBEB;
+  --sidebar-ring: #222222;
 }
 
 /* No system dark mode — CRAFT uses role-based visual modes (Creator/Agent) */
