@@ -1,0 +1,51 @@
+# Web framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Database
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.1
+
+# Settings
+pydantic-settings==2.7.1
+
+# Auth
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Redis
+redis==5.2.1
+
+# Storage
+boto3==1.36.4
+
+# Image processing
+Pillow==11.1.0
+CairoSVG==2.7.1
+
+# Video processing
+ffmpeg-python==0.2.0
+
+# AI - Google
+google-generativeai==0.8.4
+google-cloud-aiplatform==1.75.0
+
+# RAG / Compliance
+langchain==0.3.14
+langchain-community==0.3.14
+langchain-google-genai==2.0.8
+pgvector==0.3.6
+
+# HTTP client
+httpx==0.28.1
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.2
+
+# Type checking
+mypy==1.14.1
+
+# Linting
+ruff==0.9.3

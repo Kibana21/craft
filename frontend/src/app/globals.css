@@ -1,0 +1,125 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* AIA Brand Colors */
+  --aia-red: #D0103A;
+  --aia-red-hover: #A50C2E;
+  --aia-red-light: #FFF0F3;
+  --aia-red-border: #F9C6D0;
+  --aia-dark: #1A1A18;
+  --aia-warm-gray: #F0EDE6;
+  --aia-warm-gray-dark: #E2DDD4;
+  --aia-warm-gray-darker: #C8C2B6;
+  --aia-text: #1A1A18;
+  --aia-text-secondary: #5C5A54;
+  --aia-text-muted: #9C9A92;
+  --aia-green: #1B9D74;
+  --aia-green-light: #E8F6F1;
+  --aia-green-border: #9FE1CB;
+  --aia-green-dark: #0E6B50;
+  --aia-purple: #534AB7;
+  --aia-purple-light: #EEEDFE;
+  --aia-purple-border: #AFA9EC;
+  --aia-purple-dark: #3C3489;
+  --aia-amber: #BA7517;
+  --aia-amber-light: #FFFBF0;
+  --aia-amber-border: #FAC775;
+  --aia-amber-dark: #854F0B;
+  --aia-card-bg: #FAFAF8;
+
+  /* shadcn mapped to AIA palette */
+  --background: #F0EDE6;
+  --foreground: #1A1A18;
+  --card: #FFFFFF;
+  --card-foreground: #1A1A18;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A18;
+  --primary: #D0103A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F0EDE6;
+  --secondary-foreground: #1A1A18;
+  --muted: #F0EDE6;
+  --muted-foreground: #9C9A92;
+  --accent: #F0EDE6;
+  --accent-foreground: #1A1A18;
+  --destructive: #D0103A;
+  --border: #E2DDD4;
+  --input: #E2DDD4;
+  --ring: #D0103A;
+  --chart-1: #D0103A;
+  --chart-2: #1B9D74;
+  --chart-3: #534AB7;
+  --chart-4: #BA7517;
+  --chart-5: #1A1A18;
+  --radius: 0.75rem;
+  --sidebar: #1A1A18;
+  --sidebar-foreground: rgba(255, 255, 255, 0.5);
+  --sidebar-primary: #D0103A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #D0103A;
+}
+
+/* No system dark mode — CRAFT uses role-based visual modes (Creator/Agent) */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}

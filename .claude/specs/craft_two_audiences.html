@@ -1,0 +1,471 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.root{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0EDE6;padding:16px;}
+.tabs{display:flex;gap:4px;background:#E2DDD4;padding:4px;border-radius:10px;margin-bottom:14px;}
+.tab{flex:1;padding:8px 6px;border-radius:7px;font-size:11px;text-align:center;cursor:pointer;color:#5C5A54;border:none;background:transparent;font-family:inherit;}
+.tab.on{background:#fff;color:#1A1A18;font-weight:600;}
+.panel{display:none;} .panel.show{display:block;}
+
+/* SPLIT DIAGRAM */
+.split{display:grid;grid-template-columns:1fr 60px 1fr;gap:0;margin-bottom:14px;min-height:480px;}
+.split-col{border-radius:12px;overflow:hidden;display:flex;flex-direction:column;}
+.split-col.internal{background:#1A1A18;}
+.split-col.agents{background:#fff;border:1px solid #E2DDD4;}
+.split-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:8px 0;}
+.mid-line{flex:1;width:1px;background:#E2DDD4;}
+.mid-label{width:44px;height:44px;border-radius:50%;background:#D0103A;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;text-align:center;line-height:1.2;flex-shrink:0;}
+
+.sc-head{padding:14px 16px 10px;}
+.sc-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;}
+.split-col.internal .sc-tag{color:rgba(255,255,255,.3);}
+.split-col.agents .sc-tag{color:#9C9A92;}
+.sc-title{font-size:15px;font-weight:800;margin-bottom:3px;}
+.split-col.internal .sc-title{color:#fff;}
+.split-col.agents .sc-title{color:#1A1A18;}
+.sc-sub{font-size:11px;line-height:1.5;}
+.split-col.internal .sc-sub{color:rgba(255,255,255,.4);}
+.split-col.agents .sc-sub{color:#9C9A92;}
+
+.sc-section{padding:10px 16px;border-top:1px solid;}
+.split-col.internal .sc-section{border-top-color:rgba(255,255,255,.08);}
+.split-col.agents .sc-section{border-top-color:#F0EDE6;}
+.sc-sec-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;}
+.split-col.internal .sc-sec-title{color:rgba(255,255,255,.3);}
+.split-col.agents .sc-sec-title{color:#9C9A92;}
+
+.feature-item{display:flex;align-items:flex-start;gap:7px;margin-bottom:6px;font-size:11px;line-height:1.4;}
+.split-col.internal .feature-item{color:rgba(255,255,255,.65);}
+.split-col.agents .feature-item{color:#5C5A54;}
+.fi-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.split-col.internal .fi-dot{background:#D0103A;}
+.split-col.agents .fi-dot{background:#1B9D74;}
+
+.sc-footer{margin-top:auto;padding:10px 16px;border-top:1px solid;}
+.split-col.internal .sc-footer{border-top-color:rgba(255,255,255,.08);background:rgba(255,255,255,.03);}
+.split-col.agents .sc-footer{border-top-color:#F0EDE6;background:#FAFAF8;}
+.sf-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;}
+.split-col.internal .sf-label{color:rgba(255,255,255,.25);}
+.split-col.agents .sf-label{color:#9C9A92;}
+.sf-login{font-size:11px;}
+.split-col.internal .sf-login{color:rgba(255,255,255,.5);}
+.split-col.agents .sf-login{color:#5C5A54;}
+
+/* SHARED FOUNDATION */
+.foundation{background:#fff;border:1px solid #E2DDD4;border-radius:12px;padding:14px 16px;margin-bottom:14px;}
+.f-title{font-size:11px;font-weight:700;color:#1A1A18;margin-bottom:8px;text-align:center;}
+.f-items{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.f-item{padding:5px 12px;border-radius:20px;font-size:11px;background:#F0EDE6;border:1px solid #E2DDD4;color:#1A1A18;display:flex;align-items:center;gap:5px;}
+.f-item .dot{width:6px;height:6px;border-radius:50%;background:#D0103A;}
+
+/* FLOW DIAGRAM */
+.flow-wrap{display:flex;flex-direction:column;gap:8px;}
+.flow-row{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:center;}
+.flow-box{border-radius:9px;padding:10px 14px;}
+.fb-int{background:#1A1A18;}
+.fb-lib{background:#D0103A;text-align:center;}
+.fb-agt{background:#fff;border:1px solid #E2DDD4;}
+.fb-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;}
+.fb-int .fb-label{color:rgba(255,255,255,.3);}
+.fb-lib .fb-label{color:rgba(255,255,255,.6);}
+.fb-agt .fb-label{color:#9C9A92;}
+.fb-title{font-size:12px;font-weight:700;}
+.fb-int .fb-title{color:#fff;}
+.fb-lib .fb-title{color:#fff;}
+.fb-agt .fb-title{color:#1A1A18;}
+.fb-sub{font-size:10px;margin-top:2px;}
+.fb-int .fb-sub{color:rgba(255,255,255,.4);}
+.fb-lib .fb-sub{color:rgba(255,255,255,.7);}
+.fb-agt .fb-sub{color:#9C9A92;}
+.flow-arrow{display:flex;flex-direction:column;align-items:center;padding:0 8px;gap:2px;}
+.fa-line{flex:1;width:2px;background:#E2DDD4;}
+.fa-arrow{font-size:14px;color:#D0103A;font-weight:700;line-height:1;}
+.fa-label{font-size:9px;color:#9C9A92;white-space:nowrap;}
+
+/* SIDE-BY-SIDE HOME SCREENS */
+.homes{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.home-shell{border-radius:11px;overflow:hidden;border:1px solid #E2DDD4;}
+.hs-nav{padding:9px 14px;display:flex;align-items:center;gap:8px;}
+.hs-logo{font-size:12px;font-weight:900;color:#D0103A;letter-spacing:-.5px;}
+.hs-mode{font-size:9px;padding:2px 8px;border-radius:20px;font-weight:700;margin-left:auto;}
+.hs-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;}
+.hs-uname{font-size:10px;}
+.hs-tabs-row{display:flex;border-bottom:1px solid #E2DDD4;padding:0 12px;}
+.hs-tab{padding:7px 10px;font-size:10px;color:#9C9A92;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;}
+.hs-tab.on{color:#1A1A18;font-weight:600;border-bottom-color:#D0103A;}
+.hs-body{padding:12px;}
+.hs-section{margin-bottom:10px;}
+.hss-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.hss-title{font-size:10px;font-weight:700;color:#1A1A18;}
+.hss-link{font-size:9px;color:#D0103A;cursor:pointer;}
+.proj-row{display:flex;gap:6px;}
+.pj{border:1px solid #E2DDD4;border-radius:6px;flex:1;overflow:hidden;}
+.pj-thumb{height:28px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:rgba(255,255,255,.7);}
+.pj-info{padding:4px 7px;}
+.pj-name{font-size:9px;font-weight:600;color:#1A1A18;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pj-meta{font-size:8px;color:#9C9A92;}
+.pj-new{border:1.5px dashed #C8C2B6;border-radius:6px;height:52px;display:flex;align-items:center;justify-content:center;flex:0 0 40px;font-size:16px;color:#9C9A92;cursor:pointer;}
+.diff-callout{padding:7px 10px;border-radius:7px;font-size:10px;line-height:1.5;margin-top:8px;}
+.dc-int{background:#FFF0F3;border:1px solid #F9C6D0;color:#D0103A;}
+.dc-agt{background:#E8F6F1;border:1px solid #9FE1CB;color:#0E6B50;}
+
+/* QUICK CREATE STRIP (agent only) */
+.quick-create{padding:8px 12px;background:#FFF0F3;border-top:1px solid #F9C6D0;}
+.qc-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#D0103A;margin-bottom:5px;}
+.qc-row{display:flex;gap:5px;}
+.qc-btn{flex:1;padding:6px 4px;background:#D0103A;color:#fff;border-radius:6px;font-size:9px;font-weight:600;text-align:center;cursor:pointer;}
+
+/* GAMIFICATION (agent only) */
+.gam-strip{padding:8px 12px;background:#FFFBF0;border-top:1px solid #FAC775;}
+.gam-row{display:flex;align-items:center;gap:8px;}
+.gam-streak{font-size:10px;color:#854F0B;font-weight:600;}
+.gam-score{font-size:10px;color:#9C9A92;}
+.gam-bar{flex:1;height:4px;background:#F0EDE6;border-radius:2px;overflow:hidden;}
+.gam-fill{height:100%;background:#BA7517;border-radius:2px;}
+
+/* KEY DIFFERENCES TABLE */
+.diff-table{width:100%;border-collapse:collapse;font-size:11px;}
+.diff-table th{padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9C9A92;background:#F0EDE6;border:1px solid #E2DDD4;}
+.diff-table td{padding:9px 12px;border:1px solid #E2DDD4;vertical-align:top;color:#5C5A54;line-height:1.5;}
+.diff-table tr:hover td{background:#FAFAF8;}
+.td-feat{font-weight:600;color:#1A1A18;}
+.td-int{color:#1A1A18;}
+.td-agt{color:#1B9D74;font-weight:500;}
+</style>
+
+<div class="root">
+<h2 style="position:absolute;left:-9999px;">CRAFT — how one platform serves internal teams and agents differently</h2>
+
+<div class="tabs">
+  <div class="tab on" onclick="sw(0,this)">One platform, two faces</div>
+  <div class="tab" onclick="sw(1,this)">Side by side</div>
+  <div class="tab" onclick="sw(2,this)">Content flow</div>
+  <div class="tab" onclick="sw(3,this)">Key differences</div>
+</div>
+
+<!-- ══ PANEL 0: SPLIT DIAGRAM ══ -->
+<div class="panel show" id="p0">
+
+  <div style="background:#fff;border:1px solid #E2DDD4;border-radius:10px;padding:12px 16px;margin-bottom:12px;font-size:12px;color:#5C5A54;line-height:1.7;">
+    <b style="color:#1A1A18;">Same app. Same login URL. Different experience.</b> When an internal staff member logs in with their AIA corporate credentials, they see CRAFT in full creator mode — projects, brand library management, compliance controls, analytics. When an FSC logs in with their agent credentials, they see CRAFT in agent mode — simpler, faster, focused on create and publish. The role is detected at login. No switching needed.
+  </div>
+
+  <div class="split">
+    <!-- INTERNAL -->
+    <div class="split-col internal">
+      <div class="sc-head">
+        <div class="sc-tag">Internal staff</div>
+        <div class="sc-title">CRAFT Creator</div>
+        <div class="sc-sub">Brand, Marketing, L&D, Compliance teams. Building the official content that feeds everything.</div>
+      </div>
+
+      <div class="sc-section">
+        <div class="sc-sec-title">What they do</div>
+        <div class="feature-item"><div class="fi-dot"></div>Create official product launch content</div>
+        <div class="feature-item"><div class="fi-dot"></div>Build training and onboarding materials</div>
+        <div class="feature-item"><div class="fi-dot"></div>Run team projects with colleagues</div>
+        <div class="feature-item"><div class="fi-dot"></div>Publish approved assets to Brand Library</div>
+        <div class="feature-item"><div class="fi-dot"></div>Manage brand kit and compliance rules</div>
+        <div class="feature-item"><div class="fi-dot"></div>See what agents are creating and using</div>
+      </div>
+
+      <div class="sc-section">
+        <div class="sc-sec-title">Their home screen shows</div>
+        <div class="feature-item"><div class="fi-dot"></div>My Projects + Team Projects</div>
+        <div class="feature-item"><div class="fi-dot"></div>Brand Library (full management)</div>
+        <div class="feature-item"><div class="fi-dot"></div>Usage analytics — what agents remix most</div>
+        <div class="feature-item"><div class="fi-dot"></div>Compliance dashboard — pending reviews</div>
+      </div>
+
+      <div class="sc-section">
+        <div class="sc-sec-title">Extra controls they have</div>
+        <div class="feature-item"><div class="fi-dot"></div>Upload to Brand Library</div>
+        <div class="feature-item"><div class="fi-dot"></div>Edit brand kit (logo, colours, fonts)</div>
+        <div class="feature-item"><div class="fi-dot"></div>Update MAS compliance rules and RAG docs</div>
+        <div class="feature-item"><div class="fi-dot"></div>Approve / reject flagged agent content</div>
+      </div>
+
+      <div class="sc-footer">
+        <div class="sf-label">Login</div>
+        <div class="sf-login">AIA corporate SSO · @aia.com.sg</div>
+      </div>
+    </div>
+
+    <!-- MIDDLE -->
+    <div class="split-mid">
+      <div class="mid-line"></div>
+      <div class="mid-label">One<br/>CRAFT</div>
+      <div class="mid-line"></div>
+    </div>
+
+    <!-- AGENTS -->
+    <div class="split-col agents">
+      <div class="sc-head">
+        <div class="sc-tag">FSC / Agents</div>
+        <div class="sc-title">CRAFT Agent</div>
+        <div class="sc-sub">Financial Service Consultants. Creating personalised content for their own client relationships.</div>
+      </div>
+
+      <div class="sc-section">
+        <div class="sc-sec-title">What they do</div>
+        <div class="feature-item"><div class="fi-dot"></div>Browse Brand Library and remix approved content</div>
+        <div class="feature-item"><div class="fi-dot"></div>Create personal campaign posters and cards</div>
+        <div class="feature-item"><div class="fi-dot"></div>Add their own photo, tone, and personal message</div>
+        <div class="feature-item"><div class="fi-dot"></div>Export WhatsApp cards, Instagram posts</div>
+        <div class="feature-item"><div class="fi-dot"></div>Join team projects their leader invites them to</div>
+        <div class="feature-item"><div class="fi-dot"></div>Track their creative streak and score</div>
+      </div>
+
+      <div class="sc-section">
+        <div class="sc-sec-title">Their home screen shows</div>
+        <div class="feature-item"><div class="fi-dot"></div>Quick create strip — most used formats</div>
+        <div class="feature-item"><div class="fi-dot"></div>Brand Library prominently — easy remix</div>
+        <div class="feature-item"><div class="fi-dot"></div>My Projects — their personal work</div>
+        <div class="feature-item"><div class="fi-dot"></div>Streak, score, team leaderboard</div>
+      </div>
+
+      <div class="sc-section">
+        <div class="sc-sec-title">What they cannot see</div>
+        <div class="feature-item"><div class="fi-dot"></div>Other agents' personal projects</div>
+        <div class="feature-item"><div class="fi-dot"></div>Brand Library management controls</div>
+        <div class="feature-item"><div class="fi-dot"></div>Compliance rule editor or brand kit settings</div>
+        <div class="feature-item"><div class="fi-dot"></div>Company-wide analytics</div>
+      </div>
+
+      <div class="sc-footer">
+        <div class="sf-label">Login</div>
+        <div class="sf-login">AIA agent portal credentials · Agent ID</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHARED FOUNDATION -->
+  <div class="foundation">
+    <div class="f-title">Shared underneath — both sides use the same</div>
+    <div class="f-items">
+      <div class="f-item"><div class="dot"></div>AIA Brand Kit</div>
+      <div class="f-item"><div class="dot"></div>MAS Compliance Rules</div>
+      <div class="f-item"><div class="dot"></div>Product RAG (fact sheets)</div>
+      <div class="f-item"><div class="dot"></div>Approved Disclaimer Blocks</div>
+      <div class="f-item"><div class="dot"></div>Imagen 3 Image Generation</div>
+      <div class="f-item"><div class="dot"></div>AI Tagline Engine</div>
+      <div class="f-item"><div class="dot"></div>Brand Library Content</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PANEL 1: SIDE BY SIDE HOME SCREENS ══ -->
+<div class="panel" id="p1">
+  <div style="font-size:12px;color:#5C5A54;margin-bottom:10px;">Same app, same URL — but the home screen is completely different based on who logged in.</div>
+  <div class="homes">
+
+    <!-- INTERNAL HOME -->
+    <div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9C9A92;margin-bottom:6px;text-align:center;">Internal staff — Sarah, Brand Manager</div>
+      <div class="home-shell">
+        <div class="hs-nav" style="background:#1A1A18;">
+          <div class="hs-logo">CRAFT</div>
+          <div class="hs-mode" style="background:rgba(208,16,58,.3);color:#FF6B8A;">Creator</div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:5px;">
+            <div class="hs-av" style="background:#534AB7;">SL</div>
+            <div class="hs-uname" style="color:rgba(255,255,255,.5);">Sarah · Brand</div>
+          </div>
+        </div>
+        <div class="hs-tabs-row">
+          <div class="hs-tab on">My Projects</div>
+          <div class="hs-tab">Team Projects</div>
+          <div class="hs-tab">Brand Library</div>
+          <div class="hs-tab">Analytics</div>
+        </div>
+        <div class="hs-body">
+          <div class="hs-section">
+            <div class="hss-head"><div class="hss-title">Active team projects</div><div class="hss-link">+ New</div></div>
+            <div class="proj-row">
+              <div class="pj"><div class="pj-thumb" style="background:#D0103A;">PAA</div><div class="pj-info"><div class="pj-name">PAA Launch Q2</div><div class="pj-meta">8 artifacts · 3 members</div></div></div>
+              <div class="pj"><div class="pj-thumb" style="background:#534AB7;">SG60</div><div class="pj-info"><div class="pj-name">SG60 Campaign</div><div class="pj-meta">12 artifacts · 5 members</div></div></div>
+              <div class="pj-new">+</div>
+            </div>
+          </div>
+          <div class="hs-section">
+            <div class="hss-head"><div class="hss-title">Brand Library — pending publish</div><div class="hss-link">Manage →</div></div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:#FFF5E0;border-radius:6px;border:1px solid #FAC775;font-size:10px;color:#854F0B;"><span>⏳</span><span style="flex:1;">PAA customer poster — awaiting compliance review</span><span style="cursor:pointer;font-weight:600;">Review →</span></div>
+              <div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:#E8F6F1;border-radius:6px;border:1px solid #9FE1CB;font-size:10px;color:#0E6B50;"><span>✓</span><span style="flex:1;">HealthShield explainer video — published</span><span style="cursor:pointer;">View</span></div>
+            </div>
+          </div>
+          <div class="hs-section">
+            <div class="hss-head"><div class="hss-title">Agent usage this week</div><div class="hss-link">Full report →</div></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
+              <div style="text-align:center;padding:8px;background:#F0EDE6;border-radius:7px;border:1px solid #E2DDD4;"><div style="font-size:18px;font-weight:700;color:#1A1A18;">247</div><div style="font-size:9px;color:#9C9A92;">Assets created</div></div>
+              <div style="text-align:center;padding:8px;background:#F0EDE6;border-radius:7px;border:1px solid #E2DDD4;"><div style="font-size:18px;font-weight:700;color:#1A1A18;">89</div><div style="font-size:9px;color:#9C9A92;">Library remixes</div></div>
+              <div style="text-align:center;padding:8px;background:#F0EDE6;border-radius:7px;border:1px solid #E2DDD4;"><div style="font-size:18px;font-weight:700;color:#1A1A18;">100%</div><div style="font-size:9px;color:#9C9A92;">Compliance rate</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="diff-callout dc-int">Full project management, analytics, Brand Library controls, compliance dashboard</div>
+    </div>
+
+    <!-- AGENT HOME -->
+    <div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#9C9A92;margin-bottom:6px;text-align:center;">FSC — Maya, Financial Service Consultant</div>
+      <div class="home-shell">
+        <div class="hs-nav" style="background:#fff;border-bottom:1px solid #E2DDD4;">
+          <div class="hs-logo">CRAFT</div>
+          <div class="hs-mode" style="background:#E8F6F1;color:#0E6B50;border:1px solid #9FE1CB;">Agent</div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:5px;">
+            <div class="hs-av" style="background:#D0103A;">M</div>
+            <div class="hs-uname" style="color:#9C9A92;">Maya · FSC</div>
+          </div>
+        </div>
+
+        <!-- QUICK CREATE STRIP -->
+        <div class="quick-create">
+          <div class="qc-label">Quick create</div>
+          <div class="qc-row">
+            <div class="qc-btn">◻ Poster</div>
+            <div class="qc-btn">✉ WhatsApp card</div>
+            <div class="qc-btn">▶ Reel</div>
+            <div class="qc-btn">📋 Story</div>
+          </div>
+        </div>
+
+        <div class="hs-tabs-row">
+          <div class="hs-tab on">For me</div>
+          <div class="hs-tab">My work</div>
+          <div class="hs-tab">Team</div>
+        </div>
+        <div class="hs-body">
+          <div class="hs-section">
+            <div class="hss-head"><div class="hss-title">From Brand Library — ready to remix</div><div class="hss-link">Browse all →</div></div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#EEEDFE;border-radius:7px;border:1px solid #AFA9EC;cursor:pointer;">
+                <div style="width:32px;height:32px;border-radius:5px;background:#534AB7;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">◻</div>
+                <div style="flex:1;"><div style="font-size:11px;font-weight:600;color:#1A1A18;">PAA Young Parents poster</div><div style="font-size:9px;color:#9C9A92;">Official · Compliant · 1:1 + WA + 9:16</div></div>
+                <div style="font-size:10px;font-weight:600;color:#D0103A;cursor:pointer;">Remix →</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#E8F6F1;border-radius:7px;border:1px solid #9FE1CB;cursor:pointer;">
+                <div style="width:32px;height:32px;border-radius:5px;background:#1B9D74;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">▶</div>
+                <div style="flex:1;"><div style="font-size:11px;font-weight:600;color:#1A1A18;">HealthShield customer explainer</div><div style="font-size:9px;color:#9C9A92;">Official · 30s video · Compliant</div></div>
+                <div style="font-size:10px;font-weight:600;color:#D0103A;cursor:pointer;">Remix →</div>
+              </div>
+            </div>
+          </div>
+          <div class="hs-section">
+            <div class="hss-head"><div class="hss-title">My recent work</div><div class="hss-link">All projects →</div></div>
+            <div class="proj-row">
+              <div class="pj"><div class="pj-thumb" style="background:#D0103A;">PAA</div><div class="pj-info"><div class="pj-name">My PAA campaign</div><div class="pj-meta">3 posters · Apr</div></div></div>
+              <div class="pj"><div class="pj-thumb" style="background:#1C3044;">SG60</div><div class="pj-info"><div class="pj-name">My SG60 card</div><div class="pj-meta">1 card · Mar</div></div></div>
+              <div class="pj-new">+</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GAMIFICATION -->
+        <div class="gam-strip">
+          <div class="gam-row">
+            <span style="font-size:13px;">🔥</span>
+            <div class="gam-streak">5-day streak</div>
+            <div class="gam-bar"><div class="gam-fill" style="width:68%;"></div></div>
+            <div class="gam-score">2,847 pts · Top 12%</div>
+          </div>
+        </div>
+      </div>
+      <div class="diff-callout dc-agt">Quick create, curated library remixes, personal work, team projects they're added to, gamification</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ PANEL 2: CONTENT FLOW ══ -->
+<div class="panel" id="p2">
+  <div style="font-size:12px;color:#5C5A54;margin-bottom:12px;">How content moves from internal teams → Brand Library → agents. And what flows back up.</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#1A1A18;margin-bottom:8px;">↓ Downstream — internal to agents</div>
+      <div class="flow-wrap">
+        <div style="background:#1A1A18;border-radius:9px;padding:10px 14px;">
+          <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">Brand Team creates</div>
+          <div style="font-size:12px;font-weight:700;color:#fff;">Official campaign content</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px;">PAA launch poster, explainer video, agent deck</div>
+        </div>
+        <div style="text-align:center;padding:4px 0;font-size:11px;color:#9C9A92;">↓ Compliance reviewed + approved</div>
+        <div style="background:#D0103A;border-radius:9px;padding:10px 14px;text-align:center;">
+          <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">Published to</div>
+          <div style="font-size:13px;font-weight:700;color:#fff;">Brand Library</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px;">Visible to all FSCs · MAS-compliant · Brand-locked</div>
+        </div>
+        <div style="text-align:center;padding:4px 0;font-size:11px;color:#9C9A92;">↓ FSC browses + clicks Remix</div>
+        <div style="background:#fff;border:1px solid #E2DDD4;border-radius:9px;padding:10px 14px;">
+          <div style="font-size:9px;font-weight:700;color:#9C9A92;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">FSC personalises</div>
+          <div style="font-size:12px;font-weight:700;color:#1A1A18;">Their own version</div>
+          <div style="font-size:10px;color:#9C9A92;margin-top:2px;">Their photo · their tone · still fully compliant</div>
+        </div>
+        <div style="text-align:center;padding:4px 0;font-size:11px;color:#9C9A92;">↓ Exports to WhatsApp / Instagram</div>
+        <div style="background:#E8F6F1;border:1px solid #9FE1CB;border-radius:9px;padding:10px 14px;">
+          <div style="font-size:9px;font-weight:700;color:#0E6B50;text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px;">Reaches</div>
+          <div style="font-size:12px;font-weight:700;color:#1A1A18;">Client / prospect</div>
+          <div style="font-size:10px;color:#9C9A92;margin-top:2px;">On-brand · compliant · personal feel</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:11px;font-weight:700;color:#1A1A18;margin-bottom:8px;">↑ Upstream — what flows back to internal</div>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <div style="background:#fff;border:1px solid #E2DDD4;border-radius:9px;padding:11px 13px;">
+          <div style="font-size:10px;font-weight:700;color:#9C9A92;margin-bottom:4px;">Usage analytics</div>
+          <div style="font-size:12px;color:#1A1A18;line-height:1.5;">Brand team sees which library assets FSCs remix most. Informs which content to create more of.</div>
+        </div>
+        <div style="background:#fff;border:1px solid #E2DDD4;border-radius:9px;padding:11px 13px;">
+          <div style="font-size:10px;font-weight:700;color:#9C9A92;margin-bottom:4px;">Compliance visibility</div>
+          <div style="font-size:12px;color:#1A1A18;line-height:1.5;">Every FSC export is logged with compliance score. Brand/compliance team can see all exports across the org — no surprises.</div>
+        </div>
+        <div style="background:#fff;border:1px solid #E2DDD4;border-radius:9px;padding:11px 13px;">
+          <div style="font-size:10px;font-weight:700;color:#9C9A92;margin-bottom:4px;">Content gap signals</div>
+          <div style="font-size:12px;color:#1A1A18;line-height:1.5;">If FSCs are creating a content type that's NOT in the library — that's a gap. Brand team gets notified to create the official version.</div>
+        </div>
+        <div style="background:#fff;border:1px solid #E2DDD4;border-radius:9px;padding:11px 13px;">
+          <div style="font-size:10px;font-weight:700;color:#9C9A92;margin-bottom:4px;">Top performing content</div>
+          <div style="font-size:12px;color:#1A1A18;line-height:1.5;">Which taglines, layouts, and themes get remixed most. Brand team learns what works for FSCs without running surveys.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PANEL 3: KEY DIFFERENCES ══ -->
+<div class="panel" id="p3">
+  <table class="diff-table">
+    <thead>
+      <tr>
+        <th style="width:28%;">Feature</th>
+        <th style="width:36%;">Internal staff (Creator mode)</th>
+        <th style="width:36%;">FSC / Agent (Agent mode)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="td-feat">Login</td><td class="td-int">AIA corporate SSO · @aia.com.sg</td><td class="td-agt">Agent portal credentials · Agent ID</td></tr>
+      <tr><td class="td-feat">Home screen focus</td><td class="td-int">Projects, team management, analytics, compliance</td><td class="td-agt">Quick create strip, Brand Library remixes, gamification</td></tr>
+      <tr><td class="td-feat">Create projects</td><td class="td-int">My Projects + Team Projects (with full brief)</td><td class="td-agt">My Projects only — or join team projects leaders create</td></tr>
+      <tr><td class="td-feat">Brand Library</td><td class="td-int">Full management — upload, approve, publish, remove</td><td class="td-agt">Browse and remix only — cannot publish</td></tr>
+      <tr><td class="td-feat">Invite others</td><td class="td-int">Can invite anyone — colleagues or FSCs — to projects</td><td class="td-agt">Cannot invite · are invited by leaders</td></tr>
+      <tr><td class="td-feat">Compliance tools</td><td class="td-int">Edit rules, manage RAG docs, review flagged content</td><td class="td-agt">Auto-applied silently · sees score, not the rules engine</td></tr>
+      <tr><td class="td-feat">Analytics</td><td class="td-int">Full org-wide: what FSCs create, remix rates, compliance</td><td class="td-agt">Personal only: their streak, score, leaderboard rank</td></tr>
+      <tr><td class="td-feat">AI taglines</td><td class="td-int">Full control — generate, edit, save to approved pool</td><td class="td-agt">Suggested from approved pool — can pick or write own</td></tr>
+      <tr><td class="td-feat">Gamification</td><td class="td-int">Not shown (professional context)</td><td class="td-agt">Streak, creative score, district leaderboard, badges</td></tr>
+      <tr><td class="td-feat">Watermark on export</td><td class="td-int">"AIA Official" mark on brand library assets</td><td class="td-agt">"Crafted with CRAFT" · agent name on personal assets</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</div>
+
+<script>
+function sw(i,el){
+  document.querySelectorAll('.panel').forEach(function(p,j){p.classList.toggle('show',j===i);});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
+  el.classList.add('on');
+}
+</script>

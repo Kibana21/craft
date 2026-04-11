@@ -1,0 +1,401 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.root{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0EDE6;padding:16px;}
+.tabs{display:flex;gap:4px;background:#E2DDD4;padding:4px;border-radius:10px;margin-bottom:14px;}
+.tab{flex:1;padding:8px 6px;border-radius:7px;font-size:11px;text-align:center;cursor:pointer;color:#5C5A54;border:none;background:transparent;font-family:inherit;}
+.tab.on{background:#fff;color:#1A1A18;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.panel{display:none;} .panel.show{display:block;}
+
+/* CORE ANSWER */
+.answer-box{background:#1A1A18;border-radius:12px;padding:18px 20px;margin-bottom:14px;}
+.ab-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;}
+.ab-body{font-size:12px;color:rgba(255,255,255,.55);line-height:1.7;}
+.ab-body b{color:#fff;}
+
+/* THE MODEL */
+.model-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;}
+.mc{background:#fff;border:1px solid #E2DDD4;border-radius:11px;overflow:hidden;}
+.mc-band{height:6px;}
+.mc-body{padding:12px 14px;}
+.mc-icon{font-size:20px;margin-bottom:6px;}
+.mc-name{font-size:13px;font-weight:700;color:#1A1A18;margin-bottom:3px;}
+.mc-desc{font-size:11px;color:#5C5A54;line-height:1.5;margin-bottom:8px;}
+.mc-items{display:flex;flex-direction:column;gap:3px;}
+.mc-item{font-size:11px;color:#5C5A54;display:flex;align-items:flex-start;gap:5px;line-height:1.3;}
+.mc-item::before{content:'·';color:#D0103A;flex-shrink:0;}
+.mc-footer{padding:8px 14px;border-top:1px solid #F0EDE6;font-size:10px;color:#9C9A92;background:#FAFAF8;}
+
+/* ROLES */
+.role-grid{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.role-row{display:grid;grid-template-columns:160px 1fr 1fr;gap:8px;align-items:start;}
+.role-label{font-size:11px;font-weight:700;padding:8px 12px;border-radius:7px;text-align:center;}
+.role-can{background:#fff;border:1px solid #E2DDD4;border-radius:7px;padding:8px 12px;}
+.role-cant{background:#FAFAF8;border:1px solid #F0EDE6;border-radius:7px;padding:8px 12px;opacity:.6;}
+.rc-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9C9A92;margin-bottom:5px;}
+.rc-item{font-size:11px;color:#1A1A18;margin-bottom:3px;display:flex;align-items:flex-start;gap:5px;}
+.rc-item::before{content:'✓';color:#1B9D74;flex-shrink:0;font-size:10px;}
+.rc-item.no::before{content:'✗';color:#D0103A;}
+.rc-item.no{color:#9C9A92;}
+
+/* JOURNEY CARDS */
+.journey{display:flex;flex-direction:column;gap:12px;}
+.jc{background:#fff;border:1px solid #E2DDD4;border-radius:11px;overflow:hidden;}
+.jc-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #F0EDE6;}
+.jc-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.jc-title{font-size:13px;font-weight:700;color:#1A1A18;}
+.jc-role{font-size:10px;color:#9C9A92;}
+.jc-body{padding:12px 14px;}
+.jc-flow{display:flex;flex-direction:column;gap:4px;}
+.jf-step{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:6px;background:#F0EDE6;}
+.jfs-num{width:18px;height:18px;border-radius:50%;background:#D0103A;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.jfs-text{font-size:11px;color:#1A1A18;line-height:1.4;flex:1;}
+.jfs-text b{font-weight:600;}
+
+/* HOME SCREEN MOCKUP */
+.home-mock{background:#fff;border-radius:11px;border:1px solid #E2DDD4;overflow:hidden;}
+.hm-nav{background:#1A1A18;padding:10px 16px;display:flex;align-items:center;gap:10px;}
+.hm-logo{font-size:13px;font-weight:900;color:#D0103A;letter-spacing:-0.5px;}
+.hm-user{margin-left:auto;display:flex;align-items:center;gap:6px;}
+.hm-av{width:24px;height:24px;border-radius:50%;background:#D0103A;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;}
+.hm-name{font-size:11px;color:rgba(255,255,255,.6);}
+.hm-tabs{display:flex;border-bottom:1px solid #E2DDD4;padding:0 16px;background:#fff;}
+.hm-tab{padding:10px 14px;font-size:11px;color:#9C9A92;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.hm-tab.on{color:#1A1A18;font-weight:600;border-bottom-color:#D0103A;}
+.hm-body{padding:14px 16px;}
+.hm-section{margin-bottom:14px;}
+.hm-sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.hm-sec-title{font-size:11px;font-weight:700;color:#1A1A18;}
+.hm-sec-link{font-size:10px;color:#D0103A;cursor:pointer;}
+.proj-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.pm{border:1px solid #E2DDD4;border-radius:8px;overflow:hidden;cursor:pointer;}
+.pm:hover{border-color:#C8C2B6;}
+.pm-thumb{height:44px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(255,255,255,.7);}
+.pm-body{padding:7px 9px;}
+.pm-name{font-size:10px;font-weight:600;color:#1A1A18;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pm-meta{font-size:9px;color:#9C9A92;}
+.pm-shared{font-size:9px;padding:1px 6px;border-radius:20px;background:#E8F6F1;color:#0E6B50;border:1px solid #9FE1CB;display:inline-block;margin-top:3px;}
+.pm-new{border:1.5px dashed #C8C2B6;border-radius:8px;height:80px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:#9C9A92;flex-direction:column;gap:3px;}
+.pm-new:hover{border-color:#D0103A;color:#D0103A;}
+
+/* VERDICT */
+.verdict{background:#fff;border:2px solid #D0103A;border-radius:12px;padding:14px 16px;}
+.v-title{font-size:13px;font-weight:700;color:#D0103A;margin-bottom:8px;}
+.v-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;font-size:12px;color:#1A1A18;line-height:1.5;}
+.v-row::before{content:'→';color:#D0103A;flex-shrink:0;font-weight:700;}
+</style>
+
+<div class="root">
+<h2 style="position:absolute;left:-9999px;">CRAFT organizational structure — projects, teams, roles</h2>
+
+<div class="tabs">
+  <div class="tab on" onclick="sw(0,this)">The model</div>
+  <div class="tab" onclick="sw(1,this)">Roles + access</div>
+  <div class="tab" onclick="sw(2,this)">User journeys</div>
+  <div class="tab" onclick="sw(3,this)">Home screen</div>
+</div>
+
+<!-- ══ PANEL 0: THE MODEL ══ -->
+<div class="panel show" id="p0">
+
+  <div class="answer-box">
+    <div class="ab-title">No workspace needed. Two project types + one shared library.</div>
+    <div class="ab-body">The insurance hierarchy — FSC → Agency Leader → District Leader → Brand Team — is real but you don't need to mirror it exactly in software. That's where complexity explodes. Instead, use <b>two simple project types</b> that naturally serve every level: <b>My Projects</b> (personal, I own it) and <b>Team Projects</b> (someone creates it, invites others). A <b>Brand Library</b> sits above both — approved content anyone can browse and remix. That's it. Three things. No workspace concept needed.</div>
+  </div>
+
+  <div class="model-row">
+    <div class="mc">
+      <div class="mc-band" style="background:#D0103A;"></div>
+      <div class="mc-body">
+        <div class="mc-icon">👤</div>
+        <div class="mc-name">My Projects</div>
+        <div class="mc-desc">Projects you create for yourself. Only you can see and edit them — unless you invite someone.</div>
+        <div class="mc-items">
+          <div class="mc-item">FSC creates their own campaign</div>
+          <div class="mc-item">Brand manager works on a draft</div>
+          <div class="mc-item">Agent tries something new solo</div>
+          <div class="mc-item">Anyone at any level can have these</div>
+        </div>
+      </div>
+      <div class="mc-footer">Private by default · you own it</div>
+    </div>
+
+    <div class="mc">
+      <div class="mc-band" style="background:#1B9D74;"></div>
+      <div class="mc-body">
+        <div class="mc-icon">👥</div>
+        <div class="mc-name">Team Projects</div>
+        <div class="mc-desc">A leader creates a project and invites members. All members can view and create artifacts inside it.</div>
+        <div class="mc-items">
+          <div class="mc-item">District leader creates SG60 campaign, links 20 FSCs</div>
+          <div class="mc-item">Brand team builds PAA launch, invites L&D and marketing</div>
+          <div class="mc-item">Agency leader creates a team poster pack for agents to remix</div>
+          <div class="mc-item">FSCs contribute their own artifacts inside</div>
+        </div>
+      </div>
+      <div class="mc-footer">Shared · creator is owner · members contribute</div>
+    </div>
+
+    <div class="mc">
+      <div class="mc-band" style="background:#534AB7;"></div>
+      <div class="mc-body">
+        <div class="mc-icon">📚</div>
+        <div class="mc-name">Brand Library</div>
+        <div class="mc-desc">Approved content published by the brand team. Anyone in CRAFT can browse it and remix artifacts into their own projects.</div>
+        <div class="mc-items">
+          <div class="mc-item">Brand team publishes the official PAA launch poster</div>
+          <div class="mc-item">FSC finds it, remixes it with their photo and tone</div>
+          <div class="mc-item">All items in library are MAS-compliant and brand-locked</div>
+          <div class="mc-item">Compliance team controls what gets published here</div>
+        </div>
+      </div>
+      <div class="mc-footer">Read-only for FSCs · publish-only for brand admins</div>
+    </div>
+  </div>
+
+  <div class="verdict">
+    <div class="v-title">Why no Workspace?</div>
+    <div class="v-row">A workspace makes sense when multiple <em>organisations</em> use the same tool (like Slack workspaces for different companies). You have one organisation — AIA Singapore. A workspace layer just adds a login step and a management overhead with no benefit.</div>
+    <div class="v-row">The "personal space" concept is already handled by My Projects. Every user opens CRAFT and sees their own home — their projects, what's shared with them, the brand library. That IS their workspace, just without the word.</div>
+    <div class="v-row">Keep it to: <b>My Projects</b> · <b>Shared with me</b> · <b>Brand Library</b>. Those three tabs on the home screen cover every scenario you described.</div>
+  </div>
+</div>
+
+<!-- ══ PANEL 1: ROLES ══ -->
+<div class="panel" id="p1">
+
+  <div style="background:#fff;border:1px solid #E2DDD4;border-radius:11px;padding:12px 14px;margin-bottom:12px;">
+    <div style="font-size:12px;font-weight:700;color:#1A1A18;margin-bottom:4px;">Four roles — mapped to your real hierarchy</div>
+    <div style="font-size:11px;color:#5C5A54;line-height:1.6;">Roles control what you can <em>publish</em> and who you can <em>invite</em> — not what you can <em>create</em>. Everyone can create. Only leaders can share downward. Only admins can publish to the Brand Library.</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:140px 1fr;gap:6px;margin-bottom:6px;">
+    <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9C9A92;padding:6px 12px;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9C9A92;padding:6px 0;text-align:center;">Can do</div>
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#9C9A92;padding:6px 0;text-align:center;">Cannot do</div>
+    </div>
+  </div>
+
+  <div class="role-grid">
+    <div class="role-row">
+      <div class="role-label" style="background:#FFF0F3;color:#D0103A;border:1px solid #F9C6D0;">🏢 Brand Admin<br/><span style="font-size:9px;font-weight:400;">Marketing, Brand, L&D, Compliance</span></div>
+      <div class="role-can">
+        <div class="rc-item">Create any project type</div>
+        <div class="rc-item">Publish to Brand Library</div>
+        <div class="rc-item">Invite anyone to any project</div>
+        <div class="rc-item">See all projects across CRAFT</div>
+        <div class="rc-item">Manage brand kit + compliance rules</div>
+      </div>
+      <div class="role-cant">
+        <div class="rc-title">No restrictions</div>
+        <div style="font-size:11px;color:#9C9A92;">Full access</div>
+      </div>
+    </div>
+
+    <div class="role-row">
+      <div class="role-label" style="background:#E8F6F1;color:#0E6B50;border:1px solid #9FE1CB;">🗺 District / Agency Leader<br/><span style="font-size:9px;font-weight:400;">DL, AL, Team lead</span></div>
+      <div class="role-can">
+        <div class="rc-item">Create My Projects (personal)</div>
+        <div class="rc-item">Create Team Projects</div>
+        <div class="rc-item">Invite FSCs under them to projects</div>
+        <div class="rc-item">Remix from Brand Library</div>
+        <div class="rc-item">See all artifacts in their team projects</div>
+      </div>
+      <div class="role-cant">
+        <div class="rc-item no">Publish to Brand Library</div>
+        <div class="rc-item no">See other leaders' projects</div>
+        <div class="rc-item no">Edit brand kit or compliance rules</div>
+      </div>
+    </div>
+
+    <div class="role-row">
+      <div class="role-label" style="background:#F0EDE6;color:#5C5A54;border:1px solid #E2DDD4;">👤 FSC / Agent<br/><span style="font-size:9px;font-weight:400;">Financial Service Consultant</span></div>
+      <div class="role-can">
+        <div class="rc-item">Create My Projects (personal)</div>
+        <div class="rc-item">Create artifacts in team projects they're invited to</div>
+        <div class="rc-item">Browse and remix from Brand Library</div>
+        <div class="rc-item">Export and share their own content</div>
+      </div>
+      <div class="role-cant">
+        <div class="rc-item no">Create Team Projects</div>
+        <div class="rc-item no">Invite others</div>
+        <div class="rc-item no">See other FSCs' personal projects</div>
+        <div class="rc-item no">Publish to Brand Library</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#fff;border:1px solid #E2DDD4;border-radius:10px;padding:12px 14px;">
+    <div style="font-size:12px;font-weight:700;color:#1A1A18;margin-bottom:8px;">The key principle — who sees what</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+      <div style="padding:10px;background:#F0EDE6;border-radius:8px;border:1px solid #E2DDD4;">
+        <div style="font-size:10px;font-weight:700;color:#9C9A92;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">My Projects</div>
+        <div style="font-size:11px;color:#1A1A18;line-height:1.5;">Only you see these. Unless you explicitly share — then only the people you shared with.</div>
+      </div>
+      <div style="padding:10px;background:#E8F6F1;border-radius:8px;border:1px solid #9FE1CB;">
+        <div style="font-size:10px;font-weight:700;color:#0E6B50;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Team Projects</div>
+        <div style="font-size:11px;color:#1A1A18;line-height:1.5;">All members see all artifacts inside the project. The creator controls who's a member.</div>
+      </div>
+      <div style="padding:10px;background:#EEEDFE;border-radius:8px;border:1px solid #AFA9EC;">
+        <div style="font-size:10px;font-weight:700;color:#3C3489;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Brand Library</div>
+        <div style="font-size:11px;color:#1A1A18;line-height:1.5;">Everyone in AIA CRAFT can view and remix. Only Brand Admins can add to it.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PANEL 2: USER JOURNEYS ══ -->
+<div class="panel" id="p2">
+  <div class="journey">
+
+    <div class="jc">
+      <div class="jc-head">
+        <div class="jc-avatar" style="background:#FFF0F3;color:#D0103A;">🏢</div>
+        <div><div class="jc-title">Brand team launching a new product</div><div class="jc-role">Brand Admin · AIA Marketing</div></div>
+      </div>
+      <div class="jc-body">
+        <div class="jc-flow">
+          <div class="jf-step"><div class="jfs-num">1</div><div class="jfs-text">Creates a <b>Team Project</b> — "PAA Launch Q2 2025". Fills master brief: product, audience, period, key message, brand kit.</div></div>
+          <div class="jf-step"><div class="jfs-num">2</div><div class="jfs-text">Invites 2 colleagues (L&D manager, campaign designer) to the project. They can all create artifacts inside it.</div></div>
+          <div class="jf-step"><div class="jfs-num">3</div><div class="jfs-text">Team creates: training video, customer explainer, Instagram poster, agent deck — all inside one project, all inheriting the same brief.</div></div>
+          <div class="jf-step"><div class="jfs-num">4</div><div class="jfs-text"><b>Publishes the customer-facing poster and WhatsApp card to the Brand Library</b> — now all FSCs can find and remix it.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="jc">
+      <div class="jc-head">
+        <div class="jc-avatar" style="background:#E8F6F1;color:#0E6B50;">🗺</div>
+        <div><div class="jc-title">District Leader running a team campaign</div><div class="jc-role">District Leader · 15 FSCs in team</div></div>
+      </div>
+      <div class="jc-body">
+        <div class="jc-flow">
+          <div class="jf-step"><div class="jfs-num">1</div><div class="jfs-text">Creates a <b>Team Project</b> — "D12 Young Parents Campaign June". Invites 15 FSCs in their district.</div></div>
+          <div class="jf-step"><div class="jfs-num">2</div><div class="jfs-text">Remixes the PAA poster from the Brand Library — adapts it with district-specific messaging, creates a WhatsApp broadcast card.</div></div>
+          <div class="jf-step"><div class="jfs-num">3</div><div class="jfs-text">FSCs inside the project can see the district assets AND create their own artifacts — personalised with their own photo and tone.</div></div>
+          <div class="jf-step"><div class="jfs-num">4</div><div class="jfs-text">District Leader can see all 15 FSCs' artifacts, track what's been created, and give feedback via the chat editor.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="jc">
+      <div class="jc-head">
+        <div class="jc-avatar" style="background:#F0EDE6;color:#5C5A54;">👤</div>
+        <div><div class="jc-title">FSC creating their own personal campaign</div><div class="jc-role">Financial Service Consultant · individual agent</div></div>
+      </div>
+      <div class="jc-body">
+        <div class="jc-flow">
+          <div class="jf-step"><div class="jfs-num">1</div><div class="jfs-text">Opens <b>Brand Library</b>, finds the PAA poster their brand team published. Clicks <b>"Remix into my project"</b>.</div></div>
+          <div class="jf-step"><div class="jfs-num">2</div><div class="jfs-text">A new <b>My Project</b> is created automatically, with the PAA brief already loaded. They just add their own photo and pick a tone.</div></div>
+          <div class="jf-step"><div class="jfs-num">3</div><div class="jfs-text">CRAFT generates a personalised version — their headshot composited, their name, compliant, brand-locked. Exported in 30 seconds.</div></div>
+          <div class="jf-step"><div class="jfs-num">4</div><div class="jfs-text">They also have their own <b>My Projects</b> from previous months — personal campaigns they built independently without any team project.</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ PANEL 3: HOME SCREEN ══ -->
+<div class="panel" id="p3">
+  <div style="font-size:12px;color:#5C5A54;margin-bottom:10px;">This is what every user sees when they open CRAFT — same home screen for brand admin, district leader, and FSC. The content inside each tab is different based on their role.</div>
+  <div class="home-mock">
+    <div class="hm-nav">
+      <div class="hm-logo">CRAFT</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.3);margin-left:8px;">by AIA</div>
+      <div class="hm-user">
+        <div class="hm-av">M</div>
+        <div class="hm-name">Maya · FSC</div>
+      </div>
+    </div>
+    <div class="hm-tabs">
+      <div class="hm-tab on">My Projects</div>
+      <div class="hm-tab">Shared with me</div>
+      <div class="hm-tab">Brand Library</div>
+    </div>
+    <div class="hm-body">
+      <div class="hm-section">
+        <div class="hm-sec-head">
+          <div class="hm-sec-title">My Projects</div>
+          <div class="hm-sec-link">+ New project</div>
+        </div>
+        <div class="proj-mini-grid">
+          <div class="pm">
+            <div class="pm-thumb" style="background:#D0103A;">PAA</div>
+            <div class="pm-body">
+              <div class="pm-name">PAA Young Parents</div>
+              <div class="pm-meta">3 artifacts · Apr 2025</div>
+            </div>
+          </div>
+          <div class="pm">
+            <div class="pm-thumb" style="background:#1C3044;">SG60</div>
+            <div class="pm-body">
+              <div class="pm-name">My SG60 campaign</div>
+              <div class="pm-meta">1 artifact · Mar 2025</div>
+            </div>
+          </div>
+          <div class="pm-new">
+            <span style="font-size:20px;">+</span>
+            <span>New project</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hm-section">
+        <div class="hm-sec-head">
+          <div class="hm-sec-title">Shared with me <span style="font-size:10px;color:#9C9A92;font-weight:400;">(2 team projects)</span></div>
+          <div class="hm-sec-link">See all</div>
+        </div>
+        <div class="proj-mini-grid">
+          <div class="pm">
+            <div class="pm-thumb" style="background:#1B9D74;">D12</div>
+            <div class="pm-body">
+              <div class="pm-name">D12 June Campaign</div>
+              <div class="pm-meta">8 artifacts · by David Lee</div>
+              <div class="pm-shared">Team project</div>
+            </div>
+          </div>
+          <div class="pm">
+            <div class="pm-thumb" style="background:#534AB7;">AIA</div>
+            <div class="pm-body">
+              <div class="pm-name">PAA Official Launch</div>
+              <div class="pm-meta">12 artifacts · by Brand Team</div>
+              <div class="pm-shared">Team project</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hm-section">
+        <div class="hm-sec-head">
+          <div class="hm-sec-title">Brand Library <span style="font-size:10px;color:#9C9A92;font-weight:400;">Browse &amp; remix approved content</span></div>
+          <div class="hm-sec-link">Browse all →</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <div style="flex:1;padding:8px 10px;background:#EEEDFE;border-radius:7px;border:1px solid #AFA9EC;font-size:11px;color:#3C3489;cursor:pointer;">📋 PAA fact sheet poster <span style="font-size:9px;opacity:.6;">· Remix →</span></div>
+          <div style="flex:1;padding:8px 10px;background:#E8F6F1;border-radius:7px;border:1px solid #9FE1CB;font-size:11px;color:#0E6B50;cursor:pointer;">▶ Customer explainer video <span style="font-size:9px;opacity:.6;">· Remix →</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#fff;border:1px solid #E2DDD4;border-radius:10px;padding:12px 14px;margin-top:10px;">
+    <div style="font-size:11px;font-weight:700;color:#1A1A18;margin-bottom:6px;">The same three tabs — different content per role</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:11px;color:#5C5A54;">
+      <div style="padding:8px;background:#FFF0F3;border-radius:7px;border:1px solid #F9C6D0;"><b style="color:#D0103A;display:block;margin-bottom:3px;">Brand Admin sees</b>All projects company-wide · Full brand library management · All team projects</div>
+      <div style="padding:8px;background:#E8F6F1;border-radius:7px;border:1px solid #9FE1CB;"><b style="color:#0E6B50;display:block;margin-bottom:3px;">District Leader sees</b>Their own projects · Team projects they created · Projects they were added to · Brand Library</div>
+      <div style="padding:8px;background:#F0EDE6;border-radius:7px;border:1px solid #E2DDD4;"><b style="color:#5C5A54;display:block;margin-bottom:3px;">FSC sees</b>Only their own projects · Team projects they were invited to · Brand Library to remix</div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+function sw(i,el){
+  document.querySelectorAll('.panel').forEach(function(p,j){p.classList.toggle('show',j===i);});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('on');});
+  el.classList.add('on');
+}
+</script>

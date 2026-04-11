@@ -1,0 +1,39 @@
+[project]
+name = "craft-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = [
+    "google.*",
+    "langchain.*",
+    "langchain_community.*",
+    "langchain_google_genai.*",
+    "ffmpeg.*",
+    "boto3.*",
+    "botocore.*",
+    "jose.*",
+    "passlib.*",
+    "pgvector.*",
+    "cairosvg.*",
+]
+ignore_missing_imports = true
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "S", "B", "A", "C4", "SIM"]
+ignore = ["S101"]  # Allow assert in tests
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

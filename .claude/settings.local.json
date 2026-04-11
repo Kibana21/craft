@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(psql \"postgresql://content_forge_user:PASSWORD@localhost:5432/craft_db\" -c \"SELECT * FROM pg_available_extensions WHERE name = 'vector';\")",
+      "Bash(npx create-next-app@latest frontend --typescript --tailwind --eslint --app --src-dir --no-import-alias --use-npm)",
+      "Bash(npx shadcn@latest init -d --style new-york --base-color neutral --css-variables)",
+      "Bash(npx shadcn@latest:*)",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(psql:*)"
+    ]
+  }
+}
