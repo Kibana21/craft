@@ -24,12 +24,9 @@ export function BrandLibraryTab() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="h-20 animate-pulse rounded-xl bg-[#F7F7F7]"
-          />
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-[72px] animate-pulse rounded-xl border border-[#E8EAED] bg-[#F8F9FA]" />
         ))}
       </div>
     );
@@ -37,35 +34,20 @@ export function BrandLibraryTab() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-[#222222]">
-            Brand Library
-          </h2>
-          <p className="mt-0.5 text-sm text-[#717171]">
-            {isAdmin
-              ? "Manage what gets published for FSCs to remix"
-              : "Official AIA content — compliant and brand-locked. Remix any item."}
-          </p>
-        </div>
-        {isAdmin ? (
-          <button
-            onClick={() => router.push("/brand-library")}
-            className="rounded-lg bg-[#D0103A] px-6 py-3 text-base font-semibold text-white transition-all hover:bg-[#B80E33]"
-          >
-            Manage library →
-          </button>
-        ) : (
-          <button
-            onClick={() => router.push("/brand-library")}
-            className="rounded-lg border border-[#222222] px-6 py-3 text-base font-semibold text-[#222222] transition-colors hover:bg-[#F7F7F7]"
-          >
-            Browse all →
-          </button>
-        )}
+      <div className="mb-5 flex items-center justify-between">
+        <h2 className="text-[16px] font-semibold text-[#1F1F1F]">Brand library</h2>
+        <button
+          onClick={() => router.push("/brand-library")}
+          className="flex items-center gap-1.5 rounded-full border border-[#DADCE0] px-3.5 py-1.5 text-[13px] font-medium text-[#3C4043] transition-colors hover:bg-[#F1F3F4]"
+        >
+          {isAdmin ? "Manage library" : "Browse all"}
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 4l4 4-4 4" />
+          </svg>
+        </button>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2">
         {items.map((item) => (
           <LibraryItemCard
             key={item.id}
@@ -81,17 +63,13 @@ export function BrandLibraryTab() {
       </div>
 
       {items.length === 0 && (
-        <div className="mt-12 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#F7F7F7] text-3xl">
-            📚
-          </div>
-          <h3 className="mt-4 text-lg font-semibold text-[#222222]">
+        <div className="mt-20 flex flex-col items-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F1F3F4] text-2xl">📚</div>
+          <p className="text-[15px] font-medium text-[#1F1F1F]">
             {isAdmin ? "Brand Library is empty" : "Nothing here yet"}
-          </h3>
-          <p className="mt-1 text-sm text-[#717171]">
-            {isAdmin
-              ? "Publish your first artifact for FSCs to remix"
-              : "Your brand team will publish content here soon"}
+          </p>
+          <p className="mt-1 text-[13px] text-[#80868B]">
+            {isAdmin ? "Publish your first artifact for FSCs to remix" : "Your brand team will publish content here soon"}
           </p>
         </div>
       )}

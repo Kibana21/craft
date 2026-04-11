@@ -1,22 +1,22 @@
 import type { Project } from "@/types/project";
 
-const PROJECT_COLORS = [
-  "from-red-600 to-red-500",
-  "from-violet-600 to-violet-500",
-  "from-emerald-600 to-emerald-500",
-  "from-slate-700 to-slate-600",
-  "from-amber-600 to-amber-500",
-  "from-fuchsia-600 to-fuchsia-500",
-  "from-cyan-600 to-cyan-500",
-  "from-rose-600 to-rose-500",
+const PROJECT_THEMES = [
+  { bg: "#E8F0FE", color: "#1967D2", emoji: "📋" },
+  { bg: "#FCE8E6", color: "#C5221F", emoji: "🎯" },
+  { bg: "#E6F4EA", color: "#188038", emoji: "📂" },
+  { bg: "#FEF7E0", color: "#E37400", emoji: "⚡" },
+  { bg: "#F3E8FD", color: "#8430CE", emoji: "✨" },
+  { bg: "#E8F5E9", color: "#1B7E3E", emoji: "🌿" },
+  { bg: "#FDE7EF", color: "#C2185B", emoji: "💡" },
+  { bg: "#E8EAF6", color: "#3949AB", emoji: "🔷" },
 ];
 
-function getProjectGradient(name: string): string {
+function getTheme(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return PROJECT_COLORS[Math.abs(hash) % PROJECT_COLORS.length];
+  return PROJECT_THEMES[Math.abs(hash) % PROJECT_THEMES.length];
 }
 
 interface ProjectCardProps {
@@ -25,44 +25,41 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, onClick }: ProjectCardProps) {
-  const gradient = getProjectGradient(project.name);
+  const theme = getTheme(project.name);
   const isTeam = project.type === "team";
-  const abbreviation = project.name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 3)
-    .toUpperCase();
 
   return (
     <button
       onClick={onClick}
-      className={`group w-full overflow-hidden rounded-xl border border-[#EBEBEB] bg-white text-left transition-all duration-200 hover:shadow-lg hover:scale-[1.02]`}
+      className="group relative w-full rounded-2xl border border-[#E8EAED] bg-white p-5 text-left transition-all duration-150 hover:border-[#DADCE0] hover:shadow-[0_1px_6px_rgba(32,33,36,0.1)]"
     >
-      {/* Colored header */}
-      <div
-        className={`relative flex h-40 items-center justify-center bg-gradient-to-br ${gradient}`}
-      >
-        <span className="text-3xl font-bold text-white/60">{abbreviation}</span>
-        {isTeam && (
-          <span className="absolute right-2.5 top-2.5 rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
-            {project.member_count} members
-          </span>
-        )}
+      {/* Three-dot menu placeholder */}
+      <div className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-[#80868B] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[#F1F3F4]">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+          <circle cx="8" cy="3" r="1.2" />
+          <circle cx="8" cy="8" r="1.2" />
+          <circle cx="8" cy="13" r="1.2" />
+        </svg>
       </div>
 
-      {/* Body */}
-      <div className="p-5">
-        <p className="truncate text-base font-semibold text-[#222222]">
-          {project.name}
-        </p>
-        <p className="mt-1 text-sm text-[#717171]">
-          {project.artifact_count} artifact{project.artifact_count !== 1 ? "s" : ""}
-          {isTeam && (
-            <span className="text-[#B0B0B0]"> · by {project.owner.name}</span>
-          )}
-        </p>
+      {/* Icon */}
+      <div
+        className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl text-xl"
+        style={{ backgroundColor: theme.bg }}
+      >
+        {theme.emoji}
       </div>
+
+      {/* Title */}
+      <p className="line-clamp-2 text-[14px] font-medium leading-snug text-[#1F1F1F]">
+        {project.name}
+      </p>
+
+      {/* Meta */}
+      <p className="mt-2 text-[12px] text-[#80868B]">
+        {project.artifact_count} artifact{project.artifact_count !== 1 ? "s" : ""}
+        {isTeam && project.member_count ? ` · ${project.member_count} members` : ""}
+      </p>
     </button>
   );
 }
@@ -71,12 +68,18 @@ export function NewProjectCard({ onClick }: { onClick?: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex h-full min-h-[200px] flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#DDDDDD] transition-all duration-200 hover:border-[#D0103A] hover:bg-[#FFF0F3]"
+      className="group flex w-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[#DADCE0] bg-white p-5 transition-all duration-150 hover:border-[#D0103A] hover:bg-[#FFF8F9]"
+      style={{ minHeight: 148 }}
     >
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F7F7F7] text-xl text-[#717171]">
-        +
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F1F3F4] text-[#80868B] transition-colors group-hover:bg-[#FCE8E6] group-hover:text-[#C5221F]">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+      </div>
+      <span className="text-[13px] font-medium text-[#5F6368] group-hover:text-[#C5221F]">
+        Create new project
       </span>
-      <span className="text-sm font-medium text-[#717171]">New project</span>
     </button>
   );
 }

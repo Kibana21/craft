@@ -25,8 +25,13 @@ export default function AuthenticatedLayout({
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="text-center">
-          <h1 className="text-2xl font-black text-[#D0103A]">CRAFT</h1>
-          <p className="mt-2 text-sm text-[#717171]">Loading...</p>
+          <div className="mx-auto mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-[#D0103A]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3L3 19h4l5-10 5 10h4L12 3z" fill="white" />
+              <path d="M8.5 15h7" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </div>
+          <p className="text-[13px] text-[#9AA0A6]">Loading...</p>
         </div>
       </div>
     );

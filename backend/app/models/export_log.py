@@ -21,6 +21,9 @@ class ExportLog(Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     format: Mapped[str] = mapped_column(String(50), nullable=False)
+    aspect_ratio: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="processing")
+    download_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     compliance_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     exported_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

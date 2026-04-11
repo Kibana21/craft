@@ -22,6 +22,11 @@ from app.api.ai import router as ai_router
 from app.api.uploads import router as uploads_router
 from app.api.compliance import router as compliance_router
 from app.api.notifications import router as notifications_router
+from app.api.brand_kit import router as brand_kit_router
+from app.api.exports import router as exports_router
+from app.api.gamification import router as gamification_router
+from app.api.analytics import router as analytics_router
+from app.api.comments import router as comments_router
 
 
 @asynccontextmanager
@@ -60,6 +65,11 @@ app.include_router(ai_router)
 app.include_router(uploads_router)
 app.include_router(compliance_router)
 app.include_router(notifications_router)
+app.include_router(brand_kit_router)
+app.include_router(exports_router)
+app.include_router(gamification_router)
+app.include_router(analytics_router)
+app.include_router(comments_router)
 
 # Serve uploaded files in development
 uploads_path = Path(__file__).parent.parent / "uploads"

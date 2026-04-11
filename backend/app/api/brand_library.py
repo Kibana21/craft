@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
@@ -74,8 +74,15 @@ async def review_item(
 @router.post("/{item_id}/remix", response_model=RemixResponse, status_code=201)
 async def remix_item(
     item_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> RemixResponse:
     project_id, artifact_id = await remix_library_item(db, current_user, item_id)
+
+    # Award gamification points
+    from app.api.artifacts import _award_points_bg
+    from app.models.gamification import PointsAction
+    background_tasks.add_task(_award_points_bg, current_user.id, PointsAction.REMIX)
+
     return RemixResponse(project_id=project_id, artifact_id=artifact_id)

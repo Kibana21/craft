@@ -1,25 +1,14 @@
 import type { BrandLibraryItem } from "@/types/brand-library";
 
-const TYPE_ICONS: Record<string, string> = {
-  poster: "◻",
-  whatsapp_card: "✉",
-  reel: "▶",
-  video: "▶",
-  story: "◻",
-  deck: "📋",
-  infographic: "📊",
-  slide_deck: "📋",
-};
-
-const TYPE_BG: Record<string, string> = {
-  poster: "bg-violet-600",
-  whatsapp_card: "bg-red-600",
-  reel: "bg-emerald-600",
-  video: "bg-emerald-600",
-  story: "bg-amber-600",
-  deck: "bg-slate-700",
-  infographic: "bg-cyan-600",
-  slide_deck: "bg-slate-700",
+const TYPE_CONFIG: Record<string, { emoji: string; bg: string }> = {
+  poster:        { emoji: "🖼️", bg: "#F3E8FD" },
+  whatsapp_card: { emoji: "💬", bg: "#E6F4EA" },
+  reel:          { emoji: "🎬", bg: "#E8F0FE" },
+  video:         { emoji: "▶️", bg: "#E8F0FE" },
+  story:         { emoji: "📱", bg: "#FEF7E0" },
+  deck:          { emoji: "📋", bg: "#F1F3F4" },
+  infographic:   { emoji: "📊", bg: "#FCE8E6" },
+  slide_deck:    { emoji: "🗂️", bg: "#F1F3F4" },
 };
 
 interface LibraryItemCardProps {
@@ -29,49 +18,43 @@ interface LibraryItemCardProps {
   onManage?: () => void;
 }
 
-export function LibraryItemCard({
-  item,
-  isAdmin = false,
-  onRemix,
-  onManage,
-}: LibraryItemCardProps) {
-  const icon = TYPE_ICONS[item.artifact.type] || "◻";
-  const bg = TYPE_BG[item.artifact.type] || "bg-violet-600";
+export function LibraryItemCard({ item, isAdmin = false, onRemix, onManage }: LibraryItemCardProps) {
+  const config = TYPE_CONFIG[item.artifact.type] || { emoji: "📄", bg: "#F1F3F4" };
+
+  const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+    published:      { label: "Published",      className: "bg-[#E6F4EA] text-[#188038]" },
+    approved:       { label: "Approved",       className: "bg-[#E6F4EA] text-[#188038]" },
+    pending_review: { label: "Pending review", className: "bg-[#FEF7E0] text-[#B45309]" },
+    rejected:       { label: "Rejected",       className: "bg-[#FCE8E6] text-[#C5221F]" },
+  };
+  const statusConfig = STATUS_CONFIG[item.status] ?? { label: item.status, className: "bg-[#F1F3F4] text-[#5F6368]" };
 
   return (
-    <div className="group flex items-center gap-4 rounded-xl border border-[#EBEBEB] bg-white p-5 transition-all duration-200 hover:shadow-lg hover:scale-[1.02]">
-      {/* Thumbnail */}
+    <div className="group flex items-center gap-4 rounded-xl border border-[#E8EAED] bg-white px-4 py-3.5 transition-all hover:border-[#DADCE0] hover:shadow-[0_1px_4px_rgba(32,33,36,0.08)]">
+      {/* Icon */}
       <div
-        className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-xl text-lg text-white ${bg}`}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
+        style={{ backgroundColor: config.bg }}
       >
-        {icon}
+        {config.emoji}
       </div>
 
       {/* Info */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-base font-semibold text-[#222222]">
+        <p className="truncate text-[14px] font-medium text-[#1F1F1F]">
           {item.artifact.name}
         </p>
-        <p className="mt-0.5 text-sm text-[#717171]">
-          {item.artifact.product || item.artifact.type} · {item.remix_count} remixes
-        </p>
-        <div className="mt-2 flex gap-1.5">
-          {!isAdmin && (
-            <span className="rounded-full bg-[#F0FFF0] px-2.5 py-0.5 text-[11px] font-semibold text-[#008A05]">
-              Official · Compliant
+        <div className="mt-1 flex items-center gap-2">
+          <span className="text-[12px] text-[#80868B]">
+            {item.artifact.product || item.artifact.type} · {item.remix_count} remixes
+          </span>
+          {isAdmin ? (
+            <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${statusConfig.className}`}>
+              {statusConfig.label}
             </span>
-          )}
-          {isAdmin && (
-            <span
-              className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
-                item.status === "published"
-                  ? "bg-[#F0FFF0] text-[#008A05]"
-                  : item.status === "pending_review"
-                    ? "bg-amber-50 text-amber-700"
-                    : "bg-[#FFF0F3] text-[#D0103A]"
-              }`}
-            >
-              {item.status.replace("_", " ")}
+          ) : (
+            <span className="rounded-full bg-[#E6F4EA] px-2 py-0.5 text-[11px] font-medium text-[#188038]">
+              Compliant
             </span>
           )}
         </div>
@@ -81,16 +64,16 @@ export function LibraryItemCard({
       {isAdmin ? (
         <button
           onClick={onManage}
-          className="shrink-0 rounded-lg border border-[#222222] px-4 py-2 text-sm font-semibold text-[#222222] transition-colors hover:bg-[#F7F7F7]"
+          className="shrink-0 rounded-full border border-[#DADCE0] px-3.5 py-1.5 text-[12px] font-medium text-[#3C4043] transition-colors hover:bg-[#F1F3F4]"
         >
           Manage
         </button>
       ) : (
         <button
           onClick={onRemix}
-          className="shrink-0 rounded-lg bg-[#D0103A] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#B80E33]"
+          className="shrink-0 rounded-full bg-[#D0103A] px-3.5 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-[#B80E33]"
         >
-          Remix →
+          Remix
         </button>
       )}
     </div>

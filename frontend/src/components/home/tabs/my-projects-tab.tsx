@@ -20,52 +20,45 @@ export function MyProjectsTab() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-6 lg:grid-cols-3">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="h-48 animate-pulse rounded-xl bg-[#F7F7F7]"
-          />
-        ))}
+      <div>
+        <div className="mb-5 h-4 w-24 animate-pulse rounded bg-[#F1F3F4]" />
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="rounded-2xl border border-[#E8EAED] p-5">
+              <div className="mb-4 h-12 w-12 animate-pulse rounded-xl bg-[#F1F3F4]" />
+              <div className="h-4 w-4/5 animate-pulse rounded bg-[#F1F3F4]" />
+              <div className="mt-2 h-3 w-2/5 animate-pulse rounded bg-[#F8F9FA]" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-[#222222]">My Projects</h2>
-          <p className="mt-0.5 text-sm text-[#717171]">
-            Your personal drafts and solo work
-          </p>
-        </div>
-        <button
-          onClick={() => router.push("/projects/new")}
-          className="rounded-lg bg-[#D0103A] px-6 py-3 text-base font-semibold text-white transition-all hover:bg-[#B80E33]"
-        >
-          + New project
-        </button>
-      </div>
+      <h2 className="mb-5 text-[16px] font-semibold text-[#1F1F1F]">Recent projects</h2>
 
-      <div className="grid grid-cols-2 gap-6 lg:grid-cols-3">
-        {projects.map((project) => (
-          <ProjectCard key={project.id} project={project} onClick={() => router.push(`/projects/${project.id}`)} />
-        ))}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         <NewProjectCard onClick={() => router.push("/projects/new")} />
+        {projects.map((project) => (
+          <ProjectCard
+            key={project.id}
+            project={project}
+            onClick={() => router.push(`/projects/${project.id}`)}
+          />
+        ))}
       </div>
 
       {projects.length === 0 && (
-        <div className="mt-12 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#F7F7F7] text-3xl">
-            📁
+        <div className="mt-20 flex flex-col items-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F1F3F4]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#80868B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+            </svg>
           </div>
-          <h3 className="mt-4 text-lg font-semibold text-[#222222]">
-            No projects yet
-          </h3>
-          <p className="mt-1 text-sm text-[#717171]">
-            Create your first campaign to get started
-          </p>
+          <p className="text-[15px] font-medium text-[#1F1F1F]">No projects yet</p>
+          <p className="mt-1 text-[13px] text-[#80868B]">Create your first campaign to get started</p>
         </div>
       )}
     </div>

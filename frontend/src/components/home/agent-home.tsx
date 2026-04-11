@@ -37,7 +37,7 @@ export function AgentHome() {
                 onClick={() => setTab(tab.key)}
                 className={`pb-3 text-sm font-medium transition-all duration-200 ${
                   activeTab === tab.key
-                    ? "border-b-2 border-[#222222] text-[#222222] font-semibold"
+                    ? "border-b-2 border-[#D0103A] text-[#D0103A] font-semibold"
                     : "text-[#717171] hover:text-[#222222]"
                 }`}
               >

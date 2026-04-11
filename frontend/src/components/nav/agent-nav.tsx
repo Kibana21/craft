@@ -1,7 +1,7 @@
 "use client";
 
+import Link from "next/link";
 import { useAuth } from "@/components/providers/auth-provider";
-import { Button } from "@/components/ui/button";
 
 export function AgentNav() {
   const { user, logout } = useAuth();
@@ -23,21 +23,25 @@ export function AgentNav() {
           <span className="rounded-full bg-[#F0FFF0] px-3 py-1 text-xs font-semibold text-[#008A05]">
             Agent
           </span>
+          <Link
+            href="/leaderboard"
+            className="rounded-lg px-3 py-1.5 text-sm text-[#717171] transition-colors hover:bg-[#F7F7F7] hover:text-[#222222]"
+          >
+            Leaderboard
+          </Link>
         </div>
 
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#D0103A] text-xs font-bold text-white">
             {initials}
           </div>
-          <span className="text-sm text-[#484848]">{user.name}</span>
-          <Button
-            variant="ghost"
-            size="sm"
+          <span className="text-sm font-medium text-[#222222]">{user.name}</span>
+          <button
             onClick={logout}
-            className="text-xs text-[#717171] hover:text-[#222222]"
+            className="rounded-lg border border-[#D0103A] px-3.5 py-1.5 text-xs font-semibold text-[#D0103A] transition-colors hover:bg-[#FFF0F3]"
           >
             Sign out
-          </Button>
+          </button>
         </div>
       </div>
     </nav>

@@ -25,6 +25,23 @@ from app.services.artifact_service import list_project_artifacts
 router = APIRouter(tags=["artifacts"])
 
 
+def _award_points_bg(user_id: uuid.UUID, action: object) -> None:
+    """Fire-and-forget gamification points from a BackgroundTask."""
+    import asyncio
+    from app.core.database import async_session
+    from app.services.gamification_service import award_points
+
+    async def _run() -> None:
+        async with async_session() as db:
+            try:
+                await award_points(db, user_id, action)  # type: ignore[arg-type]
+                await db.commit()
+            except Exception:
+                pass
+
+    asyncio.run(_run())
+
+
 async def _check_project_access(
     db: AsyncSession, user: User, project_id: uuid.UUID
 ) -> Project:
@@ -124,6 +141,11 @@ async def create_artifact(
     # Trigger async compliance scoring
     from app.services.scoring_task import run_compliance_scoring
     background_tasks.add_task(run_compliance_scoring, artifact.id)
+
+    # Award gamification points
+    from app.services.gamification_service import award_points
+    from app.models.gamification import PointsAction
+    background_tasks.add_task(_award_points_bg, current_user.id, PointsAction.CREATE_ARTIFACT)
 
     return _artifact_to_detail(artifact, current_user)
 

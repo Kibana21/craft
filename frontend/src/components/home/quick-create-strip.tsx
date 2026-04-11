@@ -43,7 +43,7 @@ export function QuickCreateStrip() {
               key={option.type}
               onClick={() => handleQuickCreate(option.type)}
               disabled={creating !== null}
-              className="flex-1 rounded-xl border border-[#EBEBEB] bg-white px-4 py-3 text-center text-sm font-semibold text-[#222222] transition-all duration-200 hover:shadow-lg hover:scale-[1.02] disabled:opacity-50"
+              className="flex-1 rounded-xl border border-[#E8E8E8] bg-white px-4 py-3 text-center text-sm font-semibold text-[#222222] transition-all duration-200 hover:border-[#D0103A] hover:shadow-sm disabled:opacity-50"
             >
               {creating === option.type ? "Creating..." : `${option.icon} ${option.label}`}
             </button>

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { fetchArtifactDetail, updateArtifact } from "@/lib/api/artifacts";
+import { ExportDialog } from "@/components/artifacts/export-dialog";
+import { CommentThread } from "@/components/artifacts/comment-thread";
 import type { ArtifactDetail } from "@/types/artifact";
 
 const TYPE_ICONS: Record<string, string> = {
@@ -49,6 +51,10 @@ export default function ArtifactDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [showExport, setShowExport] = useState(false);
+
+  const LEADER_ROLES = ["district_leader", "agency_leader", "brand_admin"];
+  const canComment = user ? LEADER_ROLES.includes(user.role) : false;
 
   useEffect(() => {
     if (artifactId) {
@@ -242,20 +248,34 @@ export default function ArtifactDetailPage() {
             </div>
           </div>
 
-          {/* Export placeholder */}
+          {/* Export button */}
           <button
-            disabled={artifact.compliance_score !== null && artifact.compliance_score < 70}
-            className="w-full rounded-lg bg-[#D0103A] px-6 py-3 text-base font-semibold text-white transition-all hover:bg-[#B80E33] disabled:cursor-not-allowed disabled:opacity-40"
+            onClick={() => setShowExport(true)}
+            className="w-full rounded-lg bg-[#D0103A] px-6 py-3 text-base font-semibold text-white transition-all hover:bg-[#B80E33]"
           >
             Export artifact →
           </button>
-          {artifact.compliance_score !== null && artifact.compliance_score < 70 && (
-            <p className="text-center text-xs text-[#D0103A]">
-              Resolve compliance issues before exporting
-            </p>
-          )}
+
+          {/* Comments */}
+          <div className="rounded-xl border border-[#EBEBEB] bg-white p-6">
+            <CommentThread
+              artifactId={artifact.id}
+              canComment={canComment}
+            />
+          </div>
         </div>
       </div>
+
+      {/* Export dialog */}
+      {showExport && (
+        <ExportDialog
+          artifactId={artifact.id}
+          artifactType={artifact.type}
+          artifactName={artifact.name}
+          complianceScore={artifact.compliance_score}
+          onClose={() => setShowExport(false)}
+        />
+      )}
     </div>
   );
 }
