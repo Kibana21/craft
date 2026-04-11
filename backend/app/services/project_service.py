@@ -20,6 +20,7 @@ async def list_user_projects(
     db: AsyncSession,
     user: User,
     project_type: ProjectType | None = None,
+    status: str | None = "active",
     page: int = 1,
     per_page: int = 20,
 ) -> tuple[list[dict], int]:
@@ -28,6 +29,9 @@ async def list_user_projects(
         .where(Project.deleted_at.is_(None))
         .options(selectinload(Project.owner))
     )
+
+    if status is not None:
+        base_query = base_query.where(Project.status == status)
 
     if user.role == UserRole.BRAND_ADMIN:
         query = base_query
@@ -248,6 +252,27 @@ async def update_project(
     return project
 
 
+async def set_project_status(
+    db: AsyncSession,
+    user: User,
+    project_id: uuid.UUID,
+    new_status: str,
+) -> None:
+    result = await db.execute(
+        select(Project).where(Project.id == project_id, Project.deleted_at.is_(None))
+    )
+    project = result.scalar_one_or_none()
+
+    if project is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+
+    if user.role != UserRole.BRAND_ADMIN and project.owner_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    project.status = new_status
+    await db.flush()
+
+
 async def delete_project(
     db: AsyncSession,
     user: User,
@@ -264,5 +289,28 @@ async def delete_project(
     if user.role != UserRole.BRAND_ADMIN and project.owner_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
 
-    project.deleted_at = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(timezone.utc).isoformat()
+
+    # Cascade soft-delete all artifacts in this project
+    artifacts = (await db.execute(
+        select(Artifact).where(Artifact.project_id == project_id, Artifact.deleted_at.is_(None))
+    )).scalars().all()
+    for artifact in artifacts:
+        artifact.deleted_at = now
+
+    # Hard-delete suggestions (no soft-delete on that model)
+    suggestions = (await db.execute(
+        select(ArtifactSuggestion).where(ArtifactSuggestion.project_id == project_id)
+    )).scalars().all()
+    for suggestion in suggestions:
+        await db.delete(suggestion)
+
+    # Hard-delete project members
+    members = (await db.execute(
+        select(ProjectMember).where(ProjectMember.project_id == project_id)
+    )).scalars().all()
+    for member in members:
+        await db.delete(member)
+
+    project.deleted_at = now
     await db.flush()

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { WizardProgress } from "@/components/projects/wizard/wizard-progress";
 import { StepPurposeType } from "@/components/projects/wizard/step-purpose-type";
@@ -43,7 +43,9 @@ const STEPS = ["Type", "Brief", "Brand Kit", "Suggestions"];
 
 export default function NewProjectPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
+  const projectType = searchParams.get("type") === "team" ? "team" : "personal";
   const [step, setStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -91,7 +93,7 @@ export default function NewProjectPage() {
     try {
       const project = await createProject({
         name: brief.name,
-        type: isCreator ? "team" : "personal",
+        type: isCreator ? projectType : "personal",
         purpose,
         product: brief.product || undefined,
         target_audience: brief.target_audience || undefined,
@@ -129,8 +131,13 @@ export default function NewProjectPage() {
       <div className="mt-8 flex items-center justify-between">
         <button
           onClick={step === 0 ? () => router.back() : handleBack}
-          className="rounded-lg px-6 py-3 text-base font-semibold text-[#717171] transition-colors hover:bg-[#F7F7F7] hover:text-[#222222]"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#E8EAED] px-3 py-1.5 text-[13px] font-medium text-[#5F6368] transition-colors hover:border-[#DADCE0] hover:bg-[#F1F3F4] hover:text-[#1F1F1F]"
         >
+          {step > 0 && (
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 4L6 8l4 4" />
+            </svg>
+          )}
           {step === 0 ? "Cancel" : "Back"}
         </button>
 

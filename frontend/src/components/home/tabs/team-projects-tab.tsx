@@ -50,6 +50,7 @@ export function TeamProjectsTab() {
   const router = useRouter();
   const [projects, setProjects]     = useState<Project[]>([]);
   const [isLoading, setIsLoading]   = useState(true);
+  const [statusFilter, setStatusFilter] = useState<"active" | "archived">("active");
   const [view, setView]             = useState<View>("grid");
   const [sort, setSort]             = useState<Sort>("recent");
   const [search, setSearch]         = useState("");
@@ -58,11 +59,12 @@ export function TeamProjectsTab() {
   const isCreator = user ? isCreatorRole(user.role) : false;
 
   useEffect(() => {
-    fetchProjects("team")
+    setIsLoading(true);
+    fetchProjects("team", statusFilter)
       .then((res) => setProjects(res.items))
       .catch(() => {})
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [statusFilter]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -88,7 +90,19 @@ export function TeamProjectsTab() {
     <div>
       {/* Header row */}
       <div className="mb-5 flex items-center justify-between">
-        <h2 className={text.h2}>Team projects</h2>
+        <div className="flex items-center gap-3">
+          <h2 className={text.h2}>{statusFilter === "archived" ? "Archived team projects" : "Team projects"}</h2>
+          <div className="flex items-center rounded-full border border-[#E8EAED] bg-white p-0.5">
+            <button
+              onClick={() => { setStatusFilter("active"); setSearch(""); }}
+              className={`rounded-full px-3 py-1 text-[12px] font-medium transition-colors ${statusFilter === "active" ? "bg-[#1F1F1F] text-white" : "text-[#80868B] hover:text-[#3C4043]"}`}
+            >Active</button>
+            <button
+              onClick={() => { setStatusFilter("archived"); setSearch(""); }}
+              className={`rounded-full px-3 py-1 text-[12px] font-medium transition-colors ${statusFilter === "archived" ? "bg-[#1F1F1F] text-white" : "text-[#80868B] hover:text-[#3C4043]"}`}
+            >Archived</button>
+          </div>
+        </div>
 
         {/* Toolbar */}
         <div className="flex items-center gap-2">
@@ -197,7 +211,7 @@ export function TeamProjectsTab() {
       {/* Grid view */}
       {view === "grid" && (
         <div className={layout.grid5}>
-          {isCreator && <NewProjectCard onClick={() => router.push("/projects/new?type=team")} />}
+          {isCreator && statusFilter === "active" && <NewProjectCard onClick={() => router.push("/projects/new?type=team")} />}
           {filtered.map((p) => (
             <ProjectCard key={p.id} project={p} onClick={() => router.push(`/projects/${p.id}`)} />
           ))}
@@ -207,7 +221,7 @@ export function TeamProjectsTab() {
       {/* List view */}
       {view === "list" && (
         <div className="space-y-2">
-          {isCreator && (
+          {isCreator && statusFilter === "active" && (
             <button
               onClick={() => router.push("/projects/new?type=team")}
               className="flex w-full items-center gap-4 rounded-xl border border-dashed border-[#DADCE0] bg-white px-4 py-3.5 text-left transition-all hover:border-[#D0103A] hover:bg-[#FFF8F9]"
@@ -236,6 +250,9 @@ export function TeamProjectsTab() {
                   {p.member_count ? ` · ${p.member_count} members` : ""}
                 </p>
               </div>
+              {statusFilter === "archived" && (
+                <span className="shrink-0 rounded-full bg-[#F1F3F4] px-2 py-0.5 text-[11px] font-medium text-[#80868B]">Archived</span>
+              )}
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#DADCE0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M6 4l4 4-4 4" />
               </svg>
@@ -248,10 +265,10 @@ export function TeamProjectsTab() {
         <div className="mt-20 flex flex-col items-center gap-3">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F1F3F4] text-2xl">👥</div>
           <p className="text-[15px] font-medium text-[#1F1F1F]">
-            {search ? "No projects match your search" : "No team projects"}
+            {search ? "No projects match your search" : statusFilter === "archived" ? "No archived team projects" : "No team projects"}
           </p>
           <p className="text-[13px] text-[#80868B]">
-            {search ? "Try a different keyword" : isCreator ? "Create one and invite members to collaborate" : "Your leader will add you to a project soon"}
+            {search ? "Try a different keyword" : statusFilter === "archived" ? "Archived team projects will appear here" : isCreator ? "Create one and invite members to collaborate" : "Your leader will add you to a project soon"}
           </p>
         </div>
       )}

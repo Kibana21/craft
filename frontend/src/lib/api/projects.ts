@@ -33,11 +33,13 @@ export interface ProjectDetail {
 
 export async function fetchProjects(
   type?: ProjectType,
+  status: "active" | "archived" = "active",
   page = 1,
   perPage = 20
 ): Promise<ProjectListResponse> {
   const params = new URLSearchParams();
   if (type) params.set("type", type);
+  params.set("status", status);
   params.set("page", String(page));
   params.set("per_page", String(perPage));
   return apiClient.get<ProjectListResponse>(`/api/projects?${params}`);
@@ -56,6 +58,13 @@ export async function updateProject(
   data: Partial<CreateProjectData>
 ): Promise<ProjectDetail> {
   return apiClient.patch<ProjectDetail>(`/api/projects/${id}`, data);
+}
+
+export async function setProjectStatus(
+  id: string,
+  status: "active" | "archived"
+): Promise<ProjectDetail> {
+  return apiClient.patch<ProjectDetail>(`/api/projects/${id}/status`, { status });
 }
 
 export async function deleteProject(id: string): Promise<void> {

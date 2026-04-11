@@ -64,3 +64,4 @@ class UpdateProjectRequest(BaseModel):
     campaign_period: str | None = None
     key_message: str | None = None
     brief: dict | None = None
+    status: str | None = Field(None, pattern="^(active|archived)$")

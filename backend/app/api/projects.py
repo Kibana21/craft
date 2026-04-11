@@ -1,6 +1,8 @@
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
@@ -10,7 +12,6 @@ from app.models.enums import ProjectType
 from app.schemas.project import (
     ProjectListResponse,
     ProjectDetailResponse,
-    ProjectResponse,
     CreateProjectRequest,
     UpdateProjectRequest,
 )
@@ -19,6 +20,7 @@ from app.services.project_service import (
     create_project,
     get_project_detail,
     update_project,
+    set_project_status,
     delete_project,
 )
 from app.services.suggestion_service import generate_suggestions
@@ -26,15 +28,20 @@ from app.services.suggestion_service import generate_suggestions
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
 
+class SetStatusRequest(BaseModel):
+    status: Literal["active", "archived"]
+
+
 @router.get("", response_model=ProjectListResponse)
 async def get_projects(
     type: ProjectType | None = Query(None),
+    status: str = Query("active"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ProjectListResponse:
-    items, total = await list_user_projects(db, current_user, project_type=type, page=page, per_page=per_page)
+    items, total = await list_user_projects(db, current_user, project_type=type, status=status, page=page, per_page=per_page)
     return ProjectListResponse(items=items, total=total, page=page, per_page=per_page)
 
 
@@ -45,7 +52,6 @@ async def create_new_project(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     project = await create_project(db, current_user, data)
-    # Generate CRAFT suggestions for the project
     await generate_suggestions(db, project)
     return await get_project_detail(db, current_user, project.id)
 
@@ -67,6 +73,17 @@ async def update_existing_project(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     await update_project(db, current_user, project_id, data)
+    return await get_project_detail(db, current_user, project_id)
+
+
+@router.patch("/{project_id}/status", response_model=ProjectDetailResponse)
+async def update_project_status(
+    project_id: uuid.UUID,
+    data: SetStatusRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    await set_project_status(db, current_user, project_id, data.status)
     return await get_project_detail(db, current_user, project_id)
 
 
