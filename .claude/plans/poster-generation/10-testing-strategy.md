@@ -60,10 +60,12 @@ Location: `backend/tests/poster_wizard/`.
 
 ### Frontend
 
-Location: `frontend/src/components/poster-wizard/**/*.test.tsx` (colocated with components).
+**Note:** The frontend has no test runner configured (only `npm run typecheck`). These test cases document intended behaviour and should be implemented when a test framework (e.g., Vitest + React Testing Library) is adopted. The test runner choice is an open question — see doc 11.
 
-**Component tests (Vitest + React Testing Library):**
-- Each step component renders with valid default state.
+Location when set up: `frontend/src/components/poster-wizard/**/*.test.tsx` (colocated with components).
+
+**Component test cases to implement:**
+- Each step component renders with valid default state from `PosterWizardContext`.
 - Validation blocks Continue when required fields missing.
 - AI-assist chip: disabled while loading, re-enabled on success, field populated.
 - Tone rewrite chip updates all 4 copy fields.
@@ -72,11 +74,11 @@ Location: `frontend/src/components/poster-wizard/**/*.test.tsx` (colocated with 
 - Structural-change redirect message renders with step button.
 - Inpaint overlay: bounding box selection produces a mask of expected dimensions.
 
-**Zustand store tests (plain Vitest):**
-- `setField` writes at nested paths.
-- `acceptAIResult` clears pending state.
-- `addChangeLogEntry` / `removeChangeLogEntry` mutate the selected variant's change log only.
-- Reset on wizard close.
+**Context state test cases to implement:**
+- `setBrief` / `setCopy` / etc. merge correctly with existing state (partial updates).
+- `getContentPayload()` returns a valid JSONB object at schema_version 1.
+- `setArtifactId` is called once on first autosave and not again.
+- Context resets when the provider unmounts.
 
 ---
 
@@ -114,7 +116,7 @@ Fixtures are JSON files per prompt template, with a small set of canonical input
 
 ## E2E Happy Path
 
-Location: `frontend/e2e/poster-wizard.spec.ts` (Playwright, assuming Playwright is the existing E2E runner; verify during implementation).
+Location: `frontend/e2e/poster-wizard.spec.ts`. No E2E test runner is currently set up in this repo — this folder and a Playwright config will need to be added. Defer until after Phase C ships.
 
 ### Scenario: "Brief to export in under 10 minutes"
 

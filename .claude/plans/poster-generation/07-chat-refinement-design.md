@@ -174,7 +174,7 @@ Variants accumulate in the JSONB array. No hard cap for v1, but monitor (doc 11 
 | Data | Where | Retention |
 |---|---|---|
 | Chat turns (server) | `poster_chat_turns` table | 30 days |
-| Chat turns (client in-memory) | Zustand store | Session only |
+| Chat turns (client in-memory) | `useState` in ChatPanel (session only) | Session only |
 | Change log pills | JSONB `variant.change_log[]` (session-attached) | Until save-as-variant or 30-day sweep |
 | Inpaint masks | Object storage, referenced by `poster_chat_turns.inpaint_mask_url` | 30 days (alongside turn) |
 | Variants (generated images) | Object storage, referenced by `variant.image_url` | 90 days |

@@ -41,7 +41,7 @@ See the PRD at `.claude/specs/POSTER_WIZARD_PRD.md` for full requirements.
 
 ## Phasing
 
-Five phases, each individually demoable and behind a feature flag (`poster_wizard_v2`). Ship order matters: Phase A unblocks all UI review; Phases B–E can partially overlap once the scaffold exists.
+Five phases, each individually demoable. No feature flag system exists in this codebase — phases are merged directly. The wizard is wired in by routing the "poster" type selection to the new wizard route. Ship order matters: Phase A unblocks all UI review; Phases B–E can partially overlap once the scaffold exists.
 
 ### Phase A — Wizard Scaffold *(no dependencies)*
 - New route under `frontend/src/app/(authenticated)/projects/[id]/artifacts/new-poster/`

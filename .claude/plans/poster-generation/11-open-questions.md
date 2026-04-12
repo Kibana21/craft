@@ -131,10 +131,7 @@ Owner codes: **PM** = Product, **CO** = Compliance, **BR** = Brand, **PRINT** = 
 - **Blocks:** Phase C.
 
 ## OQ-16 — Feature-flag mechanism
-- **Current default (doc 05):** A simple `user.settings.beta_flags` lookup or hardcoded allowlist.
-- **Question:** Is there a preferred feature-flag system (e.g., LaunchDarkly) or are we inventing the mechanism?
-- **Owner:** ENG.
-- **Blocks:** Phase A.
+- **Status: RESOLVED.** No feature flag system exists in this codebase and none will be introduced for the poster wizard. The wizard is wired in directly — selecting "poster" on the artifact type page routes straight to the new wizard. The old `poster-creator.tsx` component is left intact until Phase E is verified, then deleted. If a flag mechanism is needed in future it can be added as a thin wrapper at the routing call site.
 
 ## OQ-17 — Inpaint mask: freehand vs rectangle only
 - **Current default (doc 07):** Rectangle only for v1.
@@ -169,6 +166,12 @@ Owner codes: **PM** = Product, **CO** = Compliance, **BR** = Brand, **PRINT** = 
 - **Question:** Should we add explicit "my drafts" UI at project level? Does it replace current surface?
 - **Owner:** PM.
 - **Blocks:** Phase A (only UI placement).
+
+## OQ-22 — Frontend test runner
+- **Current state:** The frontend has no test framework. `make test-frontend` runs `npm run typecheck` only.
+- **Question:** Which test framework should be adopted for the poster wizard component tests — Vitest + React Testing Library, or something else?
+- **Owner:** ENG.
+- **Blocks:** Frontend unit tests (non-blocking for Phase A–C delivery; blocking for Phase E quality gate).
 
 ---
 

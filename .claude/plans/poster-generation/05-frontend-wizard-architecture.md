@@ -14,8 +14,8 @@ frontend/src/app/(authenticated)/projects/[id]/artifacts/new-poster/
     use-chat-refinement.ts
     use-field-compliance.ts
   _state/
-    poster-wizard-store.ts  # Zustand store (see §State Container)
-    schema.ts               # TS types mirroring backend PosterContent
+    poster-wizard-context.tsx  # PosterWizardContext provider + useReducer (see §State Container)
+    schema.ts                  # TS types mirroring backend PosterContent
 ```
 
 Components live under:
@@ -68,44 +68,46 @@ frontend/src/components/poster-wizard/
 
 ## Replace vs Coexist with Existing `poster-creator.tsx`
 
-The existing single-form creator at `frontend/src/components/artifacts/create/poster-creator.tsx` stays **coexisting behind a feature flag** (`poster_wizard_v2`) during rollout.
+The existing single-form creator at `frontend/src/components/artifacts/create/poster-creator.tsx` stays **coexisting** during rollout. No feature-flag system exists in this repo, so the routing is done directly in `projects/[id]/artifacts/new/page.tsx`:
 
-Flag check on `projects/[id]/artifacts/new/page.tsx`:
 ```tsx
-if (featureFlags.posterWizardV2 && type === "POSTER") {
-  return redirect(`/projects/${id}/artifacts/new-poster?mode=...`);
+// poster type immediately routes to the new wizard
+if (type === "poster") {
+  router.push(`/projects/${id}/artifacts/new-poster/brief`);
+  return;
 }
 ```
 
-This gives us:
-- A kill switch if the new wizard destabilises the create path.
-- A direct comparison point during beta.
-- No immediate deletion of working code during Phase A.
+This keeps things simple:
+- No feature flag plumbing to maintain.
+- The wizard is the only poster creation path from Phase A onwards.
+- The old `poster-creator.tsx` component is left intact (not deleted) until Phase E is verified stable, then removed in a clean-up commit.
 
-Deprecation plan: once Phase E ships and usage of the old creator drops below 5%, delete `poster-creator.tsx` and the flag.
+Deprecation plan: once Phase E ships and the wizard is verified, delete `poster-creator.tsx`.
 
 ---
 
-## State Container — Decision: Zustand
+## State Container — Decision: React Context + useState
+
+This codebase uses **React Context for global state** (see `VideoWizardContext`, `AuthProvider`). The poster wizard follows the same pattern — no new state-management library is introduced.
 
 Three options were considered:
 
 | Option | Pros | Cons |
 |---|---|---|
-| React Context + useReducer | No dep, native | Verbose for 5-step forms, no devtools, re-render control is manual |
+| **React Context + useState** | No new dep, matches existing VideoWizardContext pattern, simple | Re-renders on every context update (mitigated by splitting contexts if needed) |
 | URL search params | Shareable links, cheap | Can't hold JSONB-scale state (reference images, variants, chat turns) |
-| **Zustand** | Tiny, no provider, good devtools, partial subscriptions | New dep (verify not already in repo) |
+| Zustand | Tiny, partial subscriptions | Not in repo; violates CLAUDE.md "No Redux / Zustand" convention |
 
-Zustand keeps the wizard state flat, supports fine-grained subscriptions (the chat panel shouldn't re-render when the user types in the brief), and is mature. Verify during implementation whether Zustand is already a dep; if not, add it — it's ~1KB gzipped and warranted here.
+### Context shape
 
-### Store shape
-
-```ts
-interface PosterWizardState {
+```tsx
+// _state/poster-wizard-context.tsx
+interface PosterWizardContextValue {
   // Identity
   projectId: string;
   artifactId: string | null;        // null until first autosave
-  step: 1 | 2 | 3 | 4 | 5;
+  isSaving: boolean;
 
   // Content (mirrors backend PosterContent JSONB)
   brief: BriefContent;
@@ -114,23 +116,28 @@ interface PosterWizardState {
   composition: CompositionContent;
   generation: GenerationState;
 
-  // UI
-  dirtyFields: Set<string>;
-  compliance: Record<FieldName, ComplianceFlag[]>;
-  pendingAI: Record<string, boolean>;   // keyed by feature, for button-disable
-  lastAutosaveAt: number | null;
-
   // Actions
-  setField: (path: string, value: unknown) => void;
-  acceptAIResult: (feature: string, result: unknown) => void;
-  setStep: (step: 1|2|3|4|5) => void;
-  addChangeLogEntry: (entry: ChangeLogEntry) => void;
-  removeChangeLogEntry: (id: string) => void;
-  // ...
+  setBrief: (value: Partial<BriefContent>) => void;
+  setSubject: (value: Partial<SubjectContent>) => void;
+  setCopy: (value: Partial<CopyContent>) => void;
+  setComposition: (value: Partial<CompositionContent>) => void;
+  setGeneration: (value: Partial<GenerationState>) => void;
+  setArtifactId: (id: string) => void;
+  setIsSaving: (v: boolean) => void;
+  getContentPayload: () => PosterContent;
+}
+
+export const PosterWizardContext = createContext<PosterWizardContextValue | null>(null);
+export function usePosterWizard() {
+  const ctx = useContext(PosterWizardContext);
+  if (!ctx) throw new Error("usePosterWizard must be used inside PosterWizardProvider");
+  return ctx;
 }
 ```
 
-One store per wizard session. Reset on wizard open / project change.
+The provider lives in the wizard `layout.tsx` (same as `VideoWizardContext`). Each step calls `usePosterWizard()` to read and write state.
+
+One context instance per wizard session. Unmounts when the user leaves the wizard route.
 
 ---
 
@@ -138,7 +145,7 @@ One store per wizard session. Reset on wizard open / project change.
 
 Two layers:
 
-1. **Local:** `localStorage` key `poster-wizard:draft:{projectId}:{userId}` mirrors the full state. Written debounced 500ms.
+1. **Local:** `localStorage` key `poster-wizard-draft:{projectId}` mirrors the full context state. Written via a `useEffect` with a 500ms debounce whenever brief/subject/copy/composition changes. Read on mount to hydrate the context before the first server fetch.
 2. **Server:** Autosave creates/updates the artifact with `status=DRAFT`. Cadence:
    - On step change (every time the user clicks Continue / Back).
    - After each AI accept.
@@ -158,7 +165,7 @@ Server autosave uses the existing artifact PATCH endpoint (`PATCH /api/artifacts
 - Backward from Step 4/5 to Step 3 is allowed; it triggers the **stale prompt** state (PRD §12.3) if the merged prompt exists — the user sees the banner in Step 4 when returning.
 - Backward from Step 5 to Step 2 is allowed but shows a warning modal: "Changing the subject will clear your generated variants. Continue?" If confirmed, variants are discarded (soft-deleted, recoverable for 24h for support, not in UI).
 
-Navigation state lives in the Zustand store; URL also reflects current step via `?step=N` for link sharing and resume continuity.
+Navigation state is derived from the URL pathname (same as the video wizard — each step is a separate Next.js route). The layout derives `currentStep` from `usePathname()`, matching the route segment to a step number. No step number is stored in the context.
 
 ---
 
@@ -213,7 +220,7 @@ The Step 5 chat panel is the most complex component. Break it down:
   - `ChatInput` — textarea + submit; disabled when `turnCount >= 6`.
   - `TurnCounter` — `{current} / 6` badge.
 
-State comes from the Zustand store's `generation.variants[selected].change_log` plus a local chat-turn log. Each submit calls `POST /api/ai/poster/refine-chat` via a hook.
+State comes from `PosterWizardContext`'s `generation.variants[selected].change_log` plus a local `useState` chat-turn log (session-only, not persisted). Each submit calls `POST /api/ai/poster/refine-chat` via a hook.
 
 Structural-change detection happens server-side; the client only reacts to the response's `action_type`. For better UX, the client may additionally call the cheap `classify-structural-change` endpoint on input blur to show a pre-submission hint — optional.
 
@@ -221,7 +228,7 @@ Structural-change detection happens server-side; the client only reacts to the r
 
 ## Feature Flag Wiring
 
-Use an existing mechanism if present (check `frontend/src/lib/` during implementation). If none exists, introduce a tiny `useFeatureFlag('poster_wizard_v2')` hook backed by user-level settings or a hardcoded allowlist fetched from `/api/users/me`. Do **not** over-engineer — a server-side field like `user.settings.beta_flags` suffices.
+No feature flag system exists in this codebase. The poster wizard is wired in directly: selecting "poster" on the artifact type page routes to `/projects/[id]/artifacts/new-poster/brief`. No kill-switch is needed for an internal demo platform. If a flag mechanism is introduced in future, it can be added as a thin wrapper at that routing call site without changing the wizard itself.
 
 ---
 
