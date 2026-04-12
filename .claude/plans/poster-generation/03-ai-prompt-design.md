@@ -7,12 +7,13 @@ This doc specifies every prompt template used by the Poster Wizard's AI endpoint
 | Purpose | Model | Reason |
 |---|---|---|
 | Brief synthesis, copy drafting, tone rewrite, scene/appearance paragraphs, chat refinement NL response, structural-change classifier | **Gemini 2.5 Flash** (existing wiring) | Low latency, sufficient quality, already integrated via Vertex AI |
-| Image generation (variants, inpainting) | **Imagen 3** (existing wiring) | AIA has enterprise access; supports text-to-image and image-to-image |
+| Image generation (variants, region edits) | **Gemini 2.5 Flash Image** (`gemini-2.5-flash-image`, a.k.a. "Nano Banana") via `google-genai` SDK — see https://ai.google.dev/gemini-api/docs/image-generation | Single multimodal API for text-to-image, image editing, and multi-image composition. Same SDK/auth as Gemini text calls; one integration surface |
 | Structural-change classifier fallback only | Gemini 2.5 Flash (single-token head) | Keyword short-circuit handles 80%+; LLM is fallback |
 
-All Gemini calls use low temperature (0.3) for deterministic structured outputs, except:
-- **Variants generation** — temperature varied slightly per variant (0.5–0.9) to achieve aesthetic diversity (PRD §9.3).
+All Gemini text calls use low temperature (0.3) for deterministic structured outputs, except:
 - **Tone rewrite** — temperature 0.5 for some creative latitude.
+
+For the image model (`gemini-2.5-flash-image`), per-variant diversity comes from prompt-level variation (small stylistic seed phrases appended to each slot) plus the model's inherent stochasticity. The Gemini image API does not accept a temperature parameter in the same form as text models; see doc 04 §4-Variant Parallel Flow for the diversity strategy.
 
 Output format: JSON when the response has multiple fields (copy-draft-all, tone-rewrite). Use Gemini's structured-output JSON schema feature to eliminate parse failures. Plain text for single-field outputs.
 
@@ -256,7 +257,7 @@ Task:
 Output: JSON only.
 ```
 
-The backend then feeds `refined_prompt` to Imagen in image-to-image mode with the current image as the base, producing the new variant image.
+The backend then feeds `refined_prompt` to `gemini-2.5-flash-image` together with the current image as an input image (image-editing mode, per https://ai.google.dev/gemini-api/docs/image-generation#image_editing_text_and_images_to_image), producing the new variant image.
 
 `change_description` becomes the label on the change-log pill. Kept short (≤ 5 words).
 

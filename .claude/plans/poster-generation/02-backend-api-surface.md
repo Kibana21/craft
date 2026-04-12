@@ -154,7 +154,7 @@ class CompositionPromptResponse(BaseModel):
 ```
 
 ## 8. `POST /api/ai/poster/generate-variants`
-Fires 4 parallel Imagen calls via `asyncio.gather` (doc 04). Returns when all 4 complete or timeout elapses.
+Fires 4 parallel `gemini-2.5-flash-image` calls via `asyncio.gather` (doc 04). Returns when all 4 complete or timeout elapses.
 
 **Request**
 ```python
@@ -299,7 +299,7 @@ Standardised `error_code` values for client handling:
 | `AUTH_REQUIRED` | No/invalid JWT |
 | `RBAC_DENIED` | User has no access to artifact/project |
 | `RATE_LIMITED` | User exceeded endpoint rate limit |
-| `AI_UPSTREAM_ERROR` | Gemini/Imagen returned error |
+| `AI_UPSTREAM_ERROR` | Gemini returned error (text or image model) |
 | `AI_TIMEOUT` | Upstream exceeded per-call timeout |
 | `VALIDATION_ERROR` | Pydantic validation failed |
 | `TURN_LIMIT_REACHED` | 6 turns already used on this variant |
@@ -340,7 +340,7 @@ Rationale for v1 unary: simpler turn-counter atomicity (doc 07), simpler retry s
 ## Cross-references
 
 - Prompt templates for endpoints 1–6, 11 → doc 03.
-- Image generation concurrency and Imagen integration for 8, 10 → doc 04.
+- Image generation concurrency and `gemini-2.5-flash-image` integration for 8, 10 → doc 04.
 - Compliance check-field cache & flag shape for 12 → doc 08.
 - Save-as-variant lineage implications → doc 07.
 - Test matrix per endpoint → doc 10.

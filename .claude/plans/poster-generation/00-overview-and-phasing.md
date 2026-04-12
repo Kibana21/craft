@@ -26,7 +26,7 @@ See the PRD at `.claude/specs/POSTER_WIZARD_PRD.md` for full requirements.
 | 01 | Data model, JSONB shape, new tables, migrations | Designing persistence |
 | 02 | Every new API endpoint with contract sketch | Implementing backend routes |
 | 03 | Prompt templates for each AI feature | Implementing prompt builders |
-| 04 | Parallel variant generation, inpainting, Imagen specifics | Implementing image pipeline |
+| 04 | Parallel variant generation, region edits, Gemini image API specifics | Implementing image pipeline |
 | 05 | Frontend wizard architecture, state container, autosave | Implementing the wizard shell |
 | 06 | Per-step UI spec (fields, validation, AI-assist wiring) | Implementing any single step |
 | 07 | Chat refinement design, turn model, redirect detection | Implementing Step 5 |
@@ -114,7 +114,7 @@ A doc that deviates from any of these must call out the deviation explicitly and
 | **Brief** | Step 1 output: campaign objective + target audience + tone + CTA + narrative summary. Context for all downstream AI calls. |
 | **Subject** | Step 2 output: visual hero of the poster. One of three types — Human Model, Product / Asset, Scene / Abstract. Drives text-to-image vs image-to-image mode. |
 | **Copy** | Step 3 output: structured text fields (headline, subheadline, body, CTA, tagline, disclaimer). |
-| **Composition** | Step 4 output: format + layout + style + palette + **merged composition prompt** (the single artifact sent to Imagen). |
+| **Composition** | Step 4 output: format + layout + style + palette + **merged composition prompt** (the single artifact sent to the Gemini image model). |
 | **Merged composition prompt** | Deterministically assembled natural-language paragraph summarising all prior-step outputs. The only thing passed to the image API. |
 | **Variant** | One of 4 parallel generations from the same merged prompt with varied temperature. Referred to as "vCRAFTnt" in the PRD — treated as "variant" in code/docs for clarity. |
 | **Turn** | One back-and-forth in the Step 5 chat refinement panel. Capped at 6 per variant state. |

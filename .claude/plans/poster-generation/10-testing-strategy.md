@@ -40,7 +40,7 @@ Location: `backend/tests/poster_wizard/`.
 
 **`test_poster_image_service.py`**
 - `asyncio.gather` orchestration returns all 4 slots even when one raises.
-- Timeout per slot is enforced (use monkeypatched Imagen client that sleeps).
+- Timeout per slot is enforced (use a monkeypatched `gemini-2.5-flash-image` client that sleeps).
 - Text-vs-image-to-image branching: correct mode chosen per subject type.
 - Inpaint mask size validation rejects mismatched dimensions.
 - Reference-image TTL is respected — expired images are rejected at generation time.
@@ -92,7 +92,7 @@ Scope: every endpoint in doc 02 gets a contract test covering:
 - Validation errors return 422 with `error_code = VALIDATION_ERROR`.
 - Rate limit triggers after N+1 calls.
 
-AI-touching contracts mock the Gemini/Imagen clients via dependency override so tests don't depend on network or cost.
+AI-touching contracts mock the Gemini text and image clients via dependency override so tests don't depend on network or cost.
 
 ---
 

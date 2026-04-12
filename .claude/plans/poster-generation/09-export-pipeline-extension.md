@@ -28,7 +28,7 @@ The PRD calls for **print-ready PDF** (300 DPI, CMYK, bleed) alongside digital P
 | Option | Format | Resolution | Colour | Use case |
 |---|---|---|---|---|
 | Export PNG | PNG | 1× (matches variant resolution, typically 1024–2048px longest edge) | sRGB | Digital, social, email |
-| Export PNG (2× upscale) | PNG | 2× via Imagen upscale | sRGB | High-DPI digital, large-format digital |
+| Export PNG (2× upscale) | PNG | 2× via Gemini re-render or Pillow fallback (doc 04 §Upscale) | sRGB | High-DPI digital, large-format digital |
 | Export PDF (print-ready) | PDF | 300 DPI, format-dependent pixel dims | CMYK with ICC | Print production |
 | Save as variant | Internal | Same as source variant | sRGB | Preserve state |
 
@@ -91,7 +91,7 @@ def convert_to_cmyk(img: Image.Image, cmyk_profile_path: str) -> Image.Image:
 ### DPI
 
 Print-ready = 300 DPI. If the variant's native resolution at the target physical size drops below 300 DPI, the pipeline:
-1. Applies Imagen upscale (2×) automatically for PDF export.
+1. Applies a 2× upscale (Gemini re-render with Pillow fallback — see doc 04 §Upscale) automatically for PDF export.
 2. If still below threshold after upscale, warns the user: "Output will be < 300 DPI. Continue with lower-DPI print or 2×-upscale first?"
 
 Minimum pixel dimensions per format at 300 DPI:
@@ -131,9 +131,9 @@ Custom font upload by users is out of scope for v1 (doc 11).
 
 ---
 
-## Overlays (post-Imagen composite)
+## Overlays (post-Gemini composite)
 
-Doc 04 established that Imagen output is the raw image; logo/tagline/disclaimer are overlaid post-generation. In the export path:
+Doc 04 established that the raw Gemini image is preserved untouched; logo/tagline/disclaimer are overlaid post-generation. In the export path:
 
 - Logo: top-right per existing convention, sized 12% of shortest edge.
 - Brand tagline: below logo in brand kit font.

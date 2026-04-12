@@ -114,15 +114,15 @@ Owner codes: **PM** = Product, **CO** = Compliance, **BR** = Brand, **PRINT** = 
 - **Owner:** CO.
 - **Blocks:** Phase E test gating.
 
-## OQ-14 — Multi-reference image compositing
-- **Current default (doc 04):** If user uploads > 1 reference image, only the first is used as base for v1.
-- **Question:** Is first-only acceptable, or should we explicitly disable multi-upload until v2 collage is built?
+## OQ-14 — Multi-reference image compositing *(resolved by Gemini switch)*
+- **Previous default:** With the legacy Imagen path, only the first uploaded reference image was used.
+- **Updated default (post-Gemini switch, doc 04):** `gemini-2.5-flash-image` accepts multiple input images natively (https://ai.google.dev/gemini-api/docs/image-generation). The wizard passes all uploaded references; the prompt instructs how each is used (first as hero, subsequent as texture/colour anchors).
+- **Remaining question:** Do we want per-reference role tagging in the UI (e.g., "use as product", "use as mood") in v1, or leave all refs as a flat list?
 - **Options:**
-  1. First-only, silently (current).
-  2. First-only with UI notice "additional references used as secondary only".
-  3. Disable multi-upload for v1 — only allow 1.
+  1. Flat list in v1 (current default) — prompt handles role assignment.
+  2. Per-ref role tagging in Step 2 UI — richer signal to the model.
 - **Owner:** PM.
-- **Blocks:** Phase C (upload UI).
+- **Blocks:** Phase C (upload UI polish only; multi-image itself is unblocked).
 
 ## OQ-15 — Per-project daily variant cap
 - **Current default:** 100 variants/project/day.
@@ -142,11 +142,15 @@ Owner codes: **PM** = Product, **CO** = Compliance, **BR** = Brand, **PRINT** = 
 - **Owner:** PM.
 - **Blocks:** Phase D.
 
-## OQ-18 — Upscale source: Imagen 3 vs Pillow fallback
-- **Current default (doc 04):** Imagen 3 upscale if available; Pillow Lanczos fallback otherwise.
-- **Question:** Confirm Imagen 3 upscale is available to AIA via Vertex AI; if not, budget for alternative service.
-- **Owner:** ENG (Vertex AI provisioning).
-- **Blocks:** Phase C / E.
+## OQ-18 — Upscale source: Gemini re-render vs Pillow fallback
+- **Current default (doc 04 §Upscale):** Try a `gemini-2.5-flash-image` re-render of the variant at 2× resolution; fall back to Pillow Lanczos if the re-rendered image drifts from the source beyond a pHash similarity threshold.
+- **Question:** Is re-render-based upscale quality acceptable for AIA print output, or do we need a dedicated super-resolution service (e.g., a third-party upscaler) for Phase E PDF exports?
+- **Options:**
+  1. Gemini re-render + Pillow fallback (current).
+  2. Integrate a dedicated SR service (e.g., Real-ESRGAN-as-a-service, Replicate) for print exports only.
+  3. Accept Pillow Lanczos as the baseline for print if Gemini drift is too high.
+- **Owner:** ENG + PRINT.
+- **Blocks:** Phase E (print-DPI auto-upscale path).
 
 ## OQ-19 — Structural-change LLM fallback cost budget
 - **Current default (doc 03):** LLM fallback only when keyword match fails and message is ambiguous.
