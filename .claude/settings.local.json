@@ -26,7 +26,8 @@
       "Bash(python -c ':*)",
       "Bash(grep -v \"^$\")",
       "Bash(ls /Users/kartik/Documents/Work/Projects/craft/craft/backend/*.json)",
-      "WebFetch(domain:ai.google.dev)"
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(xargs ls:*)"
     ]
   }
 }
