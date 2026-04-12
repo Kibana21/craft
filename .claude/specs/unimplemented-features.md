@@ -103,20 +103,7 @@
 
 ---
 
-## 7. US-013 — Reel Animated Preview
-
-**Status:** Partial. Reel creator generates a storyboard (sequence of frames). Preview is static — no animated transitions between frames.
-
-**What's missing:**
-- Animated storyboard preview rendering frames in sequence with transitions
-- 9:16 vertical playback in the browser
-
-**Files to build:**
-- `frontend/src/components/artifacts/preview/reel-preview.tsx` — animate frame sequence
-
----
-
-## 8. US-002 — Hierarchy API (Accepted Deferral)
+## 7. US-002 — Hierarchy API (Accepted Deferral)
 
 **Status:** Mock only. `GET /api/hierarchy/{leader_id}/fscs` returns hardcoded data.
 
@@ -138,4 +125,4 @@
 | 4 | Invite Members in Wizard | UX gap — feels broken that team project creation doesn't include inviting |
 | 5 | Team Oversight Panel | Needed for District Leader value prop |
 | 6 | Project Assets Panel | Campaign-level shared resources — high value for brand team |
-| 7 | Reel Animated Preview | Nice-to-have — static storyboard is functional enough for MVP |
+| 7 | Hierarchy API | Needs AIA network access — external dependency |

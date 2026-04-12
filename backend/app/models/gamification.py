@@ -14,6 +14,7 @@ class PointsAction(str, enum.Enum):
     EXPORT = "export"
     REMIX = "remix"
     STREAK_BONUS = "streak_bonus"
+    VIDEO_GENERATED = "video_generated"
 
 
 class UserPoints(Base):
@@ -48,10 +49,16 @@ class PointsLog(Base):
         Enum(PointsAction, name="points_action", create_type=True), nullable=False
     )
     points: Mapped[int] = mapped_column(Integer, nullable=False)
+    related_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("artifacts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
     __table_args__ = (
         Index("idx_points_log_user_id", "user_id"),
+        Index("idx_points_log_artifact_id", "related_artifact_id"),
     )

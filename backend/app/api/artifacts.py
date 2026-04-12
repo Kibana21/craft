@@ -66,7 +66,11 @@ async def _check_project_access(
     return project
 
 
-def _artifact_to_detail(artifact: Artifact, user: User) -> dict:
+def _artifact_to_detail(
+    artifact: Artifact,
+    user: User,
+    video_session_id: uuid.UUID | None = None,
+) -> dict:
     content = artifact.content or {}
     locks = content.get("locks", []) if isinstance(content, dict) else []
     return {
@@ -88,6 +92,7 @@ def _artifact_to_detail(artifact: Artifact, user: User) -> dict:
         "status": artifact.status,
         "version": artifact.version,
         "created_at": artifact.created_at,
+        "video_session_id": video_session_id,
     }
 
 
@@ -132,6 +137,14 @@ async def create_artifact(
     db.add(artifact)
     await db.flush()
 
+    # Auto-create a VideoSession for VIDEO and REEL artifacts (same transaction)
+    video_session_id: uuid.UUID | None = None
+    if data.type in (ArtifactType.VIDEO, ArtifactType.REEL):
+        from app.services.video_session_service import create_for_artifact
+        duration = data.target_duration_seconds or 60
+        video_session = await create_for_artifact(db, artifact.id, duration)
+        video_session_id = video_session.id
+
     # Reload with creator relationship
     result = await db.execute(
         select(Artifact).where(Artifact.id == artifact.id).options(selectinload(Artifact.creator))
@@ -147,7 +160,7 @@ async def create_artifact(
     from app.models.gamification import PointsAction
     background_tasks.add_task(_award_points_bg, current_user.id, PointsAction.CREATE_ARTIFACT)
 
-    return _artifact_to_detail(artifact, current_user)
+    return _artifact_to_detail(artifact, current_user, video_session_id=video_session_id)
 
 
 @router.get("/api/artifacts/{artifact_id}", response_model=ArtifactDetailResponse)
@@ -167,7 +180,30 @@ async def get_artifact_detail(
 
     # Verify project access
     await _check_project_access(db, current_user, artifact.project_id)
-    return _artifact_to_detail(artifact, current_user)
+
+    # Include video_session_id for VIDEO/REEL artifacts; lazy-create if missing (legacy artifacts)
+    from app.models.video_session import VideoSession
+    vs_result = await db.execute(
+        select(VideoSession.id).where(VideoSession.artifact_id == artifact_id)
+    )
+    video_session_id = vs_result.scalar_one_or_none()
+
+    if video_session_id is None and artifact.type in (ArtifactType.VIDEO, ArtifactType.REEL):
+        from app.services.video_session_service import create_for_artifact
+        from sqlalchemy.exc import IntegrityError
+        try:
+            video_session = await create_for_artifact(db, artifact.id)
+            await db.commit()
+            video_session_id = video_session.id
+        except IntegrityError:
+            # Concurrent request already created the session (e.g. React StrictMode double-invoke)
+            await db.rollback()
+            vs_retry = await db.execute(
+                select(VideoSession.id).where(VideoSession.artifact_id == artifact_id)
+            )
+            video_session_id = vs_retry.scalar_one_or_none()
+
+    return _artifact_to_detail(artifact, current_user, video_session_id=video_session_id)
 
 
 @router.patch("/api/artifacts/{artifact_id}", response_model=ArtifactDetailResponse)

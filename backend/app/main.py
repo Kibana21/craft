@@ -27,11 +27,24 @@ from app.api.exports import router as exports_router
 from app.api.gamification import router as gamification_router
 from app.api.analytics import router as analytics_router
 from app.api.comments import router as comments_router
+from app.api.presenters import router as presenters_router
+from app.api.video_sessions import router as video_sessions_router
+from app.api.scenes import router as scenes_router
+from app.api.generated_videos import router as generated_videos_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    # Startup
+    # Startup: mark any orphaned QUEUED/RENDERING videos as FAILED
+    from app.core.database import async_session
+    from app.services.video_generation_service import mark_orphans_failed
+    async with async_session() as db:
+        count = await mark_orphans_failed(db)
+        if count:
+            import logging
+            logging.getLogger(__name__).warning(
+                "Startup sweep: marked %d orphaned video generation job(s) as FAILED", count
+            )
     yield
     # Shutdown
     await engine.dispose()
@@ -70,6 +83,10 @@ app.include_router(exports_router)
 app.include_router(gamification_router)
 app.include_router(analytics_router)
 app.include_router(comments_router)
+app.include_router(presenters_router)
+app.include_router(video_sessions_router)
+app.include_router(scenes_router)
+app.include_router(generated_videos_router)
 
 # Serve uploaded files in development
 uploads_path = Path(__file__).parent.parent / "uploads"

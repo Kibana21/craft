@@ -16,6 +16,7 @@ POINTS_MAP = {
     PointsAction.EXPORT: 20,
     PointsAction.REMIX: 15,
     PointsAction.STREAK_BONUS: 50,
+    PointsAction.VIDEO_GENERATED: 50,
 }
 
 LEADERBOARD_KEY = "leaderboard:global"
@@ -85,6 +86,56 @@ async def award_points(db: AsyncSession, user_id: uuid.UUID, action: PointsActio
     await db.flush()
 
     # Sync Redis sorted set
+    redis = await _get_redis()
+    if redis:
+        try:
+            await redis.zadd(LEADERBOARD_KEY, {str(user_id): up.total_points})
+        except Exception:
+            pass
+        finally:
+            await redis.aclose()
+
+
+async def award_points_once(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    action: PointsAction,
+    related_artifact_id: uuid.UUID,
+) -> None:
+    """Idempotent points award keyed on (user_id, action, related_artifact_id).
+    If a PointsLog row already exists for this triple, no-ops silently.
+    """
+    existing = await db.execute(
+        select(PointsLog).where(
+            PointsLog.user_id == user_id,
+            PointsLog.action == action,
+            PointsLog.related_artifact_id == related_artifact_id,
+        )
+    )
+    if existing.scalar_one_or_none() is not None:
+        return  # Already awarded — idempotent no-op
+
+    up = await _get_or_create_user_points(db, user_id)
+    pts = POINTS_MAP.get(action, 0)
+
+    log_entry = PointsLog(
+        user_id=user_id,
+        action=action,
+        points=pts,
+        related_artifact_id=related_artifact_id,
+    )
+    db.add(log_entry)
+    up.total_points = up.total_points + pts
+
+    if action != PointsAction.STREAK_BONUS:
+        streak_bonus = await _update_streak(db, user_id, up)
+        if streak_bonus:
+            bonus_log = PointsLog(user_id=user_id, action=PointsAction.STREAK_BONUS, points=50)
+            db.add(bonus_log)
+            up.total_points = up.total_points + 50
+
+    await db.flush()
+
     redis = await _get_redis()
     if redis:
         try:

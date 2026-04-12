@@ -6,9 +6,9 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import ButtonBase from "@mui/material/ButtonBase";
+import CircularProgress from "@mui/material/CircularProgress";
 import { PosterCreator } from "@/components/artifacts/create/poster-creator";
 import { WhatsAppCreator } from "@/components/artifacts/create/whatsapp-creator";
-import { ReelCreator } from "@/components/artifacts/create/reel-creator";
 import { createArtifact } from "@/lib/api/artifacts";
 import { fetchProjectDetail, type ProjectDetail } from "@/lib/api/projects";
 import type { ArtifactType } from "@/types/artifact";
@@ -30,12 +30,30 @@ export default function NewArtifactPage() {
   const [selectedType, setSelectedType] = useState<ArtifactType | null>(preselectedType);
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingVideo, setIsCreatingVideo] = useState(false);
 
   useEffect(() => {
     if (projectId) {
       fetchProjectDetail(projectId).then(setProject).catch(() => router.push("/home"));
     }
   }, [projectId, router]);
+
+  // Immediately create a REEL artifact and route to the video wizard
+  const handleSelectReel = async () => {
+    if (!projectId || isCreatingVideo) return;
+    setIsCreatingVideo(true);
+    try {
+      const artifact = await createArtifact(projectId, {
+        type: "reel",
+        name: "New video",
+        content: {},
+        channel: "social",
+      });
+      router.push(`/projects/${projectId}/artifacts/${artifact.id}/video/presenter`);
+    } catch {
+      setIsCreatingVideo(false);
+    }
+  };
 
   const handleSave = async (data: Record<string, unknown>) => {
     if (!selectedType || !projectId) return;
@@ -103,7 +121,8 @@ export default function NewArtifactPage() {
             {ARTIFACT_TYPES.map((type) => (
               <ButtonBase
                 key={type.key}
-                onClick={() => setSelectedType(type.key)}
+                disabled={type.key === "reel" && isCreatingVideo}
+                onClick={() => type.key === "reel" ? handleSelectReel() : setSelectedType(type.key)}
                 sx={{
                   display: "flex",
                   flexDirection: "column",
@@ -113,6 +132,7 @@ export default function NewArtifactPage() {
                   p: 4,
                   textAlign: "left",
                   transition: "all 0.2s",
+                  opacity: type.key === "reel" && isCreatingVideo ? 0.6 : 1,
                   "&:hover": {
                     boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
                     transform: "scale(1.02)",
@@ -121,7 +141,11 @@ export default function NewArtifactPage() {
                   },
                 }}
               >
-                <Typography sx={{ fontSize: "36px" }}>{type.icon}</Typography>
+                {type.key === "reel" && isCreatingVideo ? (
+                  <CircularProgress size={36} sx={{ color: "#D0103A" }} />
+                ) : (
+                  <Typography sx={{ fontSize: "36px" }}>{type.icon}</Typography>
+                )}
                 <Typography
                   className="card-label"
                   sx={{ mt: 2, fontSize: "16px", fontWeight: 600, color: "#222222", transition: "color 0.2s" }}
@@ -199,15 +223,6 @@ export default function NewArtifactPage() {
               <WhatsAppCreator
                 product={project?.product || ""}
                 audience={project?.target_audience || ""}
-                onSave={handleSave}
-                isSaving={isSaving}
-              />
-            )}
-            {selectedType === "reel" && (
-              <ReelCreator
-                product={project?.product || ""}
-                audience={project?.target_audience || ""}
-                keyMessage={project?.key_message || ""}
                 onSave={handleSave}
                 isSaving={isSaving}
               />

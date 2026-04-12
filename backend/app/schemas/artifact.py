@@ -34,6 +34,7 @@ class ArtifactResponse(BaseModel):
 class ArtifactDetailResponse(ArtifactResponse):
     content: dict | None = None
     locks: list[str] | None = None
+    video_session_id: uuid.UUID | None = None
 
 
 class ArtifactListResponse(BaseModel):
@@ -49,6 +50,7 @@ class CreateArtifactRequest(BaseModel):
     content: dict | None = None
     channel: ArtifactChannel | None = None
     format: ArtifactFormat | None = None
+    target_duration_seconds: int | None = None  # VIDEO/REEL only; defaults to 60
 
 
 class UpdateArtifactRequest(BaseModel):

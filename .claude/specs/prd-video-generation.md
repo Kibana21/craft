@@ -148,14 +148,16 @@ User stories are grouped into seven implementation phases. Each phase can be imp
 - [ ] Request/response Pydantic schemas in `app/schemas/presenter.py`
 - [ ] All endpoints require authentication
 
-#### US-006: AI-generate presenter appearance description
-**Description:** As a user, I want the AI to write a full appearance paragraph from my keywords so I don't have to write it manually.
+#### US-006: AI-generate presenter appearance (two-step AI assist)
+**Description:** As a user, I want AI to help me fill both the appearance keywords AND the full description so I don't have to write them from scratch.
 
 **Acceptance Criteria:**
+- [ ] `POST /api/presenters/suggest-keywords` accepts `{name, age_range, speaking_style}` and returns `{appearance_keywords}` — comma-separated keyword suggestions
 - [ ] `POST /api/presenters/generate-appearance` accepts `{appearance_keywords, speaking_style}` and returns `{full_appearance_description}`
-- [ ] Uses Gemini via `ai_service.py` with a dedicated prompt template in `prompt_builder.py`
-- [ ] Returns a 2–4 sentence prose paragraph covering physical appearance, clothing, setting, and manner
-- [ ] The triggering button on the frontend is disabled while the call is in progress (see US-008)
+- [ ] Both endpoints use Gemini via `ai_service.py` with dedicated prompt templates in `prompt_builder.py`
+- [ ] **Step 1 (keywords):** "Suggest with AI" button appears above the keywords field; disabled until name + age range are filled; fills the keywords field when clicked
+- [ ] **Step 2 (description):** "Generate description with AI →" button below keywords; disabled until keywords are filled; fills the full description textarea
+- [ ] Both buttons show loading state while in progress
 
 #### US-007: Presenter form and library picker UI
 **Description:** As a user, I want to fill presenter fields or pick from my library so I can assign a presenter to this video.
@@ -163,7 +165,7 @@ User stories are grouped into seven implementation phases. Each phase can be imp
 **Acceptance Criteria:**
 - [ ] `/projects/[id]/artifacts/[artifactId]/video/presenter` page renders presenter form and a "Pick from library" button
 - [ ] Form fields: Name, Age Range (dropdown), Appearance Keywords, Full Appearance Description (textarea), Speaking Style (dropdown)
-- [ ] "Generate from keywords" button calls the AI endpoint and fills the description textarea
+- [ ] "Suggest with AI" on keywords field + "Generate description with AI →" — two-step AI assist flow
 - [ ] Library picker modal lists existing presenters and pre-fills the form on selection
 - [ ] Changes to a selected library presenter do not mutate the saved library entry unless the user clicks "Save to library"
 - [ ] `npm run typecheck` passes
@@ -285,14 +287,18 @@ User stories are grouped into seven implementation phases. Each phase can be imp
 - [ ] Operation is atomic (single transaction)
 
 #### US-020: Storyboard page + scene cards UI
-**Description:** As a user, I want to see, edit, insert, and delete scenes in a vertically ordered list.
+**Description:** As a user, I want to see, edit, insert, and delete scenes in a vertically ordered list, with AI assist on individual fields.
 
 **Acceptance Criteria:**
 - [ ] `/storyboard` page fetches scenes ordered by sequence and renders each as a card
 - [ ] Card shows: scene number (fixed), scene name (text), dialogue (italic, left-border), setting (text), camera framing (dropdown), "Presenter Locked" tag, "Brand Locked" tag, Save button, Delete button
+- [ ] **"Refine with AI" button** below the dialogue field — calls `POST /api/scenes/{id}/refine-dialogue`, fills dialogue field with improved text (does not auto-save)
+- [ ] **"Suggest setting with AI" button** below the setting field — calls `POST /api/scenes/{id}/suggest-setting`, fills setting field with AI-generated setting (does not auto-save)
+- [ ] Both AI buttons show loading states and inline error messages; user must hit Save to persist
+- [ ] `POST /api/scenes/{id}/refine-dialogue` and `POST /api/scenes/{id}/suggest-setting` endpoints use Gemini via `ai_service.py`
 - [ ] Save button shows "Saved ✓" briefly on success
 - [ ] Insert button appears between adjacent cards and above Scene 1; opens an insert modal
-- [ ] Delete button uses single-click delete per §4.8 of source spec (no separate confirmation on scene cards — contrast with video deletion)
+- [ ] Delete button uses single-click delete per §4.8 of source spec
 - [ ] "Regenerate all scenes" button at top of page
 - [ ] Staleness warning banner (US-013) renders above the list when applicable
 - [ ] `npm run typecheck` passes

@@ -537,7 +537,9 @@ export default function ProjectDetailPage() {
                                     <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "#1F1F1F", lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", mb: 0.5 }}>
                                       {artifact.name}
                                     </Typography>
-                                    <Typography sx={{ fontSize: "11px", color: "#BDBDBD" }}>v{artifact.version}</Typography>
+                                    <Typography sx={{ fontSize: "11px", color: "#BDBDBD" }}>
+                                      v{artifact.version} · {new Date(artifact.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}, {new Date(artifact.created_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                                    </Typography>
                                   </Box>
                                 </Box>
                               );
@@ -599,9 +601,14 @@ export default function ProjectDetailPage() {
                                   <Box sx={{ width: 36, height: 36, borderRadius: "9px", bgcolor: meta.pastel, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                                     <Box sx={{ opacity: 0.8 }}>{meta.iconLg && <svg width="16" height="16" viewBox="0 0 24 24" fill={meta.hex}>{type === "video" || type === "reel" ? <path d="M5 4l15 8L5 20V4z"/> : type === "whatsapp_card" ? <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/> : null}</svg>}</Box>
                                   </Box>
-                                  <Typography sx={{ flex: 1, fontSize: "13px", fontWeight: 500, color: "#1F1F1F", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                    {artifact.name}
-                                  </Typography>
+                                  <Box sx={{ flex: 1, overflow: "hidden" }}>
+                                    <Typography sx={{ fontSize: "13px", fontWeight: 500, color: "#1F1F1F", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                      {artifact.name}
+                                    </Typography>
+                                    <Typography sx={{ fontSize: "11px", color: "#BDBDBD" }}>
+                                      {new Date(artifact.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}, {new Date(artifact.created_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+                                    </Typography>
+                                  </Box>
                                   <Box component="span" sx={{ borderRadius: 9999, bgcolor: sc.bg, color: sc.color, px: 1.25, py: 0.375, fontSize: "11px", fontWeight: 600, flexShrink: 0 }}>
                                     {sc.label}
                                   </Box>

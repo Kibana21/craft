@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { fetchArtifactDetail, updateArtifact } from "@/lib/api/artifacts";
+import { fetchVideoSession } from "@/lib/api/video-sessions";
 import { ExportDialog } from "@/components/artifacts/export-dialog";
 import { CommentThread } from "@/components/artifacts/comment-thread";
 import type { ArtifactDetail } from "@/types/artifact";
@@ -91,12 +92,33 @@ export default function ArtifactDetailPage() {
   const canComment = user ? LEADER_ROLES.includes(user.role) : false;
 
   useEffect(() => {
-    if (artifactId) {
-      fetchArtifactDetail(artifactId)
-        .then(setArtifact)
-        .catch(() => router.push(`/projects/${projectId}`))
-        .finally(() => setIsLoading(false));
-    }
+    if (!artifactId) return;
+    fetchArtifactDetail(artifactId)
+      .then(async (art) => {
+        // Video artifacts have a wizard — redirect to the current step
+        if (art.video_session_id) {
+          const STEP_MAP: Record<string, string> = {
+            presenter: "presenter",
+            script: "script",
+            storyboard: "storyboard",
+            generation: "generate",
+          };
+          try {
+            const vs = await fetchVideoSession(art.video_session_id);
+            const hasBrief = !!(art.content as Record<string, unknown>)?.key_message;
+            const step = STEP_MAP[vs.current_step] ?? "presenter";
+            // If no brief yet and still in presenter step, go to brief first
+            const redirectStep = (step === "presenter" && !hasBrief) ? "brief" : step;
+            router.replace(`/projects/${projectId}/artifacts/${artifactId}/video/${redirectStep}`);
+          } catch {
+            router.replace(`/projects/${projectId}/artifacts/${artifactId}/video/brief`);
+          }
+          return;
+        }
+        setArtifact(art);
+      })
+      .catch(() => router.push(`/projects/${projectId}`))
+      .finally(() => setIsLoading(false));
   }, [artifactId, projectId, router]);
 
   const handleSaveField = async (field: string, value: string) => {

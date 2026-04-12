@@ -36,3 +36,6 @@ htmlcov/
 
 # Build artifacts
 *.log
+
+
+video-key.json

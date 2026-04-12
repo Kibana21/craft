@@ -33,6 +33,46 @@ async def upload_file(file: UploadFile, subfolder: str = "assets") -> tuple[str,
     return url, safe_filename
 
 
+async def upload_video_bytes(
+    video_bytes: bytes,
+    artifact_id: str,
+    version: int,
+) -> str:
+    """Save final rendered MP4 and return its URL.
+    Naming convention: videos/{artifact_id}/v{version}.mp4
+    """
+    subfolder = f"videos/{artifact_id}"
+    filename = f"v{version}.mp4"
+    folder_path = UPLOAD_DIR / subfolder
+    folder_path.mkdir(parents=True, exist_ok=True)
+
+    if settings.S3_BUCKET:
+        try:
+            import boto3
+            from botocore.config import Config
+
+            s3 = boto3.client(
+                "s3",
+                region_name=settings.S3_REGION,
+                aws_access_key_id=settings.S3_ACCESS_KEY,
+                aws_secret_access_key=settings.S3_SECRET_KEY,
+                endpoint_url=settings.S3_ENDPOINT_URL or None,
+                config=Config(multipart_threshold=8 * 1024 * 1024),
+            )
+            key = f"{subfolder}/{filename}"
+            import io
+            s3.upload_fileobj(io.BytesIO(video_bytes), settings.S3_BUCKET, key)
+            base = settings.S3_ENDPOINT_URL or f"https://{settings.S3_BUCKET}.s3.{settings.S3_REGION}.amazonaws.com"
+            return f"{base}/{key}"
+        except Exception as e:
+            print(f"S3 video upload failed, falling back to local: {e}")
+
+    # Local fallback
+    file_path = folder_path / filename
+    file_path.write_bytes(video_bytes)
+    return f"/uploads/{subfolder}/{filename}"
+
+
 async def process_headshot(file: UploadFile) -> tuple[str, str]:
     """Process and upload a headshot: crop to square, resize to 400x400."""
     try:

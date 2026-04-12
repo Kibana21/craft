@@ -27,6 +27,7 @@ export interface Artifact {
 export interface ArtifactDetail extends Artifact {
   content: Record<string, unknown> | null;
   locks: string[] | null;
+  video_session_id: string | null;
 }
 
 export interface ArtifactListResponse {

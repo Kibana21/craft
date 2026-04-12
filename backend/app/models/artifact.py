@@ -50,6 +50,10 @@ class Artifact(BaseModel):
         back_populates="artifacts",
     )
     creator: Mapped["User"] = relationship()  # type: ignore[name-defined]  # noqa: F821
+    video_session: Mapped["VideoSession | None"] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        back_populates="artifact",
+        uselist=False,
+    )
 
     __table_args__ = (
         CheckConstraint(

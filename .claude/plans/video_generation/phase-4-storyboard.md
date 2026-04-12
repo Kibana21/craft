@@ -2,6 +2,11 @@
 
 **Goal:** AI scene generation that splits the script into ordered scenes, per-scene edit/insert/delete with contiguous renumbering, the merged-prompt builder, and the storyboard UI with scene cards.
 
+**AI enhancements (added post-Phase 7):** Per-scene AI assist on scene cards:
+1. "Refine with AI" button on dialogue field — tightens/improves the spoken text via `POST /api/scenes/{id}/refine-dialogue`.
+2. "Suggest setting with AI" button on setting field — generates a vivid visual setting from the scene's dialogue via `POST /api/scenes/{id}/suggest-setting`.
+Both update only the local field state; user must hit Save to persist.
+
 **User stories:** US-014 (AI scene generation), US-015 (Regenerate all), US-016 (Scene edit API), US-017 (Merged prompt builder), US-018 (Scene insertion), US-019 (Scene deletion), US-020 (Storyboard UI)
 
 **Dependencies:** Phase 2 (presenter required for merged prompt) + Phase 3 (script required for AI split).
@@ -13,11 +18,11 @@
 | File | Purpose |
 |---|---|
 | `backend/app/api/video_sessions.py` (extend) | `POST /api/video-sessions/{id}/scenes/generate` (first-time split), `POST /api/video-sessions/{id}/scenes/regenerate` (wipe + re-split), `GET /api/video-sessions/{id}/scenes` (list ordered) |
-| `backend/app/api/scenes.py` | New router. `PATCH /api/scenes/{id}` (update any subset of name/dialogue/setting/camera_framing), `POST /api/video-sessions/{id}/scenes` (insert at position), `DELETE /api/scenes/{id}` |
-| `backend/app/schemas/scene.py` | `SceneResponse` (id, sequence, name, dialogue, setting, camera_framing, merged_prompt_present: bool — don't expose the full prompt), `SceneUpdate` (all fields optional), `SceneInsertRequest` (position, name, dialogue, setting, camera_framing), `SceneListResponse` (scenes: list, scenes_script_version_id, current_script_version_id — for staleness detection) |
+| `backend/app/api/scenes.py` | New router. `PATCH /api/scenes/{id}`, `POST /api/video-sessions/{id}/scenes` (insert at position), `DELETE /api/scenes/{id}`, `POST /api/scenes/{id}/refine-dialogue` (AI dialogue improvement), `POST /api/scenes/{id}/suggest-setting` (AI setting suggestion) |
+| `backend/app/schemas/scene.py` | `SceneResponse`, `SceneUpdate`, `SceneInsertRequest`, `SceneListResponse`, `SceneAiDialogueResponse` (dialogue: str), `SceneAiSettingResponse` (setting: str) |
 | `backend/app/services/video_service.py` | Core pipeline service. `build_merged_prompt(scene, presenter, brand_kit) -> str` — pure function, exact template from PRD §3.1. `generate_scenes(session_id)` — fetches script, calls Gemini, bulk-inserts scenes. `regenerate_scenes(session_id)` — wraps delete-all + generate_scenes in a single transaction. `update_scene(scene_id, data)` — does NOT rebuild merged prompt (per PRD FR-13). `insert_scene(session_id, position, data)` — renumbers via deferred-constraint transaction + builds new merged prompt. `delete_scene(scene_id)` — atomically shifts subsequent sequences down by 1. |
-| `backend/app/services/ai_service.py` (extend) | `split_script_into_scenes(script, target_duration_seconds) -> list[dict]` — structured Gemini call returning scenes array |
-| `backend/app/services/prompt_builder.py` (extend) | `build_scene_split_prompt(script, duration)` — instructs Gemini to split by target duration per PRD §3.8 heuristics, returning strict JSON: `[{name, dialogue, setting, camera_framing}, ...]`. `build_scene_merged_prompt(scene, presenter, brand_kit)` — implementation of the public merged-prompt template |
+| `backend/app/services/ai_service.py` (extend) | `split_script_into_scenes(script, target_duration_seconds) -> list[dict]`, `refine_scene_dialogue(dialogue, scene_name) -> str`, `suggest_scene_setting(dialogue, scene_name) -> str` |
+| `backend/app/services/prompt_builder.py` (extend) | `build_scene_split_prompt(script, duration)`, `build_scene_merged_prompt(scene, presenter, brand_kit)`, `build_dialogue_refinement_prompt(dialogue, scene_name)`, `build_setting_suggestion_prompt(dialogue, scene_name)` |
 | `backend/app/services/brand_kit_service.py` (reuse) | `get_by_id(brand_kit_id)` — existing service feeds into merged prompt builder |
 | `backend/app/core/config.py` (extend) | Add `VIDEO_SPEAKING_PACE_WPM = 150` constant if not already set in Phase 3 |
 
@@ -26,13 +31,13 @@
 | File | Purpose |
 |---|---|
 | `frontend/src/app/(authenticated)/projects/[id]/artifacts/[artifactId]/video/storyboard/page.tsx` | Storyboard step page: auto-triggers `scenes/generate` if no scenes exist, renders list of `SceneCard` in sequence order, shows "Regenerate all scenes" button + staleness banner |
-| `frontend/src/components/video/scene-card.tsx` | Editable card per scene. Fields: scene number (fixed label), name (text input), dialogue (textarea, italic with left-border styling), setting (text input), camera framing (dropdown), "Presenter Locked" + "Brand Locked" chips (non-interactive), Save button (shows "Saved ✓" briefly), single-click Delete button. Form dirty-state tracked client-side. |
+| `frontend/src/components/video/scene-card.tsx` | Editable card per scene. Fields: name, dialogue (italic with left-border), setting, camera framing. "Refine with AI" button under dialogue, "Suggest setting with AI" button under setting — each updates local state only, user saves manually. Save / Delete footer actions. |
 | `frontend/src/components/video/scene-insert-button.tsx` | Small "+ Insert scene" button rendered between adjacent cards and above Scene 1. Opens the insert modal. |
 | `frontend/src/components/video/scene-insert-modal.tsx` | Modal with fields Name, Dialogue, Setting, Camera Framing. Confirm calls the insert endpoint with the chosen position. |
 | `frontend/src/components/video/staleness-banner.tsx` | Amber banner rendered above the scene list when `scenes_script_version_id != current_script_version_id`. Has "Regenerate scenes" CTA that triggers `scenes/regenerate` with a confirmation dialog. |
 | `frontend/src/components/video/camera-framing-select.tsx` | Dropdown with the 7 PRD-defined options, each with a short descriptor for user guidance |
 | `frontend/src/lib/api/video-sessions.ts` (extend) | `generateScenes(sessionId)`, `regenerateScenes(sessionId)`, `listScenes(sessionId)` |
-| `frontend/src/lib/api/scenes.ts` | `updateScene(sceneId, data)`, `insertScene(sessionId, position, data)`, `deleteScene(sceneId)` |
+| `frontend/src/lib/api/scenes.ts` | `updateScene(sceneId, data)`, `insertScene(sessionId, position, data)`, `deleteScene(sceneId)`, `refineSceneDialogue(sceneId)`, `suggestSceneSetting(sceneId)` |
 | `frontend/src/types/scene.ts` | `Scene`, `CameraFraming` types matching backend enums |
 
 ## API endpoints

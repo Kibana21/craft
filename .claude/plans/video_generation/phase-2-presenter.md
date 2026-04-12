@@ -2,6 +2,11 @@
 
 **Goal:** Presenter library CRUD, AI-generated appearance descriptions via Gemini, presenter form + library picker UI, and endpoint to assign a presenter to a `VideoSession`.
 
+**AI enhancements (added post-Phase 7):** Two-step AI assist on the presenter form:
+1. "Suggest with AI" button on the appearance keywords field — generates keyword suggestions from name + age range + speaking style (`POST /api/presenters/suggest-keywords`).
+2. Existing "Generate description with AI" button — expands keywords into a full paragraph (`POST /api/presenters/generate-appearance`).
+This eliminates the blank-page problem for users unfamiliar with appearance description writing.
+
 **User stories:** US-005 (Presenter library CRUD API), US-006 (AI appearance generation), US-007 (Presenter form + library picker UI), US-008 (Assign presenter to video session)
 
 **Dependencies:** Phase 1 (models must exist).
@@ -12,14 +17,14 @@
 
 | File | Purpose |
 |---|---|
-| `backend/app/api/presenters.py` | New router. `GET /api/presenters` (list visible), `POST /api/presenters` (create), `GET /api/presenters/{id}` (detail), `PATCH /api/presenters/{id}` (update, own only), `DELETE /api/presenters/{id}` (soft-delete, own only), `POST /api/presenters/generate-appearance` (AI description) |
+| `backend/app/api/presenters.py` | New router. `GET /api/presenters` (list visible), `POST /api/presenters` (create), `GET /api/presenters/{id}` (detail), `PATCH /api/presenters/{id}` (update, own only), `DELETE /api/presenters/{id}` (soft-delete, own only), `POST /api/presenters/suggest-keywords` (AI keyword suggestions), `POST /api/presenters/generate-appearance` (AI description) |
 | `backend/app/api/video_sessions.py` | New router. `PATCH /api/video-sessions/{id}/presenter` — assign or inline-create presenter |
-| `backend/app/schemas/presenter.py` | `PresenterCreate` (name, age_range, appearance_keywords, full_appearance_description, speaking_style, is_library=True), `PresenterUpdate` (all optional), `PresenterResponse`, `GenerateAppearanceRequest` (appearance_keywords, speaking_style), `GenerateAppearanceResponse` (full_appearance_description) |
+| `backend/app/schemas/presenter.py` | `PresenterCreate` (name, age_range, appearance_keywords, full_appearance_description, speaking_style, is_library=True), `PresenterUpdate` (all optional), `PresenterResponse`, `GenerateAppearanceRequest` (appearance_keywords, speaking_style), `GenerateAppearanceResponse` (full_appearance_description), `SuggestKeywordsRequest` (name, age_range, speaking_style), `SuggestKeywordsResponse` (appearance_keywords) |
 | `backend/app/schemas/video_session.py` (extend) | `AssignPresenterRequest` — either `{presenter_id}` for library reuse OR full presenter fields + `save_to_library: bool` for inline creation |
 | `backend/app/services/presenter_service.py` | `list_for_user(user_id)` — returns own presenters + shared library (`is_library=True`). `create(user_id, data)`. `update(user_id, presenter_id, data)` — enforces creator-only. `soft_delete(user_id, presenter_id)`. `generate_appearance(keywords, speaking_style)` — delegates to ai_service. |
 | `backend/app/services/video_session_service.py` (extend) | `assign_presenter(session_id, payload)` — branches on `presenter_id` vs inline; for inline, creates a `Presenter` (with `is_library` from `save_to_library`), assigns to session, updates `current_step = SCRIPT` |
-| `backend/app/services/ai_service.py` (extend) | `generate_presenter_appearance(keywords, speaking_style) -> str` — calls Gemini with dedicated prompt |
-| `backend/app/services/prompt_builder.py` (extend) | `build_presenter_appearance_prompt(keywords, speaking_style) -> str` — returns a prompt instructing Gemini to write a 2–4 sentence paragraph covering physical appearance, clothing, setting, and manner |
+| `backend/app/services/ai_service.py` (extend) | `generate_presenter_appearance(keywords, speaking_style) -> str` — calls Gemini with dedicated prompt. `suggest_appearance_keywords(name, age_range, speaking_style) -> str` — returns comma-separated keyword suggestions. |
+| `backend/app/services/prompt_builder.py` (extend) | `build_presenter_appearance_prompt(keywords, speaking_style) -> str` — returns a prompt instructing Gemini to write a 2–4 sentence paragraph covering physical appearance, clothing, setting, and manner. `build_keyword_suggestion_prompt(name, age_range, speaking_style) -> str` — prompts for 6–10 comma-separated appearance keywords. |
 | `backend/app/core/rbac.py` (reuse) | All endpoints use the existing `require_authenticated` dependency. Creator-ownership is enforced in the service layer. |
 | `backend/app/main.py` (extend) | Register `presenters` and `video_sessions` routers |
 
@@ -28,7 +33,7 @@
 | File | Purpose |
 |---|---|
 | `frontend/src/app/(authenticated)/projects/[id]/artifacts/[artifactId]/video/presenter/page.tsx` | Presenter step page: renders `PresenterForm` and `PresenterLibraryPicker` button, "Continue" saves and navigates to `/script` |
-| `frontend/src/components/video/presenter-form.tsx` | Fields: Name, Age Range dropdown, Appearance Keywords input, Full Appearance Description textarea, Speaking Style dropdown. "Generate from keywords" button (disabled while loading). "Save to library" checkbox. |
+| `frontend/src/components/video/presenter-form.tsx` | Fields: Name, Age Range dropdown, Appearance Keywords input, Full Appearance Description textarea, Speaking Style dropdown. "Suggest with AI" button on keywords field (fills keywords from name+age+style). "Generate description with AI →" button (fills full description from keywords). "Save to library" checkbox. |
 | `frontend/src/components/video/presenter-library-picker.tsx` | Modal listing user's + shared presenters; selecting one pre-fills the form without mutating the library entry |
 | `frontend/src/lib/api/presenters.ts` | `listPresenters()`, `createPresenter(data)`, `updatePresenter(id, data)`, `deletePresenter(id)`, `generateAppearance(keywords, speaking_style)` |
 | `frontend/src/lib/api/video-sessions.ts` | `assignPresenter(sessionId, payload)` (other methods stubbed for later phases) |

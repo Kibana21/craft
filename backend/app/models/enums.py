@@ -80,3 +80,54 @@ class SuggestionAudience(str, enum.Enum):
     INTERNAL = "internal"
     EXTERNAL = "external"
     BOTH = "both"
+
+
+# --- Video pipeline enums ---
+
+class SpeakingStyle(str, enum.Enum):
+    AUTHORITATIVE = "authoritative"
+    CONVERSATIONAL = "conversational"
+    ENTHUSIASTIC = "enthusiastic"
+    EMPATHETIC = "empathetic"
+
+
+class CameraFraming(str, enum.Enum):
+    WIDE_SHOT = "wide_shot"
+    MEDIUM_SHOT = "medium_shot"
+    CLOSE_UP = "close_up"
+    OVER_THE_SHOULDER = "over_the_shoulder"
+    TWO_SHOT = "two_shot"
+    AERIAL = "aerial"
+    POV = "pov"
+
+
+class VideoStatus(str, enum.Enum):
+    QUEUED = "queued"
+    RENDERING = "rendering"
+    READY = "ready"
+    FAILED = "failed"
+
+
+class ScriptAction(str, enum.Enum):
+    DRAFT = "draft"
+    WARM = "warm"
+    PROFESSIONAL = "professional"
+    SHORTER = "shorter"
+    STRONGER_CTA = "stronger_cta"
+    MANUAL = "manual"
+
+
+class TargetDuration(str, enum.Enum):
+    SECONDS_30 = "30s"
+    SECONDS_60 = "60s"
+    SECONDS_90 = "90s"
+    MINUTES_2 = "2m"
+    MINUTES_3 = "3m"
+    MINUTES_5 = "5m"
+
+
+class VideoSessionStep(str, enum.Enum):
+    PRESENTER = "presenter"
+    SCRIPT = "script"
+    STORYBOARD = "storyboard"
+    GENERATION = "generation"

@@ -1,11 +1,64 @@
 import json
+import os
 
 from app.core.config import settings
 from app.services.prompt_builder import (
     build_image_prompt,
     build_tagline_prompt,
     build_storyboard_prompt,
+    build_presenter_appearance_prompt,
+    build_script_draft_prompt,
+    build_script_rewrite_prompt,
+    build_scene_split_prompt,
+    build_keyword_suggestion_prompt,
+    build_dialogue_refinement_prompt,
+    build_setting_suggestion_prompt,
+    build_video_brief_prompt,
+    build_brief_field_improve_prompt,
 )
+
+
+def _gemini_model(model_name: str = "gemini-2.0-flash"):
+    """Return a configured Gemini GenerativeModel.
+
+    Auth priority:
+    1. GOOGLE_API_KEY env var (explicit API key)
+    2. GOOGLE_VEO_KEY_FILE service account JSON (already used for Veo)
+    3. Application Default Credentials (GOOGLE_APPLICATION_CREDENTIALS in env)
+
+    Raises RuntimeError if no credentials are available.
+    """
+    import google.generativeai as genai
+
+    if settings.GOOGLE_API_KEY:
+        genai.configure(api_key=settings.GOOGLE_API_KEY)
+        return genai.GenerativeModel(model_name)
+
+    key_file = settings.GOOGLE_VEO_KEY_FILE
+    if key_file and not os.path.isabs(key_file):
+        # __file__ = .../backend/app/services/ai_service.py
+        # project root is three levels up
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+        key_file = os.path.join(project_root, key_file)
+    key_file = os.path.normpath(key_file) if key_file else ""
+
+    if key_file and os.path.exists(key_file):
+        from google.oauth2 import service_account
+        credentials = service_account.Credentials.from_service_account_file(
+            key_file,
+            scopes=["https://www.googleapis.com/auth/generative-language"],
+        )
+        genai.configure(credentials=credentials)
+        return genai.GenerativeModel(model_name)
+
+    # Fall back to ADC (GOOGLE_APPLICATION_CREDENTIALS env var)
+    import google.auth
+    credentials, _ = google.auth.default(
+        scopes=["https://www.googleapis.com/auth/generative-language"]
+    )
+    genai.configure(credentials=credentials)
+    return genai.GenerativeModel(model_name)
+
 
 # Fallback taglines when Gemini is not configured
 FALLBACK_TAGLINES: dict[str, list[str]] = {
@@ -49,24 +102,18 @@ async def generate_taglines(
     count: int = 5,
 ) -> list[str]:
     """Generate taglines using Gemini, or return fallback."""
-    if settings.GOOGLE_API_KEY:
-        try:
-            import google.generativeai as genai
+    try:
+        model = _gemini_model()
+        prompt = build_tagline_prompt(product, audience, tone, count)
+        response = model.generate_content(prompt)
 
-            genai.configure(api_key=settings.GOOGLE_API_KEY)
-            model = genai.GenerativeModel("gemini-1.5-flash")
-
-            prompt = build_tagline_prompt(product, audience, tone, count)
-            response = model.generate_content(prompt)
-
-            # Parse JSON array from response
-            text = response.text.strip()
-            if text.startswith("```"):
-                text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-            taglines = json.loads(text)
-            return taglines[:count]
-        except Exception as e:
-            print(f"Gemini tagline generation failed: {e}")
+        text = response.text.strip()
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        taglines = json.loads(text)
+        return taglines[:count]
+    except Exception as e:
+        print(f"Gemini tagline generation failed: {e}")
 
     # Fallback
     key = product.split(" ")[0].upper() if product else "default"
@@ -107,22 +154,229 @@ async def generate_storyboard(
     tone: str,
 ) -> list[dict]:
     """Generate storyboard using Gemini, or return fallback."""
-    if settings.GOOGLE_API_KEY:
-        try:
-            import google.generativeai as genai
+    try:
+        model = _gemini_model()
+        prompt = build_storyboard_prompt(topic, key_message, product, tone)
+        response = model.generate_content(prompt)
 
-            genai.configure(api_key=settings.GOOGLE_API_KEY)
-            model = genai.GenerativeModel("gemini-1.5-flash")
-
-            prompt = build_storyboard_prompt(topic, key_message, product, tone)
-            response = model.generate_content(prompt)
-
-            text = response.text.strip()
-            if text.startswith("```"):
-                text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-            frames = json.loads(text)
-            return frames
-        except Exception as e:
-            print(f"Gemini storyboard generation failed: {e}")
+        text = response.text.strip()
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        frames = json.loads(text)
+        return frames
+    except Exception as e:
+        print(f"Gemini storyboard generation failed: {e}")
 
     return FALLBACK_STORYBOARD
+
+
+async def generate_presenter_appearance(keywords: str, speaking_style: str) -> str:
+    """Generate a detailed presenter appearance description using Gemini."""
+    try:
+        model = _gemini_model()
+        prompt = build_presenter_appearance_prompt(keywords, speaking_style)
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        if text:
+            return text
+    except Exception as e:
+        print(f"Gemini appearance generation failed: {e}")
+        raise
+
+    # Fallback
+    style_map = {
+        "authoritative": "confident and composed",
+        "conversational": "warm and approachable",
+        "enthusiastic": "energetic and engaging",
+        "empathetic": "caring and supportive",
+    }
+    style_desc = style_map.get(speaking_style.lower(), "professional")
+    return (
+        f"A professional presenter with {keywords}. "
+        f"They wear smart business attire appropriate for a financial services setting. "
+        f"Their manner is {style_desc}, speaking directly to camera with a composed expression. "
+        f"The background is a soft-focus modern office with warm ambient lighting."
+    )
+
+
+async def draft_script(brief: dict) -> str:
+    """Generate a video script from a project brief using Gemini."""
+    try:
+        model = _gemini_model()
+        prompt = build_script_draft_prompt(brief)
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        if text:
+            return text
+    except Exception as e:
+        print(f"Gemini script draft failed: {e}")
+        raise
+
+    # Fallback
+    product = brief.get("product", "AIA insurance")
+    audience = brief.get("target_audience", "working adults")
+    cta = brief.get("cta_text", "Learn more at aia.com.sg")
+    return (
+        f"Did you know that {audience} face unexpected financial challenges every day? "
+        f"That's why {product} was designed with you in mind. "
+        f"Whether it's protecting your family or securing your future, we're here to help. "
+        f"Our comprehensive coverage gives you the peace of mind to live life fully. "
+        f"AIA Singapore — because what matters most deserves the best protection. "
+        f"{cta}"
+    )
+
+
+async def rewrite_script(content: str, tone: str) -> str:
+    """Rewrite an existing script in the specified tone using Gemini."""
+    try:
+        model = _gemini_model()
+        prompt = build_script_rewrite_prompt(content, tone)
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        if text:
+            return text
+    except Exception as e:
+        print(f"Gemini script rewrite failed: {e}")
+        raise
+
+    # Fallback: simple text transformations
+    if tone == "shorter":
+        words = content.split()
+        return " ".join(words[: max(1, int(len(words) * 0.8))])
+    tone_labels = {
+        "warm": "With warmth and care — ",
+        "professional": "In our professional assessment — ",
+        "stronger_cta": "",
+    }
+    return tone_labels.get(tone, "") + content
+
+
+async def split_script_into_scenes(
+    script: str,
+    target_duration_seconds: int,
+    presenter: dict | None = None,
+    brand_kit: dict | None = None,
+) -> list[dict]:
+    """Ask Gemini to split a script into scenes. Returns a list of scene dicts."""
+    try:
+        model = _gemini_model()
+        prompt = build_scene_split_prompt(script, target_duration_seconds, presenter, brand_kit)
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        # Strip fenced code block markers (```json ... ``` or ``` ... ```)
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        data = json.loads(text)
+        scenes = data.get("scenes", data) if isinstance(data, dict) else data
+        if isinstance(scenes, list) and len(scenes) > 0:
+            return scenes
+    except Exception as e:
+        print(f"Gemini scene split failed: {e}")
+
+    # Fallback: single scene wrapping the whole script
+    return [
+        {
+            "name": "Main scene",
+            "dialogue": script,
+            "setting": "Modern professional office with warm ambient lighting",
+            "camera_framing": "MEDIUM_SHOT",
+        }
+    ]
+
+
+async def suggest_appearance_keywords(name: str, age_range: str, speaking_style: str) -> str:
+    """Suggest comma-separated appearance keywords based on presenter details."""
+    try:
+        model = _gemini_model()
+        prompt = build_keyword_suggestion_prompt(name, age_range, speaking_style)
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        if text:
+            return text
+    except Exception as e:
+        print(f"Gemini keyword suggestion failed: {e}")
+        raise
+
+    # Fallback based on speaking style
+    style_keywords = {
+        "authoritative": "professional business attire, dark navy suit, confident expression, modern office background",
+        "conversational": "smart casual wear, warm smile, approachable expression, bright neutral background",
+        "enthusiastic": "vibrant business casual, energetic posture, open expression, dynamic background",
+        "empathetic": "soft professional attire, gentle expression, welcoming posture, warm neutral background",
+    }
+    base = style_keywords.get(speaking_style, "professional attire, neutral background")
+    return f"East Asian, {age_range} age range, {base}"
+
+
+async def refine_scene_dialogue(dialogue: str, scene_name: str) -> str:
+    """Refine and tighten a scene's dialogue using Gemini."""
+    try:
+        model = _gemini_model()
+        prompt = build_dialogue_refinement_prompt(dialogue, scene_name)
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        if text:
+            return text
+    except Exception as e:
+        print(f"Gemini dialogue refinement failed: {e}")
+        raise
+
+    return dialogue  # Fallback: return unchanged
+
+
+async def suggest_scene_setting(dialogue: str, scene_name: str) -> str:
+    """Suggest a visual setting description for a scene using Gemini."""
+    try:
+        model = _gemini_model()
+        prompt = build_setting_suggestion_prompt(dialogue, scene_name)
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        if text:
+            return text
+    except Exception as e:
+        print(f"Gemini setting suggestion failed: {e}")
+        raise
+
+    return "Modern professional office with warm ambient lighting, clean minimalist design"
+
+
+async def improve_brief_field(field: str, context: dict) -> str:
+    """Improve a single brief field (or generate the narrative brief) using Gemini."""
+    try:
+        model = _gemini_model()
+        prompt = build_brief_field_improve_prompt(field, context)
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        if text:
+            return text
+    except Exception as e:
+        print(f"Gemini brief field improvement failed: {e}")
+
+    # Fallback: return the current value unchanged
+    return context.get(field, "")
+
+
+async def generate_video_brief(project_brief: dict, video_name: str) -> dict:
+    """Generate video brief suggestions using Gemini."""
+    try:
+        model = _gemini_model()
+        prompt = build_video_brief_prompt(project_brief, video_name)
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        if text.startswith("```"):
+            text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        data = json.loads(text)
+        return {
+            "key_message": data.get("key_message", ""),
+            "target_audience": data.get("target_audience", ""),
+            "tone": data.get("tone", "professional"),
+            "cta_text": data.get("cta_text", ""),
+        }
+    except Exception as e:
+        print(f"Gemini brief generation failed: {e}")
+        return {
+            "key_message": project_brief.get("key_message", ""),
+            "target_audience": project_brief.get("target_audience", ""),
+            "tone": project_brief.get("tone", "professional"),
+            "cta_text": project_brief.get("cta_text", ""),
+        }

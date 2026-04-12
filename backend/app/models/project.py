@@ -46,6 +46,9 @@ class Project(BaseModel):
         back_populates="owned_projects",
         foreign_keys=[owner_id],
     )
+    brand_kit: Mapped["BrandKit | None"] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        foreign_keys=[brand_kit_id],
+    )
     members: Mapped[list["ProjectMember"]] = relationship(  # type: ignore[name-defined]  # noqa: F821
         back_populates="project",
         cascade="all, delete-orphan",

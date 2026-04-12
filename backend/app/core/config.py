@@ -25,8 +25,16 @@ class Settings(BaseSettings):
     S3_SECRET_KEY: str = ""
     S3_ENDPOINT_URL: str = ""
 
-    # Google AI
+    # Google AI (Gemini)
     GOOGLE_API_KEY: str = ""
+
+    # Google Veo (Vertex AI video generation)
+    GOOGLE_VEO_KEY_FILE: str = "video-key.json"   # path relative to backend working dir
+    VEO_PROJECT_ID: str = "gen-lang-client-0913704662"
+    VEO_LOCATION: str = "us-central1"
+    VEO_MODEL_ID: str = "veo-3.0-generate-001"
+    VEO_SCENE_TIMEOUT_SECONDS: int = 900          # 15 minutes per scene
+    VIDEO_POLL_INTERVAL_SECONDS: int = 5
 
     # Frontend
     FRONTEND_URL: str = "http://localhost:3000"

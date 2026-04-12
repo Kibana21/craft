@@ -13,6 +13,12 @@ from app.models.enums import (
     ComplianceSeverity,
     DocumentType,
     SuggestionAudience,
+    SpeakingStyle,
+    CameraFraming,
+    VideoStatus,
+    ScriptAction,
+    TargetDuration,
+    VideoSessionStep,
 )
 from app.models.user import User
 from app.models.project import Project
@@ -26,6 +32,12 @@ from app.models.compliance_document import ComplianceDocument
 from app.models.compliance_check import ComplianceCheck
 from app.models.export_log import ExportLog
 from app.models.notification import Notification
+from app.models.presenter import Presenter
+from app.models.video_script import VideoScript
+from app.models.script_version import ScriptVersion
+from app.models.video_session import VideoSession
+from app.models.scene import Scene
+from app.models.generated_video import GeneratedVideo
 
 __all__ = [
     "Base",
@@ -42,6 +54,12 @@ __all__ = [
     "ComplianceSeverity",
     "DocumentType",
     "SuggestionAudience",
+    "SpeakingStyle",
+    "CameraFraming",
+    "VideoStatus",
+    "ScriptAction",
+    "TargetDuration",
+    "VideoSessionStep",
     "User",
     "Project",
     "ProjectMember",
@@ -54,4 +72,10 @@ __all__ = [
     "ComplianceCheck",
     "ExportLog",
     "Notification",
+    "Presenter",
+    "VideoScript",
+    "ScriptVersion",
+    "VideoSession",
+    "Scene",
+    "GeneratedVideo",
 ]
