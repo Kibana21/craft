@@ -2,6 +2,12 @@
 
 import Link from "next/link";
 import { useAuth } from "@/components/providers/auth-provider";
+import AppBar from "@mui/material/AppBar";
+import Toolbar from "@mui/material/Toolbar";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Avatar from "@mui/material/Avatar";
+import Box from "@mui/material/Box";
 
 export function AgentNav() {
   const { user, logout } = useAuth();
@@ -10,40 +16,99 @@ export function AgentNav() {
 
   const initials = user.name
     .split(" ")
-    .map((n) => n[0])
-    .join("");
+    .map((n: string) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-[#EBEBEB]">
-      <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-6">
-        <div className="flex items-center gap-3">
-          <span className="text-lg font-black tracking-tight text-[#D0103A]">
+    <AppBar position="sticky">
+      <Toolbar sx={{ maxWidth: 768, mx: "auto", width: "100%", gap: 1.5 }}>
+
+        {/* Brand */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box
+            component="span"
+            sx={{
+              fontSize: "18px",
+              fontWeight: 800,
+              color: "#D0103A",
+              letterSpacing: "-0.5px",
+            }}
+          >
             CRAFT
-          </span>
-          <span className="rounded-full bg-[#F0FFF0] px-3 py-1 text-xs font-semibold text-[#008A05]">
-            Agent
-          </span>
-          <Link
+          </Box>
+
+          <Chip
+            label="Agent"
+            size="small"
+            color="success"
+            sx={{
+              height: 22,
+              fontSize: "11px",
+              fontWeight: 700,
+              bgcolor: "#E6F4EA",
+              color: "#188038",
+            }}
+          />
+
+          <Button
+            component={Link}
             href="/leaderboard"
-            className="rounded-lg px-3 py-1.5 text-sm text-[#717171] transition-colors hover:bg-[#F7F7F7] hover:text-[#222222]"
+            variant="text"
+            size="small"
+            sx={{
+              fontSize: "14px",
+              color: "#5F6368",
+              px: 1.5,
+              "&:hover": { color: "#1F1F1F", bgcolor: "#F1F3F4" },
+            }}
           >
             Leaderboard
-          </Link>
-        </div>
+          </Button>
+        </Box>
 
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#D0103A] text-xs font-bold text-white">
+        <Box sx={{ flex: 1 }} />
+
+        {/* User info + sign out */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Avatar
+            sx={{
+              width: 32,
+              height: 32,
+              bgcolor: "#D0103A",
+              fontSize: "11px",
+              fontWeight: 700,
+            }}
+          >
             {initials}
-          </div>
-          <span className="text-sm font-medium text-[#222222]">{user.name}</span>
-          <button
+          </Avatar>
+          <Box
+            component="span"
+            sx={{ fontSize: "14px", fontWeight: 500, color: "#1F1F1F" }}
+          >
+            {user.name}
+          </Box>
+          <Button
             onClick={logout}
-            className="rounded-lg border border-[#D0103A] px-3.5 py-1.5 text-xs font-semibold text-[#D0103A] transition-colors hover:bg-[#FFF0F3]"
+            variant="outlined"
+            size="small"
+            sx={{
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "#D0103A",
+              borderColor: "#D0103A",
+              px: 1.75,
+              "&:hover": {
+                bgcolor: "#FFF0F3",
+                borderColor: "#D0103A",
+              },
+            }}
           >
             Sign out
-          </button>
-        </div>
-      </div>
-    </nav>
+          </Button>
+        </Box>
+      </Toolbar>
+    </AppBar>
   );
 }

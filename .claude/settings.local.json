@@ -16,7 +16,10 @@
       "Bash(node_modules/.bin/next build:*)",
       "Bash(kill %1)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('current status:', d.get\\('status'\\)\\)\")",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('status now:', d.get\\('status', d\\)\\)\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('status now:', d.get\\('status', d\\)\\)\")",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(python3 -c \"import sys,json; d=json.loads\\(sys.stdin.read\\(\\).split\\('__NEXT_DATA__\\\\\" type=\\\\\"application/json\\\\\">'\\)[1].split\\('</script>'\\)[0]\\); print\\(d.get\\('err', {}\\).get\\('message', 'OK'\\)[:300] if d.get\\('err'\\) else 'Page OK'\\)\")",
+      "Bash(curl -s http://localhost:3000/login)"
     ]
   }
 }

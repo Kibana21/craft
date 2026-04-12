@@ -1,59 +1,181 @@
 import type { Project } from "@/types/project";
-import { card } from "@/lib/ui";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import IconButton from "@mui/material/IconButton";
 
+// Soft pastel themes — light, airy, pleasant (no dark gradients)
 const PROJECT_THEMES = [
-  { bg: "#E8F0FE", emoji: "📋" },
-  { bg: "#FCE8E6", emoji: "🎯" },
-  { bg: "#E6F4EA", emoji: "📂" },
-  { bg: "#FEF7E0", emoji: "⚡" },
-  { bg: "#F3E8FD", emoji: "✨" },
-  { bg: "#E8F5E9", emoji: "🌿" },
-  { bg: "#FDE7EF", emoji: "💡" },
-  { bg: "#E8EAF6", emoji: "🔷" },
+  { bg: "#ECEDF8", emoji: "📋" },  // soft lavender
+  { bg: "#FAE8EC", emoji: "🎯" },  // soft rose
+  { bg: "#E5F3EC", emoji: "📂" },  // soft mint
+  { bg: "#FDF4E0", emoji: "⚡" },  // soft amber cream
+  { bg: "#EEE8F8", emoji: "✨" },  // soft lilac
+  { bg: "#E4EFF8", emoji: "🌿" },  // soft sky blue
+  { bg: "#FAE8F4", emoji: "💡" },  // soft blush
+  { bg: "#E2F2F0", emoji: "🔷" },  // soft seafoam
 ];
 
-function getTheme(name: string) {
+function getIdx(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return PROJECT_THEMES[Math.abs(hash) % PROJECT_THEMES.length];
+  return Math.abs(hash) % PROJECT_THEMES.length;
+}
+
+export function getProjectTheme(name: string) {
+  return PROJECT_THEMES[getIdx(name)];
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 export function ProjectCard({ project, onClick }: { project: Project; onClick?: () => void }) {
-  const theme = getTheme(project.name);
-  const isTeam = project.type === "team";
+  const theme = getProjectTheme(project.name);
 
   return (
-    <button onClick={onClick} className={`group relative w-full text-left ${card.base} ${card.padding}`}>
+    <Box
+      component="button"
+      onClick={onClick}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        minHeight: 180,
+        borderRadius: "16px",
+        bgcolor: theme.bg,
+        border: "none",
+        cursor: "pointer",
+        p: 2,
+        textAlign: "left",
+        position: "relative",
+        transition: "all 0.18s ease",
+        "& .card-menu": { opacity: 0 },
+        "&:hover": {
+          filter: "brightness(0.96)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+          "& .card-menu": { opacity: 1 },
+        },
+      }}
+    >
       {/* Three-dot menu */}
-      <div className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full text-[#80868B] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[#F1F3F4]">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-          <circle cx="8" cy="3" r="1.2" /><circle cx="8" cy="8" r="1.2" /><circle cx="8" cy="13" r="1.2" />
-        </svg>
-      </div>
+      <Box
+        className="card-menu"
+        sx={{ position: "absolute", top: 8, right: 8, transition: "opacity 0.15s ease" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <IconButton
+          size="small"
+          sx={{
+            width: 28,
+            height: 28,
+            color: "rgba(0,0,0,0.35)",
+            "&:hover": { bgcolor: "rgba(0,0,0,0.08)", color: "rgba(0,0,0,0.6)" },
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="5" r="1.8" />
+            <circle cx="12" cy="12" r="1.8" />
+            <circle cx="12" cy="19" r="1.8" />
+          </svg>
+        </IconButton>
+      </Box>
 
-      {/* Icon */}
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl text-xl" style={{ backgroundColor: theme.bg }}>
-        {theme.emoji}
-      </div>
+      {/* Emoji — top area */}
+      <Box sx={{ flex: 1, display: "flex", alignItems: "flex-start", pt: 0.5 }}>
+        <Box component="span" sx={{ fontSize: "36px", lineHeight: 1, userSelect: "none" }}>
+          {theme.emoji}
+        </Box>
+      </Box>
 
-      <p className="line-clamp-2 text-[14px] font-medium leading-snug text-[#1F1F1F]">{project.name}</p>
-      <p className="mt-2 text-[12px] text-[#80868B]">
-        {project.artifact_count} artifact{project.artifact_count !== 1 ? "s" : ""}
-        {isTeam && project.member_count ? ` · ${project.member_count} members` : ""}
-      </p>
-    </button>
+      {/* Text — bottom area */}
+      <Box sx={{ mt: "auto" }}>
+        <Typography
+          sx={{
+            fontSize: "15px",
+            fontWeight: 600,
+            color: "#1A1A1A",
+            lineHeight: 1.35,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            mb: 0.5,
+          }}
+        >
+          {project.name}
+        </Typography>
+        <Typography sx={{ fontSize: "12px", color: "rgba(0,0,0,0.45)", lineHeight: 1.4 }}>
+          {formatDate(project.created_at)} · {project.artifact_count} artifact{project.artifact_count !== 1 ? "s" : ""}
+          {project.type === "team" && project.member_count ? ` · ${project.member_count} members` : ""}
+        </Typography>
+      </Box>
+    </Box>
   );
 }
 
 export function NewProjectCard({ onClick }: { onClick?: () => void }) {
   return (
-    <button onClick={onClick} className={`group ${card.new} ${card.padding}`} style={{ minHeight: 148 }}>
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F1F3F4] text-[#80868B] transition-colors group-hover:bg-[#FCE8E6] group-hover:text-[#C5221F]">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-      </div>
-      <span className="text-[13px] font-medium text-[#5F6368] group-hover:text-[#C5221F]">Create new project</span>
-    </button>
+    <Box
+      component="button"
+      onClick={onClick}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        minHeight: 180,
+        borderRadius: "16px",
+        bgcolor: "#FFFFFF",
+        border: "1.5px solid #E8E8E8",
+        cursor: "pointer",
+        p: 2,
+        textAlign: "left",
+        position: "relative",
+        transition: "all 0.18s ease",
+        "&:hover": {
+          borderColor: "#D0103A",
+          "& .plus-circle": { bgcolor: "rgba(208,16,58,0.08)", borderColor: "#D0103A", color: "#D0103A" },
+          "& .create-label": { color: "#D0103A" },
+        },
+      }}
+    >
+      {/* Plus circle — centered in top area */}
+      <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", pb: 1 }}>
+        <Box
+          className="plus-circle"
+          sx={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            bgcolor: "#F0F0F8",
+            border: "1.5px solid transparent",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#8888AA",
+            transition: "all 0.18s ease",
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </Box>
+      </Box>
+
+      {/* Label */}
+      <Box>
+        <Typography
+          className="create-label"
+          sx={{
+            fontSize: "15px",
+            fontWeight: 600,
+            color: "#3C3C3C",
+            transition: "color 0.18s ease",
+          }}
+        >
+          Create new project
+        </Typography>
+      </Box>
+    </Box>
   );
 }
