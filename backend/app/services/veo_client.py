@@ -2,7 +2,17 @@
 Typed wrapper around Google Veo via the google-genai SDK (Vertex AI backend).
 
 Authentication: service account key file at settings.GOOGLE_VEO_KEY_FILE.
-All methods are synchronous — the worker runs them in a BackgroundTask thread.
+All methods are synchronous — the worker runs them in a Celery task.
+
+API reference: https://ai.google.dev/gemini-api/docs/video
+
+Return contract:
+  generate_scene(prompt)              → (video_obj, mp4_bytes)
+  extend_scene(prompt, video_obj)     → (video_obj, mp4_bytes)
+
+  video_obj  — the google-genai Video object; pass directly to the next
+               extend_scene call for visual continuity.
+  mp4_bytes  — raw MP4 bytes for upload (only the last scene's bytes are used).
 
 Exceptions raised (user-friendly, no raw API strings leaked):
   VeoTimeoutError            — scene exceeded VEO_SCENE_TIMEOUT_SECONDS
@@ -12,8 +22,9 @@ Exceptions raised (user-friendly, no raw API strings leaked):
   VeoNotConfiguredError      — key file missing or auth failed
 """
 import logging
+import os
+import tempfile
 import time
-from pathlib import Path
 
 from app.core.config import settings
 
@@ -38,10 +49,12 @@ class VeoNotConfiguredError(Exception):
     pass
 
 
-# ── Internal helpers ──────────────────────────────────────────────────────────
+# ── Auth ──────────────────────────────────────────────────────────────────────
 
 def _make_client():
     """Build an authenticated google-genai Client for Vertex AI."""
+    from pathlib import Path
+
     key_path = Path(settings.GOOGLE_VEO_KEY_FILE)
     if not key_path.is_absolute():
         key_path = Path.cwd() / key_path
@@ -68,8 +81,11 @@ def _make_client():
     )
 
 
+# ── Error translation ─────────────────────────────────────────────────────────
+
 def _translate_error(exc: Exception) -> Exception:
     """Map raw SDK errors to our typed exception hierarchy."""
+    log.error("Veo raw error (%s): %s", type(exc).__name__, exc, exc_info=True)
     msg = str(exc).lower()
     if "deadline" in msg or "timeout" in msg:
         return VeoTimeoutError(
@@ -90,71 +106,88 @@ def _translate_error(exc: Exception) -> Exception:
             "Veo API access denied. Verify the service account has the Vertex AI User role "
             f"in project {settings.VEO_PROJECT_ID}."
         )
-    log.error("Unclassified Veo error: %s", exc)
-    return VeoMalformedResponseError(f"Unexpected response from Veo: {type(exc).__name__}")
+    return VeoMalformedResponseError(
+        f"Unexpected response from Veo: {type(exc).__name__}: {exc}"
+    )
 
 
-def _poll_operation(client, operation, timeout: int) -> bytes:
+# ── Polling ───────────────────────────────────────────────────────────────────
+
+def _poll_operation(client, operation, timeout: int):
     """
-    Poll a GenerateVideosOperation until it completes or times out.
-    Returns the raw MP4 bytes of the first generated video.
-    """
-    from google.genai.types import GenerateVideosOperation
+    Poll until the operation is done or timeout is exceeded.
+    Returns the google-genai Video object from the first generated video.
 
+    Correct SDK pattern (from docs):
+        operation = client.operations.get(operation)   ← not client.models.fetch_video_operation
+    """
     deadline = time.monotonic() + timeout
-    poll_interval = 10  # seconds between polls
+    poll_interval = 10
 
-    op: GenerateVideosOperation = operation
-    while not op.done:
+    while not operation.done:
         if time.monotonic() >= deadline:
             raise VeoTimeoutError(
                 f"Scene timed out after {timeout}s while waiting for Veo."
             )
         time.sleep(poll_interval)
-        op = client.models.fetch_video_operation(operation_name=op.name)
+        operation = client.operations.get(operation)   # ← correct API
 
-    response = op.result
-    if response is None or not response.generated_videos:
+    # Debug: log the full operation structure so we can see what Vertex AI returns
+    log.info("Veo operation done. type=%s attrs=%s", type(operation).__name__, dir(operation))
+    log.info("Veo operation.response=%s", getattr(operation, "response", "MISSING"))
+    log.info("Veo operation.result=%s", getattr(operation, "result", "MISSING"))
+
+    # Try both .response and .result — Vertex AI SDK uses .response, but inspect both
+    response = getattr(operation, "response", None) or getattr(operation, "result", None)
+
+    if response is None:
+        raise VeoMalformedResponseError("Veo operation completed but response is None.")
+
+    generated_videos = getattr(response, "generated_videos", None)
+    log.info("Veo generated_videos=%s", generated_videos)
+
+    if not generated_videos:
         raise VeoMalformedResponseError(
-            "Veo operation completed but returned no videos."
+            "Veo operation completed but returned no videos. "
+            f"Response type: {type(response).__name__}, attrs: {dir(response)}"
         )
 
-    video = response.generated_videos[0].video
-    if video is None:
-        raise VeoMalformedResponseError("Veo returned a video entry with no content.")
-
-    # Prefer inline bytes; fall back to URI download if needed
-    if video.video_bytes:
-        return video.video_bytes
-
-    if video.uri:
-        log.info("Veo returned GCS URI %s — downloading", video.uri)
-        return _download_gcs(video.uri)
-
-    raise VeoMalformedResponseError("Veo video has neither bytes nor URI.")
+    return generated_videos[0].video
 
 
-def _download_gcs(uri: str) -> bytes:
-    """Download a gs:// URI using the storage client."""
+# ── Download ──────────────────────────────────────────────────────────────────
+
+def _download_bytes(video_obj) -> bytes:
+    """
+    Download a Veo Video object and return raw MP4 bytes.
+
+    For Vertex AI clients, call video_obj.save() directly.
+    client.files.download() is Gemini Developer API only and raises ValueError on Vertex AI.
+    """
+    tmp = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
+    tmp_path = tmp.name
+    tmp.close()
     try:
-        from google.cloud import storage
-        bucket_name, blob_path = uri.replace("gs://", "").split("/", 1)
-        client = storage.Client()
-        bucket = client.bucket(bucket_name)
-        blob = bucket.blob(blob_path)
-        return blob.download_as_bytes()
-    except Exception as exc:
-        raise VeoMalformedResponseError(f"Failed to download GCS video: {exc}") from exc
+        video_obj.save(tmp_path)
+        with open(tmp_path, "rb") as f:
+            return f.read()
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
-def generate_scene(prompt: str) -> bytes:
+def generate_scene(prompt: str) -> tuple:
     """
-    Generate Scene 1 from a text-only prompt.
-    Returns raw MP4 bytes.
-    Raises VeoNotConfiguredError, VeoPolicyError, VeoQuotaError, VeoTimeoutError,
-           VeoMalformedResponseError.
+    Generate the first scene from a text-only prompt.
+
+    Returns:
+        (video_obj, mp4_bytes)
+        video_obj  — pass to extend_scene() for the next scene
+        mp4_bytes  — raw MP4 bytes
     """
     try:
         from google.genai.types import GenerateVideosConfig
@@ -169,10 +202,13 @@ def generate_scene(prompt: str) -> bytes:
             config=GenerateVideosConfig(
                 number_of_videos=1,
                 aspect_ratio="16:9",
+                resolution="720p",
                 person_generation="allow_adult",
             ),
         )
-        return _poll_operation(client, operation, settings.VEO_SCENE_TIMEOUT_SECONDS)
+        video_obj = _poll_operation(client, operation, settings.VEO_SCENE_TIMEOUT_SECONDS)
+        mp4_bytes = _download_bytes(video_obj)
+        return video_obj, mp4_bytes
 
     except (VeoTimeoutError, VeoPolicyError, VeoQuotaError,
             VeoMalformedResponseError, VeoNotConfiguredError):
@@ -181,33 +217,41 @@ def generate_scene(prompt: str) -> bytes:
         raise _translate_error(exc) from exc
 
 
-def extend_scene(prompt: str, previous_clip: bytes) -> bytes:
+def extend_scene(prompt: str, previous_video_obj) -> tuple:
     """
-    Extend a video by starting from the previous scene's clip.
-    Returns raw MP4 bytes of the extended/continued clip.
+    Extend a video by continuing from the previous scene's Video object.
+
+    Pattern from docs:
+        client.models.generate_videos(
+            model=...,
+            video=operation.response.generated_videos[0].video,  ← Video object, not bytes
+            prompt=prompt,
+            ...
+        )
+
+    Returns:
+        (video_obj, mp4_bytes)
     """
     try:
-        from google.genai.types import GenerateVideosConfig, GenerateVideosSource, Video
+        from google.genai.types import GenerateVideosConfig
 
         client = _make_client()
-        log.info("Veo: extending scene — prev_clip=%d bytes prompt_len=%d",
-                 len(previous_clip), len(prompt))
+        log.info("Veo: extending scene — prompt_len=%d", len(prompt))
 
-        source = GenerateVideosSource(
-            prompt=prompt,
-            video=Video(video_bytes=previous_clip, mime_type="video/mp4"),
-        )
         operation = client.models.generate_videos(
             model=settings.VEO_MODEL_ID,
             prompt=prompt,
-            source=source,
+            video=previous_video_obj,   # ← Video object from previous generation
             config=GenerateVideosConfig(
                 number_of_videos=1,
                 aspect_ratio="16:9",
+                resolution="720p",
                 person_generation="allow_adult",
             ),
         )
-        return _poll_operation(client, operation, settings.VEO_SCENE_TIMEOUT_SECONDS)
+        video_obj = _poll_operation(client, operation, settings.VEO_SCENE_TIMEOUT_SECONDS)
+        mp4_bytes = _download_bytes(video_obj)
+        return video_obj, mp4_bytes
 
     except (VeoTimeoutError, VeoPolicyError, VeoQuotaError,
             VeoMalformedResponseError, VeoNotConfiguredError):

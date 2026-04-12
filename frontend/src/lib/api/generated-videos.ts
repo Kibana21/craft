@@ -1,16 +1,26 @@
 import { apiClient } from "@/lib/api-client";
 
+function backendBase(): string {
+  return (
+    process.env.NEXT_PUBLIC_API_URL ??
+    (typeof window !== "undefined" ? "" : "http://localhost:8000")
+  );
+}
+
 /**
- * Returns the URL used for streaming/playing a video.
- * The backend streams with Range support, so this URL works both as
- * the HTML5 <video src> and as a download href.
+ * Direct URL to the video file via the static /uploads mount (no auth required).
+ * Use this for <video src> and download links.
+ * file_url looks like "/uploads/videos/<artifact_id>/v1.mp4"
+ */
+export function staticVideoUrl(fileUrl: string): string {
+  return `${backendBase()}${fileUrl}`;
+}
+
+/**
+ * Authenticated streaming endpoint — kept for cases where auth is needed.
  */
 export function streamUrl(videoId: string): string {
-  // Point directly at the backend — Next.js does not proxy binary streams
-  const base =
-    process.env.NEXT_PUBLIC_API_URL ??
-    (typeof window !== "undefined" ? "" : "http://localhost:8000");
-  return `${base}/api/generated-videos/${videoId}/stream`;
+  return `${backendBase()}/api/generated-videos/${videoId}/stream`;
 }
 
 /**

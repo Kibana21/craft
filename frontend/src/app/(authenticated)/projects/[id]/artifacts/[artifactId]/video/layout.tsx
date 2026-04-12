@@ -6,7 +6,7 @@ import Box from "@mui/material/Box";
 import ButtonBase from "@mui/material/ButtonBase";
 import Typography from "@mui/material/Typography";
 import { fetchArtifactDetail } from "@/lib/api/artifacts";
-import { fetchVideoSession } from "@/lib/api/video-sessions";
+import { fetchVideoSession, listGeneratedVideos } from "@/lib/api/video-sessions";
 import { WizardStepIndicator } from "@/components/video/wizard-step-indicator";
 import type { ArtifactDetail } from "@/types/artifact";
 import type { VideoSession } from "@/types/presenter";
@@ -50,6 +50,7 @@ export default function VideoWizardLayout({
 
   const [artifact, setArtifact] = useState<ArtifactDetail | null>(null);
   const [videoSession, setVideoSession] = useState<VideoSession | null>(null);
+  const [hasReadyVideo, setHasReadyVideo] = useState(false);
 
   const loadSession = async () => {
     if (!artifactId) return;
@@ -58,8 +59,12 @@ export default function VideoWizardLayout({
       setArtifact(art);
       const vsId = art.video_session_id;
       if (vsId) {
-        const vs = await fetchVideoSession(vsId);
+        const [vs, videoList] = await Promise.all([
+          fetchVideoSession(vsId),
+          listGeneratedVideos(vsId),
+        ]);
         setVideoSession(vs);
+        setHasReadyVideo(videoList.videos.some((v) => v.status === "ready"));
       }
     } catch {
       // Non-fatal — child pages handle their own errors
@@ -113,6 +118,7 @@ export default function VideoWizardLayout({
           projectId={projectId}
           artifactId={artifactId}
           onNavigate={handleNavigate}
+          isGenerationComplete={hasReadyVideo}
         />
 
         {/* Page content */}

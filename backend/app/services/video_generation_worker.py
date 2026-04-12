@@ -1,9 +1,18 @@
 """
-Background worker for video generation.
+Celery worker for video generation.
 
-Runs inside FastAPI BackgroundTasks (in-process thread pool).
-Fetches scenes, rebuilds merged prompts from latest field values (FR-13),
-chains scene-extension calls, uploads final MP4, updates status.
+Each generate_video_task runs in a dedicated Celery worker process (not in the
+FastAPI web process), so the web server stays responsive and tasks survive restarts.
+
+Architecture:
+  - Broker + result backend: Redis
+  - Queue: "video"  (start with: make worker)
+  - Monitor: Flower at http://localhost:5555  (start with: make flower)
+
+Retries:
+  - Domain errors (VeoNotConfiguredError, VeoPolicyError) → mark FAILED, no retry
+  - VeoTimeoutError, VeoQuotaError → mark FAILED (caller should retry manually for now)
+  - Unexpected exceptions → Celery auto-retries up to 2 times with exponential back-off
 
 Cancellation: checks GeneratedVideo.status between scenes.
 If status is no longer RENDERING, aborts gracefully.
@@ -125,27 +134,31 @@ async def _mark_ready(
 
     artifact_uuid = uuid.UUID(artifact_id)
 
-    # Integration hooks — each wrapped in try/except so a failure never marks the video as FAILED
+    # Integration hooks — each runs in its own session so a failure in one never
+    # poisons the next (asyncpg marks the whole connection broken on any error).
     try:
-        from app.services.compliance_scorer import score_artifact
-        await score_artifact(db, artifact_uuid)
-        await db.commit()
+        async with async_session() as hook_db:
+            from app.services.compliance_scorer import score_artifact
+            await score_artifact(hook_db, artifact_uuid)
+            await hook_db.commit()
     except Exception as exc:
         log.error("Worker: compliance scoring failed for artifact %s: %s", artifact_id, exc)
 
     if triggering_user_id is not None:
         try:
-            from app.services.gamification_service import award_points_once
-            from app.models.gamification import PointsAction
-            await award_points_once(db, triggering_user_id, PointsAction.VIDEO_GENERATED, artifact_uuid)
-            await db.commit()
+            async with async_session() as hook_db:
+                from app.services.gamification_service import award_points_once
+                from app.models.gamification import PointsAction
+                await award_points_once(hook_db, triggering_user_id, PointsAction.VIDEO_GENERATED, artifact_uuid)
+                await hook_db.commit()
         except Exception as exc:
             log.error("Worker: gamification award failed for user %s: %s", triggering_user_id, exc)
 
     try:
-        from app.services.notification_service import notify_video_ready
-        await notify_video_ready(db, artifact_uuid)
-        await db.commit()
+        async with async_session() as hook_db:
+            from app.services.notification_service import notify_video_ready
+            await notify_video_ready(hook_db, artifact_uuid)
+            await hook_db.commit()
     except Exception as exc:
         log.error("Worker: notify_video_ready failed for artifact %s: %s", artifact_id, exc)
 
@@ -203,7 +216,10 @@ async def _run(generated_video_id: uuid.UUID) -> None:
         await db.commit()
 
         # ── Scene-extension chain ─────────────────────────────────────────
-        previous_clip: bytes | None = None
+        # previous_video_obj: the google-genai Video object passed to extend_scene
+        # previous_bytes: raw MP4 bytes — only the last scene's bytes are uploaded
+        previous_video_obj = None
+        previous_bytes: bytes | None = None
         total = len(scenes)
 
         # Mark as RENDERING before starting
@@ -224,12 +240,12 @@ async def _run(generated_video_id: uuid.UUID) -> None:
         try:
             log.info("Generating scene %d/%d for video %s", idx, total, generated_video_id)
             if idx == 1:
-                clip = await asyncio.get_event_loop().run_in_executor(
+                video_obj, clip_bytes = await asyncio.get_event_loop().run_in_executor(
                     None, veo_generate, prompt
                 )
             else:
-                clip = await asyncio.get_event_loop().run_in_executor(
-                    None, veo_extend, prompt, previous_clip
+                video_obj, clip_bytes = await asyncio.get_event_loop().run_in_executor(
+                    None, veo_extend, prompt, previous_video_obj
                 )
         except VeoTimeoutError as exc:
             async with async_session() as db:
@@ -257,7 +273,8 @@ async def _run(generated_video_id: uuid.UUID) -> None:
             log.exception("Unexpected worker error on scene %d", idx)
             return
 
-        previous_clip = clip
+        previous_video_obj = video_obj
+        previous_bytes = clip_bytes
         progress = round(idx / total * 100)
 
         async with async_session() as db:
@@ -267,14 +284,35 @@ async def _run(generated_video_id: uuid.UUID) -> None:
     async with async_session() as db:
         result = await db.execute(select(GeneratedVideo).where(GeneratedVideo.id == generated_video_id))
         gv = result.scalar_one()
-        await _mark_ready(db, generated_video_id, artifact_id, gv.version, previous_clip or b"", triggering_user_id)
+        await _mark_ready(db, generated_video_id, artifact_id, gv.version, previous_bytes or b"", triggering_user_id)
 
 
-def generate_video_task(generated_video_id: uuid.UUID) -> None:
+from app.celery_app import celery_app
+
+
+@celery_app.task(
+    bind=True,
+    name="video.generate",
+    max_retries=2,
+    default_retry_delay=60,
+    acks_late=True,
+)
+def generate_video_task(self, generated_video_id_str: str) -> None:
     """
-    Synchronous entry point for FastAPI BackgroundTasks.
-    Creates and runs the async event loop internally.
+    Celery task entry point — runs in a separate worker process.
+
+    Args:
+        generated_video_id_str: UUID string of the GeneratedVideo record.
     """
-    log.info("Worker starting for GeneratedVideo %s", generated_video_id)
-    asyncio.run(_run(generated_video_id))
+    generated_video_id = uuid.UUID(generated_video_id_str)
+    log.info("Worker starting for GeneratedVideo %s (attempt %d/%d)",
+             generated_video_id, self.request.retries + 1, self.max_retries + 1)
+    try:
+        asyncio.run(_run(generated_video_id))
+    except Exception as exc:
+        # _run handles all domain errors internally (marks FAILED in DB).
+        # If we get here it's an unexpected infrastructure failure (e.g. DB down).
+        log.exception("generate_video_task raised unexpectedly for %s", generated_video_id)
+        countdown = 60 * (2 ** self.request.retries)  # 60s, 120s
+        raise self.retry(exc=exc, countdown=countdown)
     log.info("Worker finished for GeneratedVideo %s", generated_video_id)

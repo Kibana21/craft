@@ -108,7 +108,7 @@ async def award_points_once(
     existing = await db.execute(
         select(PointsLog).where(
             PointsLog.user_id == user_id,
-            PointsLog.action == action,
+            PointsLog.action == action.value,
             PointsLog.related_artifact_id == related_artifact_id,
         )
     )

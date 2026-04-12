@@ -1,5 +1,4 @@
 import json
-import os
 
 from app.core.config import settings
 from app.services.prompt_builder import (
@@ -18,46 +17,52 @@ from app.services.prompt_builder import (
 )
 
 
-def _gemini_model(model_name: str = "gemini-2.0-flash"):
-    """Return a configured Gemini GenerativeModel.
+class _VertexGeminiModel:
+    """Thin wrapper so callers can use await model.generate_content(prompt)."""
 
-    Auth priority:
-    1. GOOGLE_API_KEY env var (explicit API key)
-    2. GOOGLE_VEO_KEY_FILE service account JSON (already used for Veo)
-    3. Application Default Credentials (GOOGLE_APPLICATION_CREDENTIALS in env)
+    def __init__(self, client, model_name: str):
+        self._client = client
+        self._model_name = model_name
 
-    Raises RuntimeError if no credentials are available.
-    """
-    import google.generativeai as genai
-
-    if settings.GOOGLE_API_KEY:
-        genai.configure(api_key=settings.GOOGLE_API_KEY)
-        return genai.GenerativeModel(model_name)
-
-    key_file = settings.GOOGLE_VEO_KEY_FILE
-    if key_file and not os.path.isabs(key_file):
-        # __file__ = .../backend/app/services/ai_service.py
-        # project root is three levels up
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-        key_file = os.path.join(project_root, key_file)
-    key_file = os.path.normpath(key_file) if key_file else ""
-
-    if key_file and os.path.exists(key_file):
-        from google.oauth2 import service_account
-        credentials = service_account.Credentials.from_service_account_file(
-            key_file,
-            scopes=["https://www.googleapis.com/auth/generative-language"],
+    async def generate_content(self, prompt: str):
+        return await self._client.aio.models.generate_content(
+            model=self._model_name,
+            contents=prompt,
         )
-        genai.configure(credentials=credentials)
-        return genai.GenerativeModel(model_name)
 
-    # Fall back to ADC (GOOGLE_APPLICATION_CREDENTIALS env var)
-    import google.auth
-    credentials, _ = google.auth.default(
-        scopes=["https://www.googleapis.com/auth/generative-language"]
+
+def _gemini_model(model_name: str = "gemini-2.5-flash") -> _VertexGeminiModel:
+    """Return a Gemini model backed by Vertex AI using the service account key file.
+
+    Uses the same credentials as veo_client.py (GOOGLE_VEO_KEY_FILE + cloud-platform scope).
+    Raises RuntimeError if the key file is missing or misconfigured.
+    """
+    from pathlib import Path
+    from google.oauth2 import service_account
+    from google import genai
+
+    key_path = Path(settings.GOOGLE_VEO_KEY_FILE)
+    if not key_path.is_absolute():
+        key_path = Path.cwd() / key_path
+    key_path = key_path.resolve()
+
+    if not key_path.exists():
+        raise RuntimeError(
+            f"Gemini service account key not found at {key_path}. "
+            "Ensure GOOGLE_VEO_KEY_FILE in .env points to the correct JSON file."
+        )
+
+    credentials = service_account.Credentials.from_service_account_file(
+        str(key_path),
+        scopes=["https://www.googleapis.com/auth/cloud-platform"],
     )
-    genai.configure(credentials=credentials)
-    return genai.GenerativeModel(model_name)
+    client = genai.Client(
+        vertexai=True,
+        project=settings.VEO_PROJECT_ID,
+        location=settings.VEO_LOCATION,
+        credentials=credentials,
+    )
+    return _VertexGeminiModel(client, model_name)
 
 
 # Fallback taglines when Gemini is not configured
@@ -105,7 +110,7 @@ async def generate_taglines(
     try:
         model = _gemini_model()
         prompt = build_tagline_prompt(product, audience, tone, count)
-        response = model.generate_content(prompt)
+        response = await model.generate_content(prompt)
 
         text = response.text.strip()
         if text.startswith("```"):
@@ -157,7 +162,7 @@ async def generate_storyboard(
     try:
         model = _gemini_model()
         prompt = build_storyboard_prompt(topic, key_message, product, tone)
-        response = model.generate_content(prompt)
+        response = await model.generate_content(prompt)
 
         text = response.text.strip()
         if text.startswith("```"):
@@ -175,7 +180,7 @@ async def generate_presenter_appearance(keywords: str, speaking_style: str) -> s
     try:
         model = _gemini_model()
         prompt = build_presenter_appearance_prompt(keywords, speaking_style)
-        response = model.generate_content(prompt)
+        response = await model.generate_content(prompt)
         text = response.text.strip()
         if text:
             return text
@@ -204,7 +209,7 @@ async def draft_script(brief: dict) -> str:
     try:
         model = _gemini_model()
         prompt = build_script_draft_prompt(brief)
-        response = model.generate_content(prompt)
+        response = await model.generate_content(prompt)
         text = response.text.strip()
         if text:
             return text
@@ -231,7 +236,7 @@ async def rewrite_script(content: str, tone: str) -> str:
     try:
         model = _gemini_model()
         prompt = build_script_rewrite_prompt(content, tone)
-        response = model.generate_content(prompt)
+        response = await model.generate_content(prompt)
         text = response.text.strip()
         if text:
             return text
@@ -261,7 +266,7 @@ async def split_script_into_scenes(
     try:
         model = _gemini_model()
         prompt = build_scene_split_prompt(script, target_duration_seconds, presenter, brand_kit)
-        response = model.generate_content(prompt)
+        response = await model.generate_content(prompt)
         text = response.text.strip()
         # Strip fenced code block markers (```json ... ``` or ``` ... ```)
         if text.startswith("```"):
@@ -289,7 +294,7 @@ async def suggest_appearance_keywords(name: str, age_range: str, speaking_style:
     try:
         model = _gemini_model()
         prompt = build_keyword_suggestion_prompt(name, age_range, speaking_style)
-        response = model.generate_content(prompt)
+        response = await model.generate_content(prompt)
         text = response.text.strip()
         if text:
             return text
@@ -313,7 +318,7 @@ async def refine_scene_dialogue(dialogue: str, scene_name: str) -> str:
     try:
         model = _gemini_model()
         prompt = build_dialogue_refinement_prompt(dialogue, scene_name)
-        response = model.generate_content(prompt)
+        response = await model.generate_content(prompt)
         text = response.text.strip()
         if text:
             return text
@@ -329,7 +334,7 @@ async def suggest_scene_setting(dialogue: str, scene_name: str) -> str:
     try:
         model = _gemini_model()
         prompt = build_setting_suggestion_prompt(dialogue, scene_name)
-        response = model.generate_content(prompt)
+        response = await model.generate_content(prompt)
         text = response.text.strip()
         if text:
             return text
@@ -342,18 +347,11 @@ async def suggest_scene_setting(dialogue: str, scene_name: str) -> str:
 
 async def improve_brief_field(field: str, context: dict) -> str:
     """Improve a single brief field (or generate the narrative brief) using Gemini."""
-    try:
-        model = _gemini_model()
-        prompt = build_brief_field_improve_prompt(field, context)
-        response = model.generate_content(prompt)
-        text = response.text.strip()
-        if text:
-            return text
-    except Exception as e:
-        print(f"Gemini brief field improvement failed: {e}")
-
-    # Fallback: return the current value unchanged
-    return context.get(field, "")
+    model = _gemini_model()
+    prompt = build_brief_field_improve_prompt(field, context)
+    response = await model.generate_content(prompt)
+    text = response.text.strip()
+    return text if text else context.get(field, "")
 
 
 async def generate_video_brief(project_brief: dict, video_name: str) -> dict:
@@ -361,7 +359,7 @@ async def generate_video_brief(project_brief: dict, video_name: str) -> dict:
     try:
         model = _gemini_model()
         prompt = build_video_brief_prompt(project_brief, video_name)
-        response = model.generate_content(prompt)
+        response = await model.generate_content(prompt)
         text = response.text.strip()
         if text.startswith("```"):
             text = text.split("\n", 1)[1].rsplit("```", 1)[0].strip()

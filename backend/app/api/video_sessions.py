@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -292,7 +292,6 @@ async def insert_scene(
 )
 async def trigger_generation(
     session_id: uuid.UUID,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> object:
@@ -312,11 +311,16 @@ async def trigger_generation(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Artifact not found")
 
     generated_video = await video_generation_service.trigger(db, session_id, project_id)
+
+    # Advance wizard step to GENERATION on first trigger
+    vs.current_step = "generation"
+
     await db.commit()
     await db.refresh(generated_video)
 
+    # Dispatch to Celery worker — survives web server restarts
     from app.services.video_generation_worker import generate_video_task
-    background_tasks.add_task(generate_video_task, generated_video.id)
+    generate_video_task.delay(str(generated_video.id))
 
     return generated_video
 
@@ -370,6 +374,14 @@ async def improve_brief_field(
 ) -> dict:
     """Improve a single brief field (or generate the narrative brief) using the full form as context."""
     await video_session_service.get_by_id(db, session_id)  # auth / existence check
-    from app.services.ai_service import improve_brief_field as ai_improve
-    value = await ai_improve(field=data.field, context=data.model_dump())
+    try:
+        from app.services.ai_service import improve_brief_field as ai_improve
+        value = await ai_improve(field=data.field, context=data.model_dump())
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).error("improve_brief_field failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="AI field improvement failed. Please try again.",
+        )
     return {"value": value}

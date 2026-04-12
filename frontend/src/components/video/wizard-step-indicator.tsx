@@ -19,6 +19,7 @@ interface WizardStepIndicatorProps {
   projectId: string;
   artifactId: string;
   onNavigate?: (step: StepKey) => void;
+  isGenerationComplete?: boolean;
 }
 
 const STEP_ORDER: StepKey[] = ["brief", "presenter", "script", "storyboard", "generate"];
@@ -28,6 +29,7 @@ export function WizardStepIndicator({
   projectId,
   artifactId,
   onNavigate,
+  isGenerationComplete = false,
 }: WizardStepIndicatorProps) {
   const currentIdx = STEP_ORDER.indexOf(currentStep);
 
@@ -42,9 +44,11 @@ export function WizardStepIndicator({
       }}
     >
       {STEPS.map((step, idx) => {
-        const isCompleted = idx < currentIdx;
-        const isCurrent = idx === currentIdx;
-        const isDisabled = idx > currentIdx;
+        const isGenerateStep = step.key === "generate";
+        // Generate step shows as completed when a ready video exists
+        const isCompleted = idx < currentIdx || (isGenerateStep && isGenerationComplete);
+        const isCurrent = idx === currentIdx && !(isGenerateStep && isGenerationComplete);
+        const isDisabled = idx > currentIdx && !(isGenerateStep && isGenerationComplete);
         const isLast = idx === STEPS.length - 1;
 
         const pill = (

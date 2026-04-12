@@ -9,7 +9,7 @@ import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import { fetchArtifactDetail } from "@/lib/api/artifacts";
 import { triggerGeneration } from "@/lib/api/video-sessions";
-import { streamUrl } from "@/lib/api/generated-videos";
+import { staticVideoUrl } from "@/lib/api/generated-videos";
 import { VideoCard } from "@/components/video/video-card";
 import { GenerationStatusBanner } from "@/components/video/generation-status-banner";
 import { VideoPlayerOverlay } from "@/components/video/video-player-overlay";
@@ -26,6 +26,7 @@ export default function GenerateStepPage() {
   const [activeVideo, setActiveVideo] = useState<GeneratedVideo | null>(null);
 
   const { videos, setVideos, anyActive, isLoading, refresh } = useVideoPolling(sessionId);
+  const hasReadyVideo = videos.some((v) => v.status === "ready");
 
   useEffect(() => {
     if (!artifactId) return;
@@ -66,10 +67,8 @@ export default function GenerateStepPage() {
 
   const handleDownload = (video: GeneratedVideo) => {
     if (video.file_url) {
-      // Use the streaming endpoint with a download hint
-      const url = streamUrl(video.id) + "?download=1";
       const a = document.createElement("a");
-      a.href = url;
+      a.href = staticVideoUrl(video.file_url);
       a.download = `video-v${video.version}.mp4`;
       a.click();
     }
@@ -111,7 +110,7 @@ export default function GenerateStepPage() {
             textTransform: "none",
           }}
         >
-          {isTriggering ? "Starting…" : "Generate video"}
+          {isTriggering ? "Starting…" : hasReadyVideo ? "Generate new version" : "Generate video"}
         </Button>
       </Box>
 

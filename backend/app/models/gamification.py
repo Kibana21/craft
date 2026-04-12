@@ -46,7 +46,7 @@ class PointsLog(Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     action: Mapped[PointsAction] = mapped_column(
-        Enum(PointsAction, name="points_action", create_type=True), nullable=False
+        String(50), nullable=False
     )
     points: Mapped[int] = mapped_column(Integer, nullable=False)
     related_artifact_id: Mapped[uuid.UUID | None] = mapped_column(

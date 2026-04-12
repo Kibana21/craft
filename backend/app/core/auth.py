@@ -66,6 +66,24 @@ def decode_token(token: str) -> dict:
         )
 
 
+def verify_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> dict:
+    """JWT-only auth — no DB query. Returns the decoded payload."""
+    payload = decode_token(credentials.credentials)
+    if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type",
+        )
+    if not payload.get("sub"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+        )
+    return payload
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db),

@@ -20,7 +20,9 @@ export function useVideoPolling(sessionId: string | null): UseVideoPollingResult
   const [isLoading, setIsLoading] = useState(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionIdRef = useRef(sessionId);
+  const anyActiveRef = useRef(anyActive);
   sessionIdRef.current = sessionId;
+  anyActiveRef.current = anyActive;
 
   const fetch = useCallback(async () => {
     if (!sessionIdRef.current) return;
@@ -30,7 +32,8 @@ export function useVideoPolling(sessionId: string | null): UseVideoPollingResult
       setAnyActive(data.any_active);
       return data.any_active;
     } catch {
-      return false;
+      // On network error, keep polling if we last knew something was active
+      return anyActiveRef.current;
     }
   }, []);
 

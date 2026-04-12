@@ -24,7 +24,9 @@
       "Bash(echo \"EXIT:$?\")",
       "Bash(./node_modules/.bin/tsc --noEmit)",
       "Bash(python -c ':*)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(ls /Users/kartik/Documents/Work/Projects/craft/craft/backend/*.json)",
+      "WebFetch(domain:ai.google.dev)"
     ]
   }
 }

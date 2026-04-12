@@ -1,4 +1,4 @@
-.PHONY: dev backend frontend migrate seed test lint
+.PHONY: dev backend frontend redis worker flower migrate seed test lint
 
 # Run both backend and frontend
 dev:
@@ -13,6 +13,18 @@ backend:
 # Frontend
 frontend:
 	cd frontend && npm run dev
+
+# Start Redis via Docker (separate terminal or background)
+redis:
+	docker-compose up -d redis
+
+# Celery video worker (separate terminal)
+worker:
+	cd backend && source .venv/bin/activate && celery -A app.celery_app worker --loglevel=info --concurrency=2 -Q video,celery
+
+# Flower task monitor — http://localhost:5555
+flower:
+	cd backend && source .venv/bin/activate && celery -A app.celery_app flower --port=5555
 
 # Database migrations
 migrate:

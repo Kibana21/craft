@@ -6,7 +6,7 @@ import IconButton from "@mui/material/IconButton";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import { streamUrl } from "@/lib/api/generated-videos";
+import { staticVideoUrl } from "@/lib/api/generated-videos";
 import type { GeneratedVideo } from "@/types/generated-video";
 
 interface VideoPlayerOverlayProps {
@@ -25,9 +25,9 @@ export function VideoPlayerOverlay({ video, onClose, onDownload }: VideoPlayerOv
     }
   }, [video]);
 
-  if (!video) return null;
+  if (!video || !video.file_url) return null;
 
-  const src = streamUrl(video.id);
+  const src = staticVideoUrl(video.file_url);
 
   return (
     <Dialog
@@ -107,8 +107,9 @@ export function VideoPlayerOverlay({ video, onClose, onDownload }: VideoPlayerOv
           controls
           autoPlay
           style={{
-            maxWidth: "100%",
-            maxHeight: "100%",
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
             outline: "none",
           }}
         />
