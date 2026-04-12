@@ -1,5 +1,7 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 import type { ProjectPurpose } from "@/types/project";
 
 const PURPOSE_OPTIONS: {
@@ -41,37 +43,69 @@ interface StepPurposeTypeProps {
 
 export function StepPurposeType({ value, onChange }: StepPurposeTypeProps) {
   return (
-    <div>
-      <h2 className="text-[28px] font-bold text-[#222222]">
+    <Box>
+      <Typography
+        component="h2"
+        sx={{ fontSize: "1.75rem", fontWeight: 700, color: "#1F1F1F" }}
+      >
         What are we launching?
-      </h2>
-      <p className="mt-2 text-base text-[#717171]">
+      </Typography>
+      <Typography sx={{ mt: 1, fontSize: "1rem", color: "#5F6368" }}>
         This sets the context for every artifact you'll create in this project
-      </p>
+      </Typography>
 
-      <div className="mt-10 grid grid-cols-2 gap-6">
-        {PURPOSE_OPTIONS.map((option) => (
-          <button
-            key={option.key}
-            onClick={() => onChange(option.key)}
-            className={`rounded-xl border-2 p-8 text-left transition-all duration-200 hover:shadow-lg hover:scale-[1.02] ${
-              value === option.key
-                ? "border-[#D0103A] bg-[#FFF0F3]"
-                : "border-[#EBEBEB] bg-white hover:border-[#DDDDDD]"
-            }`}
-          >
-            <span className="text-4xl">{option.icon}</span>
-            <h3
-              className={`mt-4 text-base font-semibold ${
-                value === option.key ? "text-[#D0103A]" : "text-[#222222]"
-              }`}
+      <Box
+        sx={{
+          mt: 5,
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 3,
+        }}
+      >
+        {PURPOSE_OPTIONS.map((option) => {
+          const isSelected = value === option.key;
+
+          return (
+            <Box
+              key={option.key}
+              component="button"
+              onClick={() => onChange(option.key)}
+              sx={{
+                borderRadius: "16px",
+                border: `2px solid ${isSelected ? "#D0103A" : "#EBEBEB"}`,
+                bgcolor: isSelected ? "#FFF0F3" : "#FFFFFF",
+                p: 4,
+                textAlign: "left",
+                cursor: "pointer",
+                transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+                "&:hover": {
+                  borderColor: isSelected ? "#D0103A" : "#DDDDDD",
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.10)",
+                },
+              }}
             >
-              {option.title}
-            </h3>
-            <p className="mt-1 text-sm text-[#717171]">{option.description}</p>
-          </button>
-        ))}
-      </div>
-    </div>
+              <Typography sx={{ fontSize: "2.25rem", lineHeight: 1 }}>
+                {option.icon}
+              </Typography>
+              <Typography
+                component="h3"
+                sx={{
+                  mt: 2,
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  color: isSelected ? "#D0103A" : "#1F1F1F",
+                }}
+              >
+                {option.title}
+              </Typography>
+              <Typography sx={{ mt: 0.5, fontSize: "0.875rem", color: "#5F6368" }}>
+                {option.description}
+              </Typography>
+            </Box>
+          );
+        })}
+      </Box>
+    </Box>
   );
 }

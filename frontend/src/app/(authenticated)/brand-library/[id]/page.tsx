@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
 import { useAuth } from "@/components/providers/auth-provider";
 import {
   fetchLibraryItemDetail,
@@ -14,10 +18,22 @@ const TYPE_ICONS: Record<string, string> = {
   poster: "◻", whatsapp_card: "✉", reel: "▶", video: "▶",
   story: "◻", deck: "📋", infographic: "📊", slide_deck: "📋",
 };
+
 const TYPE_BG: Record<string, string> = {
-  poster: "bg-violet-600", whatsapp_card: "bg-red-600", reel: "bg-emerald-600",
-  video: "bg-emerald-600", story: "bg-amber-600", deck: "bg-slate-700",
-  infographic: "bg-cyan-600", slide_deck: "bg-slate-700",
+  poster:        "linear-gradient(135deg, #7c3aed, #a855f7)",
+  whatsapp_card: "linear-gradient(135deg, #dc2626, #ef4444)",
+  reel:          "linear-gradient(135deg, #059669, #14b8a6)",
+  video:         "linear-gradient(135deg, #059669, #14b8a6)",
+  story:         "linear-gradient(135deg, #d97706, #f97316)",
+  deck:          "linear-gradient(135deg, #334155, #475569)",
+  infographic:   "linear-gradient(135deg, #0891b2, #06b6d4)",
+  slide_deck:    "linear-gradient(135deg, #334155, #475569)",
+};
+
+const STATUS_SX: Record<string, object> = {
+  published:      { bgcolor: "#F0FFF0", color: "#008A05" },
+  pending_review: { bgcolor: "#FFFBEB", color: "#B45309" },
+  rejected:       { bgcolor: "#FFF0F3", color: "#D0103A" },
 };
 
 export default function LibraryItemDetailPage() {
@@ -76,163 +92,346 @@ export default function LibraryItemDetailPage() {
 
   if (isLoading || !item) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-12">
-        <div className="h-8 w-48 animate-pulse rounded-lg bg-[#F7F7F7]" />
-        <div className="mt-6 h-96 animate-pulse rounded-xl bg-[#F7F7F7]" />
-      </div>
+      <Box sx={{ mx: "auto", maxWidth: 720, px: 3, py: 6 }}>
+        <Box
+          sx={{
+            height: 32,
+            width: 192,
+            borderRadius: "8px",
+            bgcolor: "#F7F7F7",
+            "@keyframes pulse": { "0%, 100%": { opacity: 1 }, "50%": { opacity: 0.5 } },
+            animation: "pulse 1.5s ease-in-out infinite",
+          }}
+        />
+        <Box
+          sx={{
+            mt: 3,
+            height: 384,
+            borderRadius: "12px",
+            bgcolor: "#F7F7F7",
+            "@keyframes pulse": { "0%, 100%": { opacity: 1 }, "50%": { opacity: 0.5 } },
+            animation: "pulse 1.5s ease-in-out infinite",
+          }}
+        />
+      </Box>
     );
   }
 
   const icon = TYPE_ICONS[item.artifact.type] || "◻";
-  const bg = TYPE_BG[item.artifact.type] || "bg-violet-600";
+  const bg = TYPE_BG[item.artifact.type] || "linear-gradient(135deg, #7c3aed, #a855f7)";
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
+    <Box sx={{ mx: "auto", maxWidth: 720, px: 3, py: 6 }}>
       {/* Back */}
-      <button
+      <Button
+        variant="outlined"
+        size="small"
+        disableElevation
         onClick={() => router.push("/brand-library")}
-        className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-[#E8EAED] px-3 py-1.5 text-[13px] font-medium text-[#5F6368] transition-colors hover:border-[#DADCE0] hover:bg-[#F1F3F4] hover:text-[#1F1F1F]"
+        startIcon={
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10 4L6 8l4 4" />
+          </svg>
+        }
+        sx={{
+          mb: 3,
+          borderRadius: 9999,
+          textTransform: "none",
+          fontSize: "13px",
+          fontWeight: 500,
+          color: "#5F6368",
+          borderColor: "#E8EAED",
+          "&:hover": { bgcolor: "#F1F3F4", borderColor: "#DADCE0", color: "#1F1F1F" },
+        }}
       >
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M10 4L6 8l4 4" />
-        </svg>
         Back to Brand Library
-      </button>
+      </Button>
 
       {/* Main card */}
-      <div className="overflow-hidden rounded-xl border border-[#EBEBEB] bg-white">
+      <Box
+        sx={{
+          overflow: "hidden",
+          borderRadius: "16px",
+          border: "1px solid #EBEBEB",
+          bgcolor: "#FFFFFF",
+        }}
+      >
         {/* Preview header */}
-        <div className={`flex h-48 items-center justify-center ${bg}`}>
-          <span className="text-6xl text-white/40">{icon}</span>
-        </div>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: 192,
+            background: bg,
+          }}
+        >
+          <Typography sx={{ fontSize: "60px", color: "rgba(255,255,255,0.4)" }}>
+            {icon}
+          </Typography>
+        </Box>
 
         {/* Content */}
-        <div className="p-8">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-[28px] font-bold text-[#222222]">
+        <Box sx={{ p: 4 }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+            <Box>
+              <Typography sx={{ fontSize: "28px", fontWeight: 700, color: "#1F1F1F" }}>
                 {item.artifact.name}
-              </h1>
-              <p className="mt-1 text-base text-[#717171]">
+              </Typography>
+              <Typography sx={{ mt: 0.5, fontSize: "16px", color: "#5F6368" }}>
                 Published by {item.published_by.name} · {item.remix_count} remixes
-              </p>
-              <div className="mt-3 flex gap-2">
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    item.status === "published"
-                      ? "bg-[#F0FFF0] text-[#008A05]"
-                      : item.status === "pending_review"
-                        ? "bg-amber-50 text-amber-700"
-                        : "bg-[#FFF0F3] text-[#D0103A]"
-                  }`}
+              </Typography>
+              <Box sx={{ mt: 1.5, display: "flex", gap: 1, flexWrap: "wrap" }}>
+                <Box
+                  component="span"
+                  sx={{
+                    borderRadius: 9999,
+                    px: 1.5,
+                    py: 0.5,
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    ...(STATUS_SX[item.status] ?? { bgcolor: "#F7F7F7", color: "#484848" }),
+                  }}
                 >
                   {item.status.replace("_", " ")}
-                </span>
-                <span className="rounded-full bg-[#F0FFF0] px-3 py-1 text-xs font-semibold text-[#008A05]">
+                </Box>
+                <Box
+                  component="span"
+                  sx={{
+                    borderRadius: 9999,
+                    px: 1.5,
+                    py: 0.5,
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    bgcolor: "#F0FFF0",
+                    color: "#008A05",
+                  }}
+                >
                   Official · Compliant
-                </span>
+                </Box>
                 {item.artifact.product && (
-                  <span className="rounded-full bg-[#F7F7F7] px-3 py-1 text-xs font-semibold text-[#484848]">
+                  <Box
+                    component="span"
+                    sx={{
+                      borderRadius: 9999,
+                      px: 1.5,
+                      py: 0.5,
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      bgcolor: "#F7F7F7",
+                      color: "#484848",
+                    }}
+                  >
                     {item.artifact.product}
-                  </span>
+                  </Box>
                 )}
-              </div>
-            </div>
-          </div>
+              </Box>
+            </Box>
+          </Box>
 
           {/* Artifact content preview */}
           {item.artifact.content && (
-            <div className="mt-6 rounded-xl bg-[#F7F7F7] p-5">
-              <h3 className="mb-3 text-sm font-semibold text-[#484848]">
+            <Box
+              sx={{
+                mt: 3,
+                borderRadius: "12px",
+                bgcolor: "#F7F7F7",
+                p: 2.5,
+              }}
+            >
+              <Typography sx={{ mb: 1.5, fontSize: "14px", fontWeight: 600, color: "#484848" }}>
                 Content details
-              </h3>
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              </Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gap: 1.5,
+                  fontSize: "14px",
+                }}
+              >
                 {Object.entries(item.artifact.content)
                   .filter(([key]) => !["locks", "remixed_from"].includes(key))
                   .map(([key, value]) => (
-                    <div key={key}>
-                      <span className="text-xs font-medium text-[#B0B0B0]">
+                    <Box key={key}>
+                      <Typography sx={{ fontSize: "12px", fontWeight: 500, color: "#B0B0B0" }}>
                         {key.replace(/_/g, " ")}
-                      </span>
-                      <p className="mt-0.5 text-[#484848]">
+                      </Typography>
+                      <Typography sx={{ mt: 0.25, fontSize: "14px", color: "#484848" }}>
                         {String(value)}
-                      </p>
-                    </div>
+                      </Typography>
+                    </Box>
                   ))}
-              </div>
-            </div>
+              </Box>
+            </Box>
           )}
 
           {/* Rejection reason */}
           {item.rejection_reason && (
-            <div className="mt-4 rounded-xl border border-red-200 bg-[#FFF0F3] p-4">
-              <p className="text-sm font-medium text-[#D0103A]">
+            <Box
+              sx={{
+                mt: 2,
+                borderRadius: "12px",
+                border: "1px solid",
+                borderColor: "#FECACA",
+                bgcolor: "#FFF0F3",
+                p: 2,
+              }}
+            >
+              <Typography sx={{ fontSize: "14px", fontWeight: 500, color: "#D0103A" }}>
                 Rejected: {item.rejection_reason}
-              </p>
-            </div>
+              </Typography>
+            </Box>
           )}
 
           {/* Actions */}
-          <div className="mt-8 flex gap-3">
+          <Box sx={{ mt: 4, display: "flex", gap: 1.5, flexWrap: "wrap" }}>
             {isAdmin && item.status === "pending_review" && (
               <>
-                <button
+                <Button
+                  variant="contained"
+                  disableElevation
                   onClick={handleApprove}
                   disabled={isActing}
-                  className="rounded-lg bg-[#008A05] px-6 py-3 text-base font-semibold text-white transition-all hover:bg-emerald-700 disabled:opacity-50"
+                  sx={{
+                    borderRadius: 9999,
+                    textTransform: "none",
+                    bgcolor: "#008A05",
+                    color: "#FFFFFF",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1.5,
+                    "&:hover": { bgcolor: "#047857" },
+                    "&:disabled": { opacity: 0.5, bgcolor: "#008A05", color: "#FFFFFF" },
+                  }}
                 >
                   {isActing ? "Approving..." : "Approve & Publish"}
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outlined"
+                  disableElevation
                   onClick={() => setShowReject(!showReject)}
-                  className="rounded-lg border border-[#D0103A] px-6 py-3 text-base font-semibold text-[#D0103A] transition-colors hover:bg-[#FFF0F3]"
+                  sx={{
+                    borderRadius: 9999,
+                    textTransform: "none",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1.5,
+                    color: "#D0103A",
+                    borderColor: "#D0103A",
+                    "&:hover": { bgcolor: "#FFF0F3", borderColor: "#D0103A" },
+                  }}
                 >
                   Reject
-                </button>
+                </Button>
               </>
             )}
             {isAdmin && item.status === "published" && (
-              <button
-                onClick={() =>
-                  reviewLibraryItem(item.id, "unpublish").then(setItem)
-                }
-                className="rounded-lg border border-[#222222] px-6 py-3 text-base font-semibold text-[#222222] transition-colors hover:bg-[#F7F7F7]"
+              <Button
+                variant="outlined"
+                disableElevation
+                onClick={() => reviewLibraryItem(item.id, "unpublish").then(setItem)}
+                sx={{
+                  borderRadius: 9999,
+                  textTransform: "none",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1.5,
+                  color: "#1F1F1F",
+                  borderColor: "#222222",
+                  "&:hover": { bgcolor: "#F7F7F7", borderColor: "#222222" },
+                }}
               >
                 Unpublish
-              </button>
+              </Button>
             )}
             {!isAdmin && item.status === "published" && (
-              <button
+              <Button
+                variant="contained"
+                disableElevation
                 onClick={handleRemix}
                 disabled={isActing}
-                className="rounded-lg bg-[#D0103A] px-8 py-3 text-base font-semibold text-white transition-all hover:bg-[#B80E33] disabled:opacity-50"
+                sx={{
+                  borderRadius: 9999,
+                  textTransform: "none",
+                  bgcolor: "#D0103A",
+                  color: "#FFFFFF",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  px: 4,
+                  py: 1.5,
+                  "&:hover": { bgcolor: "#B80E33" },
+                  "&:disabled": { opacity: 0.5, bgcolor: "#D0103A", color: "#FFFFFF" },
+                }}
               >
                 {isActing ? "Creating remix..." : "Remix into my project →"}
-              </button>
+              </Button>
             )}
-          </div>
+          </Box>
 
           {/* Reject form */}
           {showReject && (
-            <div className="mt-4 rounded-xl border border-[#EBEBEB] bg-[#F7F7F7] p-4">
-              <textarea
+            <Box
+              sx={{
+                mt: 2,
+                borderRadius: "12px",
+                border: "1px solid #EBEBEB",
+                bgcolor: "#F7F7F7",
+                p: 2,
+              }}
+            >
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                size="small"
+                variant="outlined"
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder="Reason for rejection..."
-                rows={3}
-                className="mb-3 w-full rounded-lg border border-[#DDDDDD] px-4 py-3.5 text-base focus:border-[#222222] focus:outline-none focus:ring-0"
+                sx={{
+                  mb: 1.5,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "10px",
+                    fontSize: "16px",
+                    color: "#222222",
+                    bgcolor: "#FFFFFF",
+                    "& fieldset": { borderColor: "#DDDDDD" },
+                    "&:hover fieldset": { borderColor: "#BBBBBB" },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#D0103A",
+                      boxShadow: "0 0 0 3px rgba(208,16,58,0.08)",
+                    },
+                  },
+                }}
               />
-              <button
+              <Button
+                variant="contained"
+                disableElevation
                 onClick={handleReject}
                 disabled={isActing || !rejectReason.trim()}
-                className="rounded-lg bg-[#D0103A] px-6 py-3 text-base font-semibold text-white transition-all hover:bg-[#B80E33] disabled:opacity-50"
+                sx={{
+                  borderRadius: 9999,
+                  textTransform: "none",
+                  bgcolor: "#D0103A",
+                  color: "#FFFFFF",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1.5,
+                  "&:hover": { bgcolor: "#B80E33" },
+                  "&:disabled": { opacity: 0.5, bgcolor: "#D0103A", color: "#FFFFFF" },
+                }}
               >
                 Confirm rejection
-              </button>
-            </div>
+              </Button>
+            </Box>
           )}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

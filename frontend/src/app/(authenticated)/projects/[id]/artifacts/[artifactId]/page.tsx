@@ -7,39 +7,73 @@ import { fetchArtifactDetail, updateArtifact } from "@/lib/api/artifacts";
 import { ExportDialog } from "@/components/artifacts/export-dialog";
 import { CommentThread } from "@/components/artifacts/comment-thread";
 import type { ArtifactDetail } from "@/types/artifact";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
 
 const TYPE_ICONS: Record<string, string> = {
   poster: "◻", whatsapp_card: "✉", reel: "▶", video: "▶",
   story: "◻", infographic: "📊", slide_deck: "📋",
 };
+
+// Gradient map converted to CSS linear-gradient equivalents
 const TYPE_BG: Record<string, string> = {
-  poster: "from-violet-600 to-violet-500",
-  whatsapp_card: "from-red-600 to-rose-500",
-  reel: "from-emerald-600 to-teal-500",
-  video: "from-emerald-600 to-teal-500",
-  story: "from-amber-600 to-orange-500",
-  infographic: "from-cyan-600 to-blue-500",
-  slide_deck: "from-slate-700 to-slate-600",
+  poster: "linear-gradient(135deg, #7C3AED, #8B5CF6)",
+  whatsapp_card: "linear-gradient(135deg, #DC2626, #F43F5E)",
+  reel: "linear-gradient(135deg, #059669, #14B8A6)",
+  video: "linear-gradient(135deg, #059669, #14B8A6)",
+  story: "linear-gradient(135deg, #D97706, #F97316)",
+  infographic: "linear-gradient(135deg, #0891B2, #3B82F6)",
+  slide_deck: "linear-gradient(135deg, #334155, #475569)",
 };
 
 function ComplianceBadge({ score }: { score: number | null }) {
   if (score === null) {
     return (
-      <span className="flex h-9 items-center gap-1.5 rounded-full bg-[#F7F7F7] px-3 text-xs font-semibold text-[#717171]">
+      <Box
+        component="span"
+        sx={{
+          display: "inline-flex",
+          height: 36,
+          alignItems: "center",
+          gap: 0.75,
+          borderRadius: 9999,
+          bgcolor: "#F7F7F7",
+          px: 1.5,
+          fontSize: "0.75rem",
+          fontWeight: 600,
+          color: "#717171",
+        }}
+      >
         ⏳ Scoring...
-      </span>
+      </Box>
     );
   }
-  const color =
+  const bgcolor =
     score >= 90
-      ? "bg-[#008A05] text-white"
+      ? "#008A05"
       : score >= 70
-        ? "bg-amber-500 text-white"
-        : "bg-[#D0103A] text-white";
+        ? "#F59E0B"
+        : "#D0103A";
   return (
-    <span className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold ${color}`}>
+    <Box
+      component="span"
+      sx={{
+        display: "inline-flex",
+        height: 36,
+        width: 36,
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: "50%",
+        bgcolor,
+        color: "white",
+        fontSize: "0.75rem",
+        fontWeight: 700,
+      }}
+    >
       {Math.round(score)}
-    </span>
+    </Box>
   );
 }
 
@@ -75,10 +109,30 @@ export default function ArtifactDetailPage() {
 
   if (isLoading || !artifact) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-12">
-        <div className="h-8 w-48 animate-pulse rounded-lg bg-[#F7F7F7]" />
-        <div className="mt-6 h-96 animate-pulse rounded-xl bg-[#F7F7F7]" />
-      </div>
+      <Box sx={{ mx: "auto", maxWidth: 900, px: 3, py: 6 }}>
+        <Box
+          sx={{
+            height: 32,
+            width: 192,
+            borderRadius: "8px",
+            bgcolor: "#F7F7F7",
+            animation: "pulse 1.5s ease-in-out infinite",
+            "@keyframes pulse": {
+              "0%, 100%": { opacity: 1 },
+              "50%": { opacity: 0.4 },
+            },
+          }}
+        />
+        <Box
+          sx={{
+            mt: 3,
+            height: 384,
+            borderRadius: "12px",
+            bgcolor: "#F7F7F7",
+            animation: "pulse 1.5s ease-in-out infinite",
+          }}
+        />
+      </Box>
     );
   }
 
@@ -89,149 +143,281 @@ export default function ArtifactDetailPage() {
   const icon = TYPE_ICONS[artifact.type] || "◻";
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-12">
+    <Box sx={{ mx: "auto", maxWidth: 900, px: 3, py: 6 }}>
       {/* Breadcrumb */}
-      <div className="mb-6">
-        <button
+      <Box sx={{ mb: 3 }}>
+        <Button
+          variant="outlined"
           onClick={() => router.push(`/projects/${projectId}`)}
-          className="inline-flex items-center gap-1.5 rounded-full border border-[#E8EAED] px-3 py-1.5 text-[13px] font-medium text-[#5F6368] transition-colors hover:border-[#DADCE0] hover:bg-[#F1F3F4] hover:text-[#1F1F1F]"
+          disableElevation
+          startIcon={
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 4L6 8l4 4" />
+            </svg>
+          }
+          sx={{
+            borderRadius: 9999,
+            textTransform: "none",
+            border: "1px solid #E8EAED",
+            color: "#5F6368",
+            fontSize: "0.8125rem",
+            fontWeight: 500,
+            px: 1.5,
+            py: 0.75,
+            "&:hover": {
+              border: "1px solid #DADCE0",
+              bgcolor: "#F1F3F4",
+              color: "#1F1F1F",
+            },
+          }}
         >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10 4L6 8l4 4" />
-          </svg>
           Back to project
-        </button>
-      </div>
+        </Button>
+      </Box>
 
-      <div className="grid grid-cols-3 gap-8">
+      <Box sx={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 4 }}>
         {/* Left — Preview */}
-        <div className="col-span-2">
-          <div className={`overflow-hidden rounded-xl bg-gradient-to-br ${gradient}`}>
-            <div className="flex h-80 flex-col items-center justify-center p-10 text-center text-white">
-              <span className="text-5xl opacity-40">{icon}</span>
-              <p className="mt-6 text-2xl font-bold">
+        <Box>
+          <Box
+            sx={{
+              overflow: "hidden",
+              borderRadius: "12px",
+              background: gradient,
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                height: 320,
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                p: 5,
+                textAlign: "center",
+                color: "white",
+              }}
+            >
+              <Box component="span" sx={{ fontSize: "3rem", opacity: 0.4 }}>{icon}</Box>
+              <Typography sx={{ mt: 3, fontSize: "1.5rem", fontWeight: 700 }}>
                 {(content.headline as string) || artifact.name}
-              </p>
+              </Typography>
               {content.message ? (
-                <p className="mt-3 max-w-md text-sm opacity-80">
+                <Typography sx={{ mt: 1.5, maxWidth: 400, fontSize: "0.875rem", opacity: 0.8 }}>
                   {String(content.message)}
-                </p>
+                </Typography>
               ) : null}
-              <p className="mt-4 text-xs uppercase tracking-wider opacity-50">
+              <Typography sx={{ mt: 2, fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.5 }}>
                 {String(content.product || "")} · {artifact.type.replace("_", " ")} · {artifact.format || ""}
-              </p>
-            </div>
-          </div>
+              </Typography>
+            </Box>
+          </Box>
 
           {/* Reel storyboard frames */}
           {artifact.type === "reel" && Array.isArray(content.frames) && (
-            <div className="mt-6">
-              <h3 className="mb-3 text-sm font-semibold text-[#484848]">
+            <Box sx={{ mt: 3 }}>
+              <Typography sx={{ mb: 1.5, fontSize: "0.875rem", fontWeight: 600, color: "#484848" }}>
                 Storyboard — {(content.frames as unknown[]).length} frames
-              </h3>
-              <div className="grid grid-cols-3 gap-3">
+              </Typography>
+              <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1.5 }}>
                 {(content.frames as Array<{ frame_number: number; text_overlay: string; duration_seconds: number; visual_description: string }>).map((frame, i) => (
-                  <div
+                  <Box
                     key={i}
-                    className="rounded-xl border border-[#EBEBEB] bg-white p-4"
+                    sx={{
+                      borderRadius: "12px",
+                      border: "1px solid #EBEBEB",
+                      bgcolor: "#FFFFFF",
+                      p: 2,
+                    }}
                   >
-                    <div className="mb-2 flex items-center justify-between text-xs text-[#B0B0B0]">
-                      <span>Frame {frame.frame_number}</span>
-                      <span>{frame.duration_seconds}s</span>
-                    </div>
-                    <p className="text-sm font-semibold text-[#222222]">
+                    <Box sx={{ mb: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <Typography sx={{ fontSize: "0.75rem", color: "#B0B0B0" }}>
+                        Frame {frame.frame_number}
+                      </Typography>
+                      <Typography sx={{ fontSize: "0.75rem", color: "#B0B0B0" }}>
+                        {frame.duration_seconds}s
+                      </Typography>
+                    </Box>
+                    <Typography sx={{ fontSize: "0.875rem", fontWeight: 600, color: "#222222" }}>
                       {frame.text_overlay}
-                    </p>
-                    <p className="mt-1 text-xs text-[#717171]">
+                    </Typography>
+                    <Typography sx={{ mt: 0.5, fontSize: "0.75rem", color: "#717171" }}>
                       {frame.visual_description}
-                    </p>
-                  </div>
+                    </Typography>
+                  </Box>
                 ))}
-              </div>
-            </div>
+              </Box>
+            </Box>
           )}
-        </div>
+        </Box>
 
         {/* Right — Details + Edit */}
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="rounded-xl border border-[#EBEBEB] bg-white p-6">
-            <div className="mb-3 flex items-center justify-between">
-              <h1 className="text-lg font-bold text-[#222222]">{artifact.name}</h1>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          {/* Header card */}
+          <Box
+            sx={{
+              borderRadius: "16px",
+              border: "1px solid #F0F0F0",
+              bgcolor: "#FFFFFF",
+              p: 3,
+            }}
+          >
+            <Box sx={{ mb: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography sx={{ fontSize: "1.125rem", fontWeight: 700, color: "#222222" }}>
+                {artifact.name}
+              </Typography>
               <ComplianceBadge score={artifact.compliance_score} />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <span className="rounded-full bg-[#F7F7F7] px-3 py-1 text-xs font-medium text-[#484848]">
+            </Box>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+              <Box
+                component="span"
+                sx={{
+                  borderRadius: 9999,
+                  bgcolor: "#F7F7F7",
+                  px: 1.5,
+                  py: 0.5,
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  color: "#484848",
+                }}
+              >
                 {artifact.type.replace("_", " ")}
-              </span>
+              </Box>
               {artifact.channel && (
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                <Box
+                  component="span"
+                  sx={{
+                    borderRadius: 9999,
+                    bgcolor: "#EFF6FF",
+                    px: 1.5,
+                    py: 0.5,
+                    fontSize: "0.75rem",
+                    fontWeight: 500,
+                    color: "#1D4ED8",
+                  }}
+                >
                   {artifact.channel}
-                </span>
+                </Box>
               )}
               {artifact.format && (
-                <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700">
+                <Box
+                  component="span"
+                  sx={{
+                    borderRadius: 9999,
+                    bgcolor: "#F5F3FF",
+                    px: 1.5,
+                    py: 0.5,
+                    fontSize: "0.75rem",
+                    fontWeight: 500,
+                    color: "#6D28D9",
+                  }}
+                >
                   {artifact.format}
-                </span>
+                </Box>
               )}
-              <span className={`rounded-full px-3 py-1 text-xs font-medium ${
-                artifact.status === "draft"
-                  ? "bg-[#F7F7F7] text-[#717171]"
-                  : artifact.status === "ready"
-                    ? "bg-[#F0FFF0] text-[#008A05]"
-                    : "bg-amber-50 text-amber-700"
-              }`}>
+              <Box
+                component="span"
+                sx={{
+                  borderRadius: 9999,
+                  px: 1.5,
+                  py: 0.5,
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  ...(artifact.status === "draft"
+                    ? { bgcolor: "#F7F7F7", color: "#717171" }
+                    : artifact.status === "ready"
+                      ? { bgcolor: "#F0FFF0", color: "#008A05" }
+                      : { bgcolor: "#FFFBEB", color: "#B45309" }),
+                }}
+              >
                 {artifact.status}
-              </span>
-            </div>
-            <p className="mt-3 text-xs text-[#B0B0B0]">
+              </Box>
+            </Box>
+            <Typography sx={{ mt: 1.5, fontSize: "0.75rem", color: "#B0B0B0" }}>
               Created by {artifact.creator.name} · v{artifact.version}
-            </p>
-          </div>
+            </Typography>
+          </Box>
 
-          {/* Editable fields */}
-          <div className="rounded-xl border border-[#EBEBEB] bg-white p-6">
-            <h3 className="mb-4 text-sm font-semibold text-[#484848]">
+          {/* Editable fields card */}
+          <Box
+            sx={{
+              borderRadius: "16px",
+              border: "1px solid #F0F0F0",
+              bgcolor: "#FFFFFF",
+              p: 3,
+            }}
+          >
+            <Typography sx={{ mb: 2, fontSize: "0.875rem", fontWeight: 600, color: "#484848" }}>
               Content
-            </h3>
-            <div className="space-y-4">
+            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {Object.entries(content)
                 .filter(([key]) => !["locks", "remixed_from", "frames", "formats", "type", "format"].includes(key))
                 .map(([key, value]) => {
                   const locked = isLocked(key);
                   return (
-                    <div key={key}>
-                      <div className="mb-1 flex items-center justify-between">
-                        <span className="text-xs font-medium text-[#B0B0B0]">
+                    <Box key={key}>
+                      <Box sx={{ mb: 0.5, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <Typography sx={{ fontSize: "0.75rem", fontWeight: 500, color: "#B0B0B0" }}>
                           {key.replace(/_/g, " ")}
-                        </span>
+                        </Typography>
                         {locked && (
-                          <span className="text-[10px] text-[#B0B0B0]">🔒 Locked</span>
+                          <Typography sx={{ fontSize: "10px", color: "#B0B0B0" }}>🔒 Locked</Typography>
                         )}
-                      </div>
+                      </Box>
                       {editingField === key && !locked ? (
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
+                        <Box sx={{ display: "flex", gap: 1 }}>
+                          <TextField
+                            size="small"
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
-                            className="flex-1 rounded-lg border border-[#DDDDDD] px-3 py-2 text-sm focus:border-[#222222] focus:outline-none focus:ring-0"
+                            sx={{
+                              flex: 1,
+                              "& .MuiOutlinedInput-root": {
+                                fontSize: "0.875rem",
+                                "& fieldset": { borderColor: "#DDDDDD" },
+                                "&:hover fieldset": { borderColor: "#AAAAAA" },
+                                "&.Mui-focused fieldset": { borderColor: "#222222", borderWidth: 1 },
+                              },
+                            }}
                           />
-                          <button
+                          <Button
+                            variant="contained"
+                            size="small"
                             onClick={() => handleSaveField(key, editValue)}
-                            className="rounded-lg bg-[#D0103A] px-3 py-2 text-xs font-semibold text-white"
+                            disableElevation
+                            sx={{
+                              borderRadius: "8px",
+                              textTransform: "none",
+                              bgcolor: "#D0103A",
+                              color: "white",
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              px: 1.5,
+                              "&:hover": { bgcolor: "#B80E33" },
+                            }}
                           >
                             Save
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="text"
+                            size="small"
                             onClick={() => setEditingField(null)}
-                            className="rounded-lg bg-[#F7F7F7] px-3 py-2 text-xs text-[#717171]"
+                            sx={{
+                              borderRadius: "8px",
+                              textTransform: "none",
+                              bgcolor: "#F7F7F7",
+                              color: "#717171",
+                              fontSize: "0.75rem",
+                              px: 1.5,
+                              "&:hover": { bgcolor: "#EEEEEE" },
+                            }}
                           >
                             Cancel
-                          </button>
-                        </div>
+                          </Button>
+                        </Box>
                       ) : (
-                        <button
+                        <Box
+                          component="button"
                           onClick={() => {
                             if (!locked) {
                               setEditingField(key);
@@ -239,38 +425,75 @@ export default function ArtifactDetailPage() {
                             }
                           }}
                           disabled={locked}
-                          className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
-                            locked
-                              ? "cursor-not-allowed border-[#F7F7F7] bg-[#F7F7F7] text-[#B0B0B0]"
-                              : "border-[#EBEBEB] bg-white text-[#484848] hover:border-[#DDDDDD]"
-                          }`}
+                          sx={{
+                            width: "100%",
+                            borderRadius: "8px",
+                            border: "1px solid",
+                            px: 1.5,
+                            py: 1,
+                            textAlign: "left",
+                            fontSize: "0.875rem",
+                            transition: "border-color 0.15s, background-color 0.15s",
+                            cursor: locked ? "not-allowed" : "pointer",
+                            ...(locked
+                              ? {
+                                  borderColor: "#F7F7F7",
+                                  bgcolor: "#F7F7F7",
+                                  color: "#B0B0B0",
+                                }
+                              : {
+                                  borderColor: "#EBEBEB",
+                                  bgcolor: "#FFFFFF",
+                                  color: "#484848",
+                                  "&:hover": { borderColor: "#DDDDDD" },
+                                }),
+                          }}
                         >
                           {String(value)}
-                        </button>
+                        </Box>
                       )}
-                    </div>
+                    </Box>
                   );
                 })}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* Export button */}
-          <button
+          <Button
+            variant="contained"
             onClick={() => setShowExport(true)}
-            className="w-full rounded-lg bg-[#D0103A] px-6 py-3 text-base font-semibold text-white transition-all hover:bg-[#B80E33]"
+            disableElevation
+            fullWidth
+            sx={{
+              borderRadius: 9999,
+              textTransform: "none",
+              bgcolor: "#D0103A",
+              color: "white",
+              fontWeight: 600,
+              fontSize: "1rem",
+              py: 1.5,
+              "&:hover": { bgcolor: "#B80E33" },
+            }}
           >
             Export artifact →
-          </button>
+          </Button>
 
-          {/* Comments */}
-          <div className="rounded-xl border border-[#EBEBEB] bg-white p-6">
+          {/* Comments card */}
+          <Box
+            sx={{
+              borderRadius: "16px",
+              border: "1px solid #F0F0F0",
+              bgcolor: "#FFFFFF",
+              p: 3,
+            }}
+          >
             <CommentThread
               artifactId={artifact.id}
               canComment={canComment}
             />
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Export dialog */}
       {showExport && (
@@ -282,6 +505,6 @@ export default function ArtifactDetailPage() {
           onClose={() => setShowExport(false)}
         />
       )}
-    </div>
+    </Box>
   );
 }

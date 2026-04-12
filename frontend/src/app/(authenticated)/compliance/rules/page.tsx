@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { fetchRules, createRule, updateRule, type ComplianceRule } from "@/lib/api/compliance";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import Skeleton from "@mui/material/Skeleton";
 
 export default function ComplianceRulesPage() {
   const [rules, setRules] = useState<ComplianceRule[]>([]);
@@ -28,96 +35,248 @@ export default function ComplianceRulesPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-12">
-      <div className="mb-10 flex items-start justify-between">
-        <div>
-          <h1 className="text-[28px] font-bold text-[#222222]">Compliance Rules</h1>
-          <p className="mt-1 text-base text-[#717171]">MAS compliance rules applied to all artifact content</p>
-        </div>
-        <button
+    <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 4 }}>
+      {/* Header */}
+      <Box sx={{ mb: 5, display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: "#1F1F1F", fontSize: "28px" }}>
+            Compliance Rules
+          </Typography>
+          <Typography sx={{ mt: 0.5, fontSize: "1rem", color: "#5F6368" }}>
+            MAS compliance rules applied to all artifact content
+          </Typography>
+        </Box>
+        <Button
           onClick={() => setShowForm(!showForm)}
-          className="rounded-lg bg-[#D0103A] px-6 py-3 text-base font-semibold text-white transition-all hover:bg-[#B80E33]"
+          disableElevation
+          sx={{
+            borderRadius: 9999,
+            textTransform: "none",
+            bgcolor: "#D0103A",
+            color: "#fff",
+            px: 3,
+            py: 1.5,
+            fontWeight: 600,
+            fontSize: "1rem",
+            "&:hover": { bgcolor: "#B80E33" },
+          }}
         >
           + Add rule
-        </button>
-      </div>
+        </Button>
+      </Box>
 
+      {/* New rule form */}
       {showForm && (
-        <div className="mb-8 rounded-xl border border-[#EBEBEB] bg-white p-6">
-          <h3 className="mb-4 text-base font-semibold text-[#222222]">New rule</h3>
-          <div className="space-y-4">
-            <textarea
+        <Box
+          sx={{
+            mb: 4,
+            borderRadius: "16px",
+            border: "1px solid #F0F0F0",
+            bgcolor: "#FFFFFF",
+            p: 3,
+          }}
+        >
+          <Typography sx={{ mb: 2, fontWeight: 600, color: "#1F1F1F" }}>New rule</Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField
+              multiline
+              rows={3}
               value={newRule.rule_text}
               onChange={(e) => setNewRule({ ...newRule, rule_text: e.target.value })}
               placeholder="Rule description..."
-              rows={3}
-              className="w-full rounded-lg border border-[#DDDDDD] px-4 py-3.5 text-base focus:border-[#222222] focus:outline-none focus:ring-0"
+              fullWidth
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "8px",
+                  "& fieldset": { borderColor: "#E8EAED" },
+                  "&:hover fieldset": { borderColor: "#DADCE0" },
+                  "&.Mui-focused fieldset": { borderColor: "#1F1F1F" },
+                },
+              }}
             />
-            <div className="flex gap-4">
-              <select
+            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+              <Select
                 value={newRule.category}
                 onChange={(e) => setNewRule({ ...newRule, category: e.target.value })}
-                className="rounded-lg border border-[#DDDDDD] px-4 py-3.5 text-base focus:border-[#222222] focus:outline-none focus:ring-0"
+                size="small"
+                sx={{
+                  borderRadius: "8px",
+                  "& .MuiOutlinedInput-notchedOutline": { borderColor: "#E8EAED" },
+                  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#DADCE0" },
+                }}
               >
-                <option value="disclaimer_required">Disclaimer required</option>
-                <option value="prohibited_claim">Prohibited claim</option>
-                <option value="benefit_illustration">Benefit illustration</option>
-                <option value="competitor_reference">Competitor reference</option>
-                <option value="testimonial">Testimonial</option>
-              </select>
-              <div className="flex gap-2">
+                <MenuItem value="disclaimer_required">Disclaimer required</MenuItem>
+                <MenuItem value="prohibited_claim">Prohibited claim</MenuItem>
+                <MenuItem value="benefit_illustration">Benefit illustration</MenuItem>
+                <MenuItem value="competitor_reference">Competitor reference</MenuItem>
+                <MenuItem value="testimonial">Testimonial</MenuItem>
+              </Select>
+              <Box sx={{ display: "flex", gap: 1 }}>
                 {(["error", "warning"] as const).map((s) => (
-                  <button
+                  <Button
                     key={s}
                     onClick={() => setNewRule({ ...newRule, severity: s })}
-                    className={`rounded-full px-4 py-2 text-sm font-medium ${
-                      newRule.severity === s
-                        ? s === "error" ? "bg-[#D0103A] text-white" : "bg-amber-500 text-white"
-                        : "border border-[#DDDDDD] text-[#484848]"
-                    }`}
+                    disableElevation
+                    size="small"
+                    sx={{
+                      borderRadius: 9999,
+                      textTransform: "none",
+                      fontWeight: 500,
+                      fontSize: "0.875rem",
+                      px: 2,
+                      ...(newRule.severity === s
+                        ? {
+                            bgcolor: s === "error" ? "#D0103A" : "#B45309",
+                            color: "#fff",
+                            "&:hover": { bgcolor: s === "error" ? "#B80E33" : "#92400E" },
+                          }
+                        : {
+                            border: "1px solid #E8EAED",
+                            color: "#5F6368",
+                            bgcolor: "transparent",
+                            "&:hover": { bgcolor: "#F8F9FA" },
+                          }),
+                    }}
                   >
                     {s}
-                  </button>
+                  </Button>
                 ))}
-              </div>
-              <button
+              </Box>
+              <Button
                 onClick={handleCreate}
                 disabled={newRule.rule_text.length < 10}
-                className="rounded-lg bg-[#008A05] px-6 py-2 text-base font-semibold text-white disabled:opacity-40"
+                disableElevation
+                sx={{
+                  borderRadius: 9999,
+                  textTransform: "none",
+                  bgcolor: "#188038",
+                  color: "#fff",
+                  px: 3,
+                  fontWeight: 600,
+                  "&:hover": { bgcolor: "#146830" },
+                  "&.Mui-disabled": { opacity: 0.4, color: "#fff", bgcolor: "#188038" },
+                }}
               >
                 Save rule
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </Box>
+          </Box>
+        </Box>
       )}
 
+      {/* Rules list */}
       {isLoading ? (
-        <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-20 animate-pulse rounded-xl bg-[#F7F7F7]" />)}</div>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} variant="rounded" height={80} sx={{ borderRadius: "16px" }} />
+          ))}
+        </Box>
       ) : (
-        <div className="space-y-4">
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {rules.map((rule) => (
-            <div key={rule.id} className={`flex items-start gap-4 rounded-xl border border-[#EBEBEB] bg-white p-5 transition-all ${!rule.is_active && "opacity-50"}`}>
-              <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${rule.severity === "error" ? "bg-[#D0103A]" : "bg-amber-500"}`}>
+            <Box
+              key={rule.id}
+              sx={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 2,
+                borderRadius: "16px",
+                border: "1px solid #F0F0F0",
+                bgcolor: "#FFFFFF",
+                p: 2.5,
+                opacity: rule.is_active ? 1 : 0.5,
+                transition: "opacity 0.2s",
+              }}
+            >
+              {/* Severity icon */}
+              <Box
+                sx={{
+                  mt: 0.5,
+                  flexShrink: 0,
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  color: "#fff",
+                  bgcolor: rule.severity === "error" ? "#D0103A" : "#B45309",
+                }}
+              >
                 {rule.severity === "error" ? "!" : "⚠"}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-[#222222]">{rule.rule_text}</p>
-                <div className="mt-2 flex gap-2">
-                  <span className="rounded-full bg-[#F7F7F7] px-3 py-0.5 text-xs font-medium text-[#484848]">{rule.category.replace("_", " ")}</span>
-                  <span className={`rounded-full px-3 py-0.5 text-xs font-medium ${rule.severity === "error" ? "bg-[#FFF0F3] text-[#D0103A]" : "bg-amber-50 text-amber-700"}`}>{rule.severity}</span>
-                </div>
-              </div>
-              <button
+              </Box>
+
+              {/* Content */}
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ fontSize: "0.875rem", fontWeight: 500, color: "#1F1F1F" }}>
+                  {rule.rule_text}
+                </Typography>
+                <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
+                  <Box
+                    component="span"
+                    sx={{
+                      borderRadius: 9999,
+                      bgcolor: "#F8F9FA",
+                      px: 1.5,
+                      py: 0.25,
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      color: "#5F6368",
+                    }}
+                  >
+                    {rule.category.replace("_", " ")}
+                  </Box>
+                  <Box
+                    component="span"
+                    sx={{
+                      borderRadius: 9999,
+                      px: 1.5,
+                      py: 0.25,
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      ...(rule.severity === "error"
+                        ? { bgcolor: "#FCE8E6", color: "#C5221F" }
+                        : { bgcolor: "#FEF7E0", color: "#B45309" }),
+                    }}
+                  >
+                    {rule.severity}
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Toggle button */}
+              <Button
                 onClick={() => handleToggle(rule)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${rule.is_active ? "bg-[#F7F7F7] text-[#717171] hover:bg-[#FFF0F3] hover:text-[#D0103A]" : "bg-[#F0FFF0] text-[#008A05]"}`}
+                disableElevation
+                size="small"
+                sx={{
+                  borderRadius: 9999,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontSize: "0.75rem",
+                  px: 1.5,
+                  py: 0.75,
+                  ...(rule.is_active
+                    ? {
+                        bgcolor: "#F8F9FA",
+                        color: "#5F6368",
+                        "&:hover": { bgcolor: "#FCE8E6", color: "#C5221F" },
+                      }
+                    : {
+                        bgcolor: "#E6F4EA",
+                        color: "#188038",
+                        "&:hover": { bgcolor: "#D4EDD9" },
+                      }),
+                }}
               >
                 {rule.is_active ? "Deactivate" : "Activate"}
-              </button>
-            </div>
+              </Button>
+            </Box>
           ))}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

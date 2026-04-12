@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import ButtonBase from "@mui/material/ButtonBase";
 import { PosterCreator } from "@/components/artifacts/create/poster-creator";
 import { WhatsAppCreator } from "@/components/artifacts/create/whatsapp-creator";
 import { ReelCreator } from "@/components/artifacts/create/reel-creator";
@@ -51,71 +55,137 @@ export default function NewArtifactPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
+    <Box sx={{ mx: "auto", maxWidth: 720, px: 3, py: 6 }}>
       {/* Breadcrumb */}
-      <div className="mb-6 flex items-center gap-2 text-sm text-[#717171]">
-        <button onClick={() => router.push("/home")} className="hover:text-[#222222]">
+      <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 1 }}>
+        <ButtonBase
+          onClick={() => router.push("/home")}
+          sx={{ fontSize: "14px", color: "#717171", "&:hover": { color: "#222222" } }}
+        >
           Home
-        </button>
-        <span>/</span>
-        <button
+        </ButtonBase>
+        <Typography sx={{ fontSize: "14px", color: "#717171" }}>/</Typography>
+        <ButtonBase
           onClick={() => router.push(`/projects/${projectId}`)}
-          className="hover:text-[#222222]"
+          sx={{ fontSize: "14px", color: "#717171", "&:hover": { color: "#222222" } }}
         >
           {project?.name || "Project"}
-        </button>
-        <span>/</span>
-        <span className="text-[#222222]">New artifact</span>
-      </div>
+        </ButtonBase>
+        <Typography sx={{ fontSize: "14px", color: "#717171" }}>/</Typography>
+        <Typography sx={{ fontSize: "14px", color: "#222222" }}>New artifact</Typography>
+      </Box>
 
       {!selectedType ? (
         /* Type selector */
-        <div className="rounded-xl border border-[#EBEBEB] bg-white p-8">
-          <h1 className="text-[28px] font-bold text-[#222222]">
+        <Box
+          sx={{
+            borderRadius: "16px",
+            border: "1px solid #EBEBEB",
+            bgcolor: "#FFFFFF",
+            p: 4,
+          }}
+        >
+          <Typography sx={{ fontSize: "28px", fontWeight: 700, color: "#222222" }}>
             Choose artifact type
-          </h1>
-          <p className="mt-2 text-base text-[#717171]">
+          </Typography>
+          <Typography sx={{ mt: 1, fontSize: "16px", color: "#717171" }}>
             What kind of content do you want to create?
-          </p>
+          </Typography>
 
-          <div className="mt-10 grid grid-cols-2 gap-6 lg:grid-cols-3">
+          <Box
+            sx={{
+              mt: 5,
+              display: "grid",
+              gridTemplateColumns: { xs: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
+              gap: 3,
+            }}
+          >
             {ARTIFACT_TYPES.map((type) => (
-              <button
+              <ButtonBase
                 key={type.key}
                 onClick={() => setSelectedType(type.key)}
-                className="group rounded-xl border-2 border-[#EBEBEB] p-8 text-left transition-all duration-200 hover:shadow-lg hover:scale-[1.02] hover:border-[#D0103A]"
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  borderRadius: "12px",
+                  border: "2px solid #EBEBEB",
+                  p: 4,
+                  textAlign: "left",
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
+                    transform: "scale(1.02)",
+                    borderColor: "#D0103A",
+                    "& .MuiTypography-root.card-label": { color: "#D0103A" },
+                  },
+                }}
               >
-                <span className="text-4xl">{type.icon}</span>
-                <h3 className="mt-4 text-base font-semibold text-[#222222] group-hover:text-[#D0103A]">
+                <Typography sx={{ fontSize: "36px" }}>{type.icon}</Typography>
+                <Typography
+                  className="card-label"
+                  sx={{ mt: 2, fontSize: "16px", fontWeight: 600, color: "#222222", transition: "color 0.2s" }}
+                >
                   {type.label}
-                </h3>
-                <p className="mt-1 text-sm text-[#717171]">{type.desc}</p>
-              </button>
+                </Typography>
+                <Typography sx={{ mt: 0.5, fontSize: "14px", color: "#717171" }}>
+                  {type.desc}
+                </Typography>
+              </ButtonBase>
             ))}
-          </div>
-        </div>
+          </Box>
+        </Box>
       ) : (
         /* Creator form */
-        <div>
-          <div className="mb-6 flex items-center gap-3">
-            <button
+        <Box>
+          <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              disableElevation
               onClick={() => setSelectedType(null)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#E8EAED] px-3 py-1.5 text-[13px] font-medium text-[#5F6368] transition-colors hover:border-[#DADCE0] hover:bg-[#F1F3F4] hover:text-[#1F1F1F]"
+              startIcon={
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 4L6 8l4 4" />
+                </svg>
+              }
+              sx={{
+                borderRadius: 9999,
+                textTransform: "none",
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "#5F6368",
+                borderColor: "#E8EAED",
+                "&:hover": { bgcolor: "#F1F3F4", borderColor: "#DADCE0", color: "#1F1F1F" },
+              }}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M10 4L6 8l4 4" />
-              </svg>
               Change type
-            </button>
-            <span className="rounded-full bg-[#F7F7F7] px-3 py-1 text-sm font-medium text-[#484848]">
-              {ARTIFACT_TYPES.find((t) => t.key === selectedType)?.label}
-            </span>
-          </div>
+            </Button>
+            <Box
+              sx={{
+                borderRadius: 9999,
+                bgcolor: "#F7F7F7",
+                px: 1.5,
+                py: 0.5,
+              }}
+            >
+              <Typography sx={{ fontSize: "14px", fontWeight: 500, color: "#484848" }}>
+                {ARTIFACT_TYPES.find((t) => t.key === selectedType)?.label}
+              </Typography>
+            </Box>
+          </Box>
 
-          <div className="rounded-xl border border-[#EBEBEB] bg-white p-8">
-            <h1 className="mb-6 text-[28px] font-bold text-[#222222]">
+          <Box
+            sx={{
+              borderRadius: "16px",
+              border: "1px solid #EBEBEB",
+              bgcolor: "#FFFFFF",
+              p: 4,
+            }}
+          >
+            <Typography sx={{ mb: 3, fontSize: "28px", fontWeight: 700, color: "#222222" }}>
               Create {ARTIFACT_TYPES.find((t) => t.key === selectedType)?.label?.toLowerCase()}
-            </h1>
+            </Typography>
 
             {selectedType === "poster" && (
               <PosterCreator
@@ -143,21 +213,33 @@ export default function NewArtifactPage() {
               />
             )}
             {(selectedType === "infographic" || selectedType === "slide_deck") && (
-              <div className="py-12 text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#F7F7F7] text-3xl">
+              <Box sx={{ py: 6, textAlign: "center" }}>
+                <Box
+                  sx={{
+                    mx: "auto",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 64,
+                    height: 64,
+                    borderRadius: "50%",
+                    bgcolor: "#F7F7F7",
+                    fontSize: "30px",
+                  }}
+                >
                   🚧
-                </div>
-                <h3 className="mt-4 text-lg font-semibold text-[#222222]">
+                </Box>
+                <Typography sx={{ mt: 2, fontSize: "18px", fontWeight: 600, color: "#222222" }}>
                   Coming soon
-                </h3>
-                <p className="mt-1 text-sm text-[#717171]">
+                </Typography>
+                <Typography sx={{ mt: 0.5, fontSize: "14px", color: "#717171" }}>
                   {selectedType === "infographic" ? "Infographic" : "Slide deck"} creation will be available in a future update.
-                </p>
-              </div>
+                </Typography>
+              </Box>
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

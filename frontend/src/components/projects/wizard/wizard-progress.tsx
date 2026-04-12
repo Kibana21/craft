@@ -1,5 +1,8 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+
 interface WizardProgressProps {
   steps: string[];
   currentStep: number;
@@ -7,59 +10,90 @@ interface WizardProgressProps {
 
 export function WizardProgress({ steps, currentStep }: WizardProgressProps) {
   return (
-    <div className="mb-10">
+    <Box sx={{ mb: 5 }}>
       {/* Numbered step indicators */}
-      <div className="mb-6 flex items-center justify-center gap-3">
+      <Box sx={{ mb: 3, display: "flex", alignItems: "center", justifyContent: "center", gap: 1.5 }}>
         {steps.map((step, i) => (
-          <div key={step} className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
-                  i === currentStep
-                    ? "bg-[#222222] text-white"
-                    : i < currentStep
-                      ? "bg-[#008A05] text-white"
-                      : "bg-[#F7F7F7] text-[#B0B0B0]"
-                }`}
+          <Box key={step} sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              {/* Circle */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  bgcolor:
+                    i === currentStep
+                      ? "#D0103A"
+                      : i < currentStep
+                      ? "#188038"
+                      : "#E8EAED",
+                  color:
+                    i === currentStep
+                      ? "#FFFFFF"
+                      : i < currentStep
+                      ? "#FFFFFF"
+                      : "#9E9E9E",
+                  transition: "all 0.2s",
+                }}
               >
                 {i < currentStep ? "✓" : i + 1}
-              </span>
-              <span
-                className={`text-sm ${
-                  i === currentStep
-                    ? "font-semibold text-[#222222]"
-                    : i < currentStep
-                      ? "text-[#008A05]"
-                      : "text-[#B0B0B0]"
-                }`}
+              </Box>
+
+              {/* Label */}
+              <Typography
+                sx={{
+                  fontSize: 14,
+                  fontWeight: i === currentStep ? 600 : 400,
+                  color:
+                    i === currentStep
+                      ? "#1F1F1F"
+                      : i < currentStep
+                      ? "#188038"
+                      : "#9E9E9E",
+                }}
               >
                 {step}
-              </span>
-            </div>
+              </Typography>
+            </Box>
+
+            {/* Connector line */}
             {i < steps.length - 1 && (
-              <div
-                className={`h-px w-8 ${
-                  i < currentStep ? "bg-[#008A05]" : "bg-[#EBEBEB]"
-                }`}
+              <Box
+                sx={{
+                  width: 32,
+                  height: 1,
+                  bgcolor: i < currentStep ? "#188038" : "#E8EAED",
+                  transition: "background-color 0.2s",
+                }}
               />
             )}
-          </div>
+          </Box>
         ))}
-      </div>
+      </Box>
 
       {/* Progress bar */}
-      <div className="mx-auto max-w-md">
-        <div className="flex items-center gap-1">
+      <Box sx={{ mx: "auto", maxWidth: 448 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
           {steps.map((_, i) => (
-            <div
+            <Box
               key={i}
-              className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                i <= currentStep ? "bg-[#222222]" : "bg-[#EBEBEB]"
-              }`}
+              sx={{
+                flex: 1,
+                height: 4,
+                borderRadius: 9999,
+                bgcolor: i <= currentStep ? "#D0103A" : "#E8EAED",
+                transition: "background-color 0.3s",
+              }}
             />
           ))}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

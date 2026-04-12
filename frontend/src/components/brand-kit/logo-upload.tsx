@@ -1,6 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import CircularProgress from "@mui/material/CircularProgress";
 
 interface LogoUploadProps {
   label: string;
@@ -29,15 +32,15 @@ export function LogoUpload({ label, currentUrl, onUpload, disabled }: LogoUpload
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium text-[#484848]">{label}</label>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+      <Typography
+        component="label"
+        sx={{ fontSize: 14, fontWeight: 500, color: "#484848" }}
+      >
+        {label}
+      </Typography>
 
-      <div
-        className={`relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition-all ${
-          isDragging
-            ? "border-[#D0103A] bg-[#FFF0F3]"
-            : "border-[#DDDDDD] bg-[#F7F7F7] hover:border-[#AAAAAA]"
-        } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
+      <Box
         onClick={() => !disabled && inputRef.current?.click()}
         onDragOver={(e) => {
           e.preventDefault();
@@ -50,43 +53,102 @@ export function LogoUpload({ label, currentUrl, onUpload, disabled }: LogoUpload
           const file = e.dataTransfer.files[0];
           if (file && !disabled) handleFile(file);
         }}
+        sx={{
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: "12px",
+          border: "2px dashed",
+          borderColor: isDragging ? "#D0103A" : "#DDDDDD",
+          backgroundColor: isDragging ? "#FFF0F3" : "#F7F7F7",
+          p: 3,
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.5 : 1,
+          transition: "border-color 0.2s, background-color 0.2s",
+          "&:hover": disabled
+            ? {}
+            : {
+                borderColor: "#AAAAAA",
+              },
+        }}
       >
-        <input
+        <Box
+          component="input"
           ref={inputRef}
           type="file"
           accept="image/jpeg,image/png,image/svg+xml,image/webp"
-          className="hidden"
           disabled={disabled}
           onChange={(e) => {
-            const file = e.target.files?.[0];
+            const file = (e.target as HTMLInputElement).files?.[0];
             if (file) handleFile(file);
           }}
+          sx={{ display: "none" }}
         />
 
         {isUploading ? (
-          <div className="flex flex-col items-center gap-2">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#D0103A] border-t-transparent" />
-            <span className="text-xs text-[#717171]">Uploading…</span>
-          </div>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <CircularProgress size={32} sx={{ color: "#D0103A" }} />
+            <Typography sx={{ fontSize: 12, color: "#717171" }}>Uploading…</Typography>
+          </Box>
         ) : currentUrl ? (
-          <div className="flex flex-col items-center gap-3">
-            <img
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 1.5,
+            }}
+          >
+            <Box
+              component="img"
               src={resolveUrl(currentUrl)}
               alt={label}
-              className="h-16 w-auto max-w-[140px] object-contain"
+              sx={{ height: 64, width: "auto", maxWidth: 140, objectFit: "contain" }}
             />
-            <span className="text-xs text-[#717171]">Click to replace</span>
-          </div>
+            <Typography sx={{ fontSize: 12, color: "#717171" }}>Click to replace</Typography>
+          </Box>
         ) : (
-          <div className="flex flex-col items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm text-xl">
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                height: 40,
+                width: 40,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "50%",
+                backgroundColor: "#fff",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+                fontSize: 20,
+              }}
+            >
               🖼
-            </div>
-            <span className="text-sm font-medium text-[#484848]">Upload logo</span>
-            <span className="text-xs text-[#717171]">PNG, SVG, JPG, WebP · max 10 MB</span>
-          </div>
+            </Box>
+            <Typography sx={{ fontSize: 14, fontWeight: 500, color: "#484848" }}>
+              Upload logo
+            </Typography>
+            <Typography sx={{ fontSize: 12, color: "#717171" }}>
+              PNG, SVG, JPG, WebP · max 10 MB
+            </Typography>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

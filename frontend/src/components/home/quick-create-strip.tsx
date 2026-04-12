@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import ButtonBase from "@mui/material/ButtonBase";
 import { createProject } from "@/lib/api/projects";
 
 const QUICK_CREATE_OPTIONS = [
@@ -32,24 +35,59 @@ export function QuickCreateStrip() {
   };
 
   return (
-    <div className="bg-white border-b border-[#EBEBEB] px-6 py-6">
-      <div className="mx-auto max-w-3xl">
-        <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-[#717171]">
+    <Box
+      sx={{
+        bgcolor: "#FFFFFF",
+        borderBottom: "1px solid #EBEBEB",
+        px: 3,
+        py: 3,
+      }}
+    >
+      <Box sx={{ mx: "auto", maxWidth: "48rem" }}>
+        <Typography
+          sx={{
+            mb: 2,
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            color: "#717171",
+          }}
+        >
           Quick create
-        </p>
-        <div className="flex gap-3">
+        </Typography>
+        <Box sx={{ display: "flex", gap: 1.5 }}>
           {QUICK_CREATE_OPTIONS.map((option) => (
-            <button
+            <ButtonBase
               key={option.type}
               onClick={() => handleQuickCreate(option.type)}
               disabled={creating !== null}
-              className="flex-1 rounded-xl border border-[#E8E8E8] bg-white px-4 py-3 text-center text-sm font-semibold text-[#222222] transition-all duration-200 hover:border-[#D0103A] hover:shadow-sm disabled:opacity-50"
+              sx={{
+                flex: 1,
+                borderRadius: "12px",
+                border: "1px solid #E8E8E8",
+                bgcolor: "#FFFFFF",
+                px: 2,
+                py: 1.5,
+                textAlign: "center",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                color: "#222222",
+                transition: "all 0.2s",
+                "&:hover": {
+                  borderColor: "#D0103A",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+                },
+                "&:disabled": {
+                  opacity: 0.5,
+                },
+              }}
             >
               {creating === option.type ? "Creating..." : `${option.icon} ${option.label}`}
-            </button>
+            </ButtonBase>
           ))}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

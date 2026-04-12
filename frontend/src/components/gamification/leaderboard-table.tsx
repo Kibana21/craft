@@ -1,5 +1,7 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 import type { LeaderboardEntry } from "@/types/gamification";
 
 interface LeaderboardTableProps {
@@ -15,14 +17,38 @@ export function LeaderboardTable({ entries, userEntry, userRank }: LeaderboardTa
     userEntry && !entries.some((e) => e.is_current_user);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#EBEBEB] bg-white">
+    <Box
+      sx={{
+        overflow: "hidden",
+        borderRadius: "16px",
+        border: "1px solid #E8EAED",
+        bgcolor: "#FFFFFF",
+      }}
+    >
       {/* Header */}
-      <div className="grid grid-cols-[40px_1fr_80px_80px] gap-4 border-b border-[#EBEBEB] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-[#AAAAAA]">
-        <span>#</span>
-        <span>Agent</span>
-        <span className="text-right">Points</span>
-        <span className="text-right">Streak</span>
-      </div>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "40px 1fr 80px 80px",
+          gap: 2,
+          borderBottom: "1px solid #E8EAED",
+          px: 3,
+          py: 1.5,
+        }}
+      >
+        <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#9E9E9E" }}>
+          #
+        </Typography>
+        <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#9E9E9E" }}>
+          Agent
+        </Typography>
+        <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#9E9E9E", textAlign: "right" }}>
+          Points
+        </Typography>
+        <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#9E9E9E", textAlign: "right" }}>
+          Streak
+        </Typography>
+      </Box>
 
       {entries.map((entry) => (
         <LeaderboardRow key={entry.user_id} entry={entry} />
@@ -31,13 +57,22 @@ export function LeaderboardTable({ entries, userEntry, userRank }: LeaderboardTa
       {/* Current user outside top N */}
       {showUserSeparate && userEntry && (
         <>
-          <div className="flex items-center justify-center py-2 text-xs text-[#AAAAAA]">
-            · · ·
-          </div>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              py: 1,
+            }}
+          >
+            <Typography variant="caption" sx={{ color: "#9E9E9E" }}>
+              · · ·
+            </Typography>
+          </Box>
           <LeaderboardRow entry={userEntry} />
         </>
       )}
-    </div>
+    </Box>
   );
 }
 
@@ -50,48 +85,99 @@ function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
     .slice(0, 2);
 
   return (
-    <div
-      className={`grid grid-cols-[40px_1fr_80px_80px] items-center gap-4 px-6 py-4 transition-colors ${
-        entry.is_current_user ? "bg-[#FFF0F3]" : "hover:bg-[#F7F7F7]"
-      }`}
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: "40px 1fr 80px 80px",
+        alignItems: "center",
+        gap: 2,
+        px: 3,
+        py: 2,
+        bgcolor: entry.is_current_user ? "#FFF0F3" : "#FFFFFF",
+        transition: "background-color 150ms ease",
+        "&:hover": {
+          bgcolor: entry.is_current_user ? "#FFF0F3" : "#F7F7F7",
+        },
+      }}
     >
       {/* Rank */}
-      <span className={`text-center text-sm font-bold ${entry.rank <= 3 ? "text-lg" : "text-[#717171]"}`}>
+      <Typography
+        sx={{
+          textAlign: "center",
+          fontWeight: 700,
+          fontSize: entry.rank <= 3 ? "1.125rem" : "0.875rem",
+          color: entry.rank <= 3 ? "inherit" : "#5F6368",
+        }}
+      >
         {rankIcon || entry.rank}
-      </span>
+      </Typography>
 
       {/* User */}
-      <div className="flex items-center gap-3 min-w-0">
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
         {entry.user_avatar ? (
-          <img
+          <Box
+            component="img"
             src={entry.user_avatar}
             alt={entry.user_name}
-            className="h-8 w-8 flex-shrink-0 rounded-full object-cover"
+            sx={{
+              height: 32,
+              width: 32,
+              flexShrink: 0,
+              borderRadius: "50%",
+              objectFit: "cover",
+            }}
           />
         ) : (
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#222222] text-xs font-bold text-white">
-            {initials}
-          </div>
+          <Box
+            sx={{
+              display: "flex",
+              height: 32,
+              width: 32,
+              flexShrink: 0,
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "50%",
+              bgcolor: "#1F1F1F",
+            }}
+          >
+            <Typography sx={{ fontSize: "0.75rem", fontWeight: 700, color: "#FFFFFF" }}>
+              {initials}
+            </Typography>
+          </Box>
         )}
-        <div className="min-w-0">
-          <p className={`truncate text-sm font-semibold ${entry.is_current_user ? "text-[#D0103A]" : "text-[#222222]"}`}>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            sx={{
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              color: entry.is_current_user ? "#D0103A" : "#1F1F1F",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
             {entry.user_name}
             {entry.is_current_user && (
-              <span className="ml-1.5 text-xs font-normal text-[#D0103A]">(you)</span>
+              <Typography
+                component="span"
+                sx={{ ml: 0.75, fontSize: "0.75rem", fontWeight: 400, color: "#D0103A" }}
+              >
+                (you)
+              </Typography>
             )}
-          </p>
-        </div>
-      </div>
+          </Typography>
+        </Box>
+      </Box>
 
       {/* Points */}
-      <p className="text-right text-sm font-bold text-[#222222]">
+      <Typography sx={{ textAlign: "right", fontSize: "0.875rem", fontWeight: 700, color: "#1F1F1F" }}>
         {entry.points.toLocaleString()}
-      </p>
+      </Typography>
 
       {/* Streak */}
-      <p className="text-right text-sm text-[#717171]">
+      <Typography sx={{ textAlign: "right", fontSize: "0.875rem", color: "#5F6368" }}>
         {entry.streak > 0 ? `🔥 ${entry.streak}` : "—"}
-      </p>
-    </div>
+      </Typography>
+    </Box>
   );
 }

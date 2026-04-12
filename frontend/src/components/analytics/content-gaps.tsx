@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 import type { ContentGap } from "@/types/analytics";
 
 interface ContentGapsProps {
@@ -13,68 +15,128 @@ export function ContentGaps({ gaps, isLoading }: ContentGapsProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-2">
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-12 animate-pulse rounded-xl bg-[#F7F7F7]" />
+          <Box
+            key={i}
+            sx={{
+              height: 48,
+              borderRadius: "12px",
+              bgcolor: "#F7F7F7",
+              "@keyframes pulse": {
+                "0%, 100%": { opacity: 1 },
+                "50%": { opacity: 0.4 },
+              },
+              animation: "pulse 1.5s ease-in-out infinite",
+            }}
+          />
         ))}
-      </div>
+      </Box>
     );
   }
 
   if (gaps.length === 0) {
     return (
-      <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-[#DDDDDD] text-sm text-[#B0B0B0]">
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: 96,
+          borderRadius: "12px",
+          border: "1px dashed #E8EAED",
+          fontSize: 14,
+          color: "#9E9E9E",
+        }}
+      >
         No content gaps detected
-      </div>
+      </Box>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[#EBEBEB]">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-[#EBEBEB] bg-[#F7F7F7]">
-            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#717171]">
-              Product
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-[#717171]">
-              Type
-            </th>
-            <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#717171]">
-              FSC Creates
-            </th>
-            <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-[#717171]">
-              Action
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+    <Box
+      sx={{
+        overflow: "hidden",
+        borderRadius: "12px",
+        border: "1px solid #F0F0F0",
+      }}
+    >
+      <Box component="table" sx={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+        <Box component="thead">
+          <Box
+            component="tr"
+            sx={{ borderBottom: "1px solid #F0F0F0", bgcolor: "#F7F7F7" }}
+          >
+            {["Product", "Type", "FSC Creates", "Action"].map((heading, idx) => (
+              <Box
+                key={heading}
+                component="th"
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  color: "#5F6368",
+                  textAlign: idx >= 2 ? "right" : "left",
+                }}
+              >
+                {heading}
+              </Box>
+            ))}
+          </Box>
+        </Box>
+        <Box component="tbody">
           {gaps.map((gap, i) => (
-            <tr
+            <Box
               key={i}
-              className="border-b border-[#EBEBEB] bg-white transition-colors last:border-0 hover:bg-[#F7F7F7]"
+              component="tr"
+              sx={{
+                borderBottom: i < gaps.length - 1 ? "1px solid #F0F0F0" : "none",
+                bgcolor: "#FFFFFF",
+                transition: "background-color 0.15s",
+                "&:hover": { bgcolor: "#F8F9FA" },
+              }}
             >
-              <td className="px-4 py-3 font-medium text-[#222222]">
+              <Box
+                component="td"
+                sx={{ px: 2, py: 1.5, fontWeight: 500, color: "#1F1F1F" }}
+              >
                 {gap.product || "—"}
-              </td>
-              <td className="px-4 py-3 text-[#484848]">
+              </Box>
+              <Box component="td" sx={{ px: 2, py: 1.5, color: "#5F6368" }}>
                 {gap.artifact_type.replace(/_/g, " ")}
-              </td>
-              <td className="px-4 py-3 text-right font-semibold text-[#D0103A]">
+              </Box>
+              <Box
+                component="td"
+                sx={{ px: 2, py: 1.5, textAlign: "right", fontWeight: 600, color: "#D0103A" }}
+              >
                 {gap.fsc_count}
-              </td>
-              <td className="px-4 py-3 text-right">
-                <button
+              </Box>
+              <Box component="td" sx={{ px: 2, py: 1.5, textAlign: "right" }}>
+                <Typography
+                  component="button"
                   onClick={() => router.push("/brand-library")}
-                  className="text-xs font-medium text-[#1B9D74] hover:underline"
+                  sx={{
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: "#1B9D74",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    p: 0,
+                    "&:hover": { textDecoration: "underline" },
+                  }}
                 >
                   Publish template →
-                </button>
-              </td>
-            </tr>
+                </Typography>
+              </Box>
+            </Box>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

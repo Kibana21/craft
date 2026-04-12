@@ -1,54 +1,132 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+
 export function StepBrandKit() {
   return (
-    <div>
-      <h2 className="text-[28px] font-bold text-[#222222]">
+    <Box>
+      <Typography
+        variant="h5"
+        sx={{ fontSize: 28, fontWeight: 700, color: "#1F1F1F" }}
+      >
         Brand + compliance kit
-      </h2>
-      <p className="mt-2 text-base text-[#717171]">
+      </Typography>
+      <Typography sx={{ mt: 1, fontSize: 16, color: "#5F6368" }}>
         Your project will use these brand assets and compliance rules
-      </p>
+      </Typography>
 
-      <div className="mt-10">
-        <div className="flex items-center justify-between rounded-xl border border-[#EBEBEB] bg-white p-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F0FFF0]">
-              <span className="text-lg text-[#008A05]">●</span>
-            </div>
-            <div>
-              <p className="text-base font-semibold text-[#222222]">
+      <Box sx={{ mt: 5 }}>
+        {/* Active brand kit row */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderRadius: "16px",
+            border: "1px solid #F0F0F0",
+            bgcolor: "#FFFFFF",
+            p: 3,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                bgcolor: "#F0FFF0",
+              }}
+            >
+              <Typography sx={{ fontSize: 18, color: "#008A05", lineHeight: 1 }}>
+                ●
+              </Typography>
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: 16, fontWeight: 600, color: "#1F1F1F" }}>
                 AIA Singapore — Brand Kit v1
-              </p>
-              <p className="mt-0.5 text-sm text-[#717171]">
+              </Typography>
+              <Typography sx={{ mt: 0.25, fontSize: 14, color: "#5F6368" }}>
                 MAS compliance rules active · 5 rules loaded
-              </p>
-            </div>
-          </div>
-          <button className="rounded-lg border border-[#222222] px-4 py-2 text-sm font-semibold text-[#222222] transition-colors hover:bg-[#F7F7F7]">
+              </Typography>
+            </Box>
+          </Box>
+          <Button
+            variant="outlined"
+            sx={{
+              borderRadius: 9999,
+              textTransform: "none",
+              borderColor: "#1F1F1F",
+              color: "#1F1F1F",
+              fontSize: 14,
+              fontWeight: 600,
+              px: 2,
+              py: 1,
+              "&:hover": { bgcolor: "#F7F7F7", borderColor: "#1F1F1F" },
+            }}
+          >
             Change
-          </button>
-        </div>
+          </Button>
+        </Box>
 
-        <div className="mt-6 grid grid-cols-3 gap-4">
-          <div className="rounded-xl border border-[#EBEBEB] bg-white p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <div className="h-5 w-5 rounded bg-[#D0103A]" />
-              <div className="h-5 w-5 rounded bg-[#1A1A18]" />
-              <div className="h-5 w-5 rounded bg-[#1B9D74]" />
-            </div>
-            <p className="text-xs font-medium text-[#717171]">Brand colours</p>
-          </div>
-          <div className="rounded-xl border border-[#EBEBEB] bg-white p-4">
-            <p className="mb-2 text-base font-semibold text-[#222222]">Aa</p>
-            <p className="text-xs font-medium text-[#717171]">Inter font family</p>
-          </div>
-          <div className="rounded-xl border border-[#EBEBEB] bg-white p-4">
-            <p className="mb-2 text-base">🛡️</p>
-            <p className="text-xs font-medium text-[#717171]">MAS compliant</p>
-          </div>
-        </div>
-      </div>
-    </div>
+        {/* Brand asset tiles */}
+        <Box sx={{ mt: 3, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2 }}>
+          {/* Colours */}
+          <Box
+            sx={{
+              borderRadius: "16px",
+              border: "1px solid #F0F0F0",
+              bgcolor: "#FFFFFF",
+              p: 2,
+            }}
+          >
+            <Box sx={{ mb: 1, display: "flex", alignItems: "center", gap: 0.75 }}>
+              <Box sx={{ width: 20, height: 20, borderRadius: "4px", bgcolor: "#D0103A" }} />
+              <Box sx={{ width: 20, height: 20, borderRadius: "4px", bgcolor: "#1A1A18" }} />
+              <Box sx={{ width: 20, height: 20, borderRadius: "4px", bgcolor: "#1B9D74" }} />
+            </Box>
+            <Typography sx={{ fontSize: 12, fontWeight: 500, color: "#5F6368" }}>
+              Brand colours
+            </Typography>
+          </Box>
+
+          {/* Typography */}
+          <Box
+            sx={{
+              borderRadius: "16px",
+              border: "1px solid #F0F0F0",
+              bgcolor: "#FFFFFF",
+              p: 2,
+            }}
+          >
+            <Typography sx={{ mb: 1, fontSize: 16, fontWeight: 600, color: "#1F1F1F" }}>
+              Aa
+            </Typography>
+            <Typography sx={{ fontSize: 12, fontWeight: 500, color: "#5F6368" }}>
+              Inter font family
+            </Typography>
+          </Box>
+
+          {/* Compliance */}
+          <Box
+            sx={{
+              borderRadius: "16px",
+              border: "1px solid #F0F0F0",
+              bgcolor: "#FFFFFF",
+              p: 2,
+            }}
+          >
+            <Typography sx={{ mb: 1, fontSize: 16 }}>🛡️</Typography>
+            <Typography sx={{ fontSize: 12, fontWeight: 500, color: "#5F6368" }}>
+              MAS compliant
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 }

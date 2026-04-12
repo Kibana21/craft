@@ -11,30 +11,85 @@ import { fetchMembers, type ProjectMember } from "@/lib/api/members";
 import type { ArtifactSuggestion } from "@/types/suggestion";
 import type { Artifact } from "@/types/artifact";
 import { isCreatorRole } from "@/lib/auth";
-import { badge, tab } from "@/lib/ui";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
+import Chip from "@mui/material/Chip";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import TextField from "@mui/material/TextField";
+import Avatar from "@mui/material/Avatar";
+import Skeleton from "@mui/material/Skeleton";
 
-const TYPE_META: Record<string, { icon: string; bg: string; label: string }> = {
-  video:         { icon: "▶",  bg: "bg-emerald-600", label: "Videos" },
-  poster:        { icon: "◻",  bg: "bg-violet-600",  label: "Posters" },
-  whatsapp_card: { icon: "✉",  bg: "bg-red-600",     label: "WhatsApp Cards" },
-  reel:          { icon: "▶",  bg: "bg-emerald-600", label: "Reels" },
-  story:         { icon: "◻",  bg: "bg-amber-600",   label: "Stories" },
-  infographic:   { icon: "📊", bg: "bg-cyan-600",    label: "Infographics" },
-  slide_deck:    { icon: "📋", bg: "bg-slate-700",   label: "Slide Decks" },
+// ─── Type metadata ────────────────────────────────────────────────────────────
+
+const TYPE_META: Record<string, { hex: string; pastel: string; label: string; icon: React.ReactNode; iconLg: React.ReactNode }> = {
+  video: {
+    hex: "#059669", pastel: "#E8F8F3", label: "Videos",
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M5 4l15 8L5 20V4z"/></svg>,
+    iconLg: <svg width="22" height="22" viewBox="0 0 24 24" fill="#059669"><path d="M5 4l15 8L5 20V4z"/></svg>,
+  },
+  reel: {
+    hex: "#059669", pastel: "#E8F8F3", label: "Reels",
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M5 4l15 8L5 20V4z"/></svg>,
+    iconLg: <svg width="22" height="22" viewBox="0 0 24 24" fill="#059669"><path d="M5 4l15 8L5 20V4z"/></svg>,
+  },
+  poster: {
+    hex: "#7C3AED", pastel: "#F2EDFF", label: "Posters",
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="white" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>,
+    iconLg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="#7C3AED" stroke="none"/><path d="M21 15l-5-5L5 21"/></svg>,
+  },
+  whatsapp_card: {
+    hex: "#D0103A", pastel: "#FFF0F3", label: "WhatsApp Cards",
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+    iconLg: <svg width="22" height="22" viewBox="0 0 24 24" fill="#D0103A"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  },
+  story: {
+    hex: "#D97706", pastel: "#FEF5E7", label: "Stories",
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><rect x="7" y="2" width="10" height="20" rx="2"/></svg>,
+    iconLg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round"><rect x="7" y="2" width="10" height="20" rx="2"/></svg>,
+  },
+  infographic: {
+    hex: "#0891B2", pastel: "#E0F5FB", label: "Infographics",
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>,
+    iconLg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0891B2" strokeWidth="2" strokeLinecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>,
+  },
+  slide_deck: {
+    hex: "#475569", pastel: "#F0F2F5", label: "Slide Decks",
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
+    iconLg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
+  },
 };
-const STATUS_BADGE: Record<string, string> = {
-  draft: badge.grey, ready: badge.green, exported: badge.green,
+
+const STATUS_CHIP: Record<string, { label: string; bg: string; color: string }> = {
+  draft:    { label: "draft",    bg: "#F1F3F4", color: "#5F6368" },
+  ready:    { label: "ready",   bg: "#E6F4EA", color: "#188038" },
+  exported: { label: "exported", bg: "#E6F4EA", color: "#188038" },
 };
-const SORT_LABELS: Record<string, string> = {
-  recent: "Most recent", name: "Name (A–Z)", oldest: "Oldest first",
-};
+
+const SORT_OPTIONS = [
+  { value: "recent", label: "Most recent" },
+  { value: "name",   label: "Name (A–Z)" },
+  { value: "oldest", label: "Oldest first" },
+];
 
 type TabId = "artifacts" | "suggestions" | "brief" | "members";
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+
   const [project, setProject]         = useState<ProjectDetail | null>(null);
   const [suggestions, setSuggestions] = useState<ArtifactSuggestion[]>([]);
   const [artifacts, setArtifacts]     = useState<Artifact[]>([]);
@@ -43,7 +98,6 @@ export default function ProjectDetailPage() {
   const [activeTab, setActiveTab]     = useState<TabId>("brief");
   const [view, setView]               = useState<"grid" | "list">("grid");
   const [sort, setSort]               = useState<"recent" | "name" | "oldest">("recent");
-  const [sortOpen, setSortOpen]       = useState(false);
   const [collapsed, setCollapsed]     = useState<Record<string, boolean>>({});
   const [showDelete, setShowDelete]   = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
@@ -84,18 +138,20 @@ export default function ProjectDetailPage() {
     return groups;
   }, [sortedArtifacts]);
 
+  // ── Loading ──
   if (isLoading || !project || !user) {
     return (
-      <div className="mx-auto max-w-[1200px] px-6 py-6">
-        <div className="h-5 w-24 animate-pulse rounded-full bg-[#F1F3F4]" />
-        <div className="mt-3 h-7 w-56 animate-pulse rounded-lg bg-[#F1F3F4]" />
-        <div className="mt-6 h-10 w-full animate-pulse rounded-lg bg-[#F1F3F4]" />
-        <div className="mt-4 grid grid-cols-4 gap-3">
+      <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 3 }}>
+        <Skeleton width={80} height={32} sx={{ borderRadius: 9999, mb: 2 }} />
+        <Skeleton width={280} height={32} sx={{ borderRadius: 1, mb: 1 }} />
+        <Skeleton width={120} height={16} sx={{ borderRadius: 1, mb: 3 }} />
+        <Skeleton height={44} sx={{ borderRadius: 1, mb: 2 }} />
+        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1.5 }}>
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-xl bg-[#F1F3F4]" />
+            <Skeleton key={i} height={112} sx={{ borderRadius: "12px" }} />
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
     );
   }
 
@@ -105,32 +161,6 @@ export default function ProjectDetailPage() {
   const canManage = isOwner || isCreator;
   const selectedSuggestions = suggestions.filter((s) => s.selected);
 
-  const handleToggleStatus = async () => {
-    setIsActing(true);
-    try {
-      const newStatus = project.status === "active" ? "archived" : "active";
-      const updated = await setProjectStatus(project.id, newStatus);
-      if (newStatus === "archived") {
-        router.push("/home");
-      } else {
-        setProject(updated);
-        setIsActing(false);
-      }
-    } catch {
-      setIsActing(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    setIsActing(true);
-    try {
-      await deleteProject(project.id);
-      router.push("/home");
-    } catch {
-      setIsActing(false);
-    }
-  };
-
   const TABS: { id: TabId; label: string; count?: number }[] = [
     { id: "brief",       label: "Brief" },
     { id: "artifacts",   label: "Artifacts",   count: artifacts.length },
@@ -138,399 +168,622 @@ export default function ProjectDetailPage() {
     ...(isTeam ? [{ id: "members" as TabId, label: "Members", count: members.length }] : []),
   ];
 
+  const tabIndex = TABS.findIndex((t) => t.id === activeTab);
+
+  const handleToggleStatus = async () => {
+    setIsActing(true);
+    try {
+      const newStatus = project.status === "active" ? "archived" : "active";
+      const updated = await setProjectStatus(project.id, newStatus);
+      if (newStatus === "archived") router.push("/home");
+      else { setProject(updated); setIsActing(false); }
+    } catch { setIsActing(false); }
+  };
+
+  const handleDelete = async () => {
+    setIsActing(true);
+    try {
+      await deleteProject(project.id);
+      router.push("/home");
+    } catch { setIsActing(false); }
+  };
+
   return (
-    <div className="mx-auto max-w-[1200px] px-6 py-5">
+    <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 3 }}>
 
-      {/* ── Compact header ── */}
-      <div className="mb-3 flex items-center gap-2.5">
-        <button
+      {/* ── Header row 1: back + badges ── */}
+      <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>
+        <Button
+          variant="outlined"
+          size="small"
           onClick={() => router.push("/home")}
-          className="inline-flex items-center gap-1.5 rounded-full border border-[#E8EAED] px-3 py-1.5 text-[13px] font-medium text-[#5F6368] transition-colors hover:border-[#DADCE0] hover:bg-[#F1F3F4] hover:text-[#1F1F1F]"
+          startIcon={
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 4L6 8l4 4" />
+            </svg>
+          }
+          sx={{
+            borderColor: "#E8EAED",
+            color: "#5F6368",
+            fontSize: "13px",
+            fontWeight: 500,
+            px: 1.5,
+            py: 0.5,
+            "&:hover": { borderColor: "#DADCE0", bgcolor: "#F1F3F4", color: "#1F1F1F" },
+          }}
         >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M10 4L6 8l4 4" />
-          </svg>
           Back
-        </button>
-        <ProjectPurposeBadge purpose={project.purpose} />
-        {isTeam && (
-          <span className="rounded-full bg-[#E6F4EA] px-2.5 py-0.5 text-[11px] font-medium text-[#188038]">
-            Team · {project.member_count} members
-          </span>
-        )}
-      </div>
+        </Button>
 
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-[22px] font-semibold text-[#1F1F1F]">{project.name}</h1>
-          <p className="mt-0.5 text-[13px] text-[#80868B]">by {project.owner.name}</p>
-        </div>
+        <ProjectPurposeBadge purpose={project.purpose} />
+
+        {isTeam && (
+          <Chip
+            label={`Team · ${project.member_count} members`}
+            size="small"
+            color="success"
+            sx={{ height: 22, fontSize: "11px", fontWeight: 600 }}
+          />
+        )}
+
+        {project.status === "archived" && (
+          <Chip
+            label="Archived"
+            size="small"
+            sx={{ height: 22, fontSize: "11px", fontWeight: 600, bgcolor: "#F1F3F4", color: "#5F6368" }}
+          />
+        )}
+      </Box>
+
+      {/* ── Header row 2: title + actions ── */}
+      <Box sx={{ mb: 3, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 3 }}>
+        <Box>
+          <Typography variant="h1" sx={{ fontSize: "24px", fontWeight: 700, color: "#1A1A1A", lineHeight: 1.2 }}>
+            {project.name}
+          </Typography>
+          <Typography sx={{ mt: 0.5, fontSize: "13px", color: "#9E9E9E" }}>
+            by {project.owner.name}
+          </Typography>
+        </Box>
+
         {canManage && (
-          <div className="flex items-center gap-2">
-            <button
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0, mt: 0.5 }}>
+            <Button
+              variant="outlined"
+              size="small"
               onClick={handleToggleStatus}
               disabled={isActing}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#E8EAED] px-4 py-2 text-[13px] font-medium text-[#5F6368] transition-colors hover:border-[#DADCE0] hover:bg-[#F1F3F4] hover:text-[#1F1F1F] disabled:opacity-50"
+              startIcon={
+                project.status === "active"
+                  ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              }
+              sx={{ borderColor: "#E8EAED", color: "#5F6368", fontSize: "13px", fontWeight: 500, "&:hover": { borderColor: "#DADCE0", bgcolor: "#F1F3F4", color: "#1F1F1F" } }}
             >
-              {project.status === "active" ? (
-                <>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                  </svg>
-                  Archive
-                </>
-              ) : (
-                <>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                  </svg>
-                  Restore
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => { setShowDelete(true); setDeleteConfirm(""); }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#E8EAED] px-4 py-2 text-[13px] font-medium text-[#D0103A] transition-colors hover:border-[#D0103A] hover:bg-[#FFF8F9]"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-              </svg>
-              Delete
-            </button>
-            {project.status === "archived" && (
-              <span className="rounded-full bg-[#F1F3F4] px-2.5 py-0.5 text-[11px] font-medium text-[#80868B]">Archived</span>
-            )}
-          </div>
-        )}
-      </div>
+              {project.status === "active" ? "Archive" : "Restore"}
+            </Button>
 
-      {/* ── Delete confirmation dialog ── */}
-      {showDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-[0_8px_40px_rgba(0,0,0,0.18)]">
-            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-full bg-[#FFF0F3]">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D0103A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
-              </svg>
-            </div>
-            <h2 className="text-[17px] font-semibold text-[#1F1F1F]">Delete &ldquo;{project.name}&rdquo;?</h2>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-[#5F6368]">
-              This will permanently delete the project and all its artifacts, suggestions, and members. This action cannot be undone.
-            </p>
-            <p className="mt-4 text-[12px] font-medium text-[#3C4043]">
-              Type <span className="font-semibold text-[#1F1F1F]">{project.name}</span> to confirm
-            </p>
-            <input
-              type="text"
-              value={deleteConfirm}
-              onChange={(e) => setDeleteConfirm(e.target.value)}
-              placeholder={project.name}
-              className="mt-2 w-full rounded-lg border border-[#E8EAED] px-3.5 py-2.5 text-[13px] text-[#1F1F1F] placeholder:text-[#B0B0B0] focus:border-[#D0103A] focus:outline-none"
-            />
-            <div className="mt-5 flex gap-2.5">
-              <button
-                onClick={() => setShowDelete(false)}
-                className="flex-1 rounded-lg border border-[#E8EAED] py-2.5 text-[13px] font-medium text-[#3C4043] transition-colors hover:bg-[#F1F3F4]"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleteConfirm !== project.name || isActing}
-                className="flex-1 rounded-lg bg-[#D0103A] py-2.5 text-[13px] font-medium text-white transition-all hover:bg-[#B80E33] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {isActing ? "Deleting..." : "Delete project"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => { setShowDelete(true); setDeleteConfirm(""); }}
+              startIcon={
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+                </svg>
+              }
+              sx={{
+                borderColor: "#FADDE1",
+                color: "#D0103A",
+                fontSize: "13px",
+                fontWeight: 500,
+                "&:hover": { borderColor: "#D0103A", bgcolor: "#FFF0F3" },
+              }}
+            >
+              Delete
+            </Button>
+          </Box>
+        )}
+      </Box>
 
       {/* ── Tabs ── */}
-      <div className={tab.root}>
-        <div className="flex items-end gap-1">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={`relative pb-3.5 pr-6 text-[14px] font-medium transition-colors ${
-                activeTab === t.id
-                  ? "text-[#1F1F1F] font-semibold"
-                  : "text-[#80868B] hover:text-[#3C4043]"
-              }`}
-            >
-              {t.label}
-              {t.count !== undefined && t.count > 0 && (
-                <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[11px] ${
-                  activeTab === t.id ? "bg-[#F1F3F4] text-[#3C4043]" : "bg-[#F1F3F4] text-[#80868B]"
-                }`}>
-                  {t.count}
-                </span>
-              )}
-              {activeTab === t.id && (
-                <span className={tab.indicator} />
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
+      <Tabs
+        value={tabIndex === -1 ? 0 : tabIndex}
+        onChange={(_, i) => setActiveTab(TABS[i].id)}
+        sx={{ mb: 3.5 }}
+      >
+        {TABS.map((t) => (
+          <Tab
+            key={t.id}
+            disableRipple
+            label={
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.875 }}>
+                {t.label}
+                {t.count !== undefined && t.count > 0 && (
+                  <Box
+                    component="span"
+                    sx={{
+                      bgcolor: "#F1F3F4",
+                      color: "#5F6368",
+                      borderRadius: 9999,
+                      px: 0.875,
+                      py: 0.125,
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      lineHeight: "16px",
+                    }}
+                  >
+                    {t.count}
+                  </Box>
+                )}
+              </Box>
+            }
+          />
+        ))}
+      </Tabs>
 
-      {/* ── Tab content ── */}
-
-      {/* Artifacts tab */}
-      {activeTab === "artifacts" && (
-        <div>
-          {artifacts.length > 0 ? (
-            <>
-              {/* Toolbar */}
-              <div className="mb-5 flex items-center justify-end gap-2">
-                {/* View toggle */}
-                <div className="flex items-center rounded-full border border-[#E8EAED] bg-white p-1">
-                  <button onClick={() => setView("grid")} title="Grid view"
-                    className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${view === "grid" ? "bg-[#E8EAED] text-[#1F1F1F]" : "text-[#80868B] hover:text-[#3C4043]"}`}>
-                    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
-                      <rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/>
-                      <rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/>
-                    </svg>
-                  </button>
-                  <button onClick={() => setView("list")} title="List view"
-                    className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${view === "list" ? "bg-[#E8EAED] text-[#1F1F1F]" : "text-[#80868B] hover:text-[#3C4043]"}`}>
-                    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                      <line x1="3" y1="4" x2="13" y2="4"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="3" y1="12" x2="13" y2="12"/>
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Sort */}
-                <div className="relative">
-                  <button onClick={() => setSortOpen((o) => !o)}
-                    className="flex items-center gap-1.5 rounded-full border border-[#E8EAED] bg-white px-4 py-1.5 text-[13px] font-medium text-[#3C4043] transition-colors hover:bg-[#F1F3F4]">
-                    {SORT_LABELS[sort]}
-                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6l4 4 4-4"/></svg>
-                  </button>
-                  {sortOpen && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setSortOpen(false)} />
-                      <div className="absolute right-0 top-full z-20 mt-1.5 w-44 overflow-hidden rounded-xl border border-[#E8EAED] bg-white py-1 shadow-[0_4px_16px_rgba(32,33,36,0.12)]">
-                        {(Object.keys(SORT_LABELS) as Array<"recent"|"name"|"oldest">).map((s) => (
-                          <button key={s} onClick={() => { setSort(s); setSortOpen(false); }}
-                            className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-[13px] transition-colors hover:bg-[#F1F3F4] ${sort === s ? "font-medium text-[#1F1F1F]" : "text-[#5F6368]"}`}>
-                            {sort === s
-                              ? <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#D0103A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="2 8 6 12 14 4"/></svg>
-                              : <span className="w-[13px]" />}
-                            {SORT_LABELS[s]}
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Type groups */}
-              <div className="space-y-4">
-                {Object.entries(groupedArtifacts).map(([type, items]) => {
-                  const meta  = TYPE_META[type] ?? { icon: "◻", bg: "bg-violet-600", label: type };
-                  const isCollapsed = collapsed[type];
-                  return (
-                    <div key={type} className="rounded-xl border border-[#E8EAED] bg-white overflow-hidden">
-                      {/* Group header */}
-                      <button
-                        onClick={() => setCollapsed((c) => ({ ...c, [type]: !c[type] }))}
-                        className="flex w-full items-center gap-3 px-4 py-3 hover:bg-[#F8F9FA] transition-colors"
-                      >
-                        <div className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs text-white ${meta.bg}`}>
-                          {meta.icon}
-                        </div>
-                        <span className="text-[14px] font-medium text-[#1F1F1F]">{meta.label}</span>
-                        <span className="rounded-full bg-[#F1F3F4] px-2 py-0.5 text-[11px] font-medium text-[#5F6368]">{items.length}</span>
-                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#80868B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                          className={`ml-auto transition-transform ${isCollapsed ? "-rotate-90" : ""}`}>
-                          <path d="M4 6l4 4 4-4"/>
-                        </svg>
-                      </button>
-
-                      {/* Group content */}
-                      {!isCollapsed && (
-                        <div className="border-t border-[#F1F3F4] px-4 pb-4 pt-3">
-                          {view === "grid" ? (
-                            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
-                              {items.map((artifact) => (
-                                <button key={artifact.id}
-                                  onClick={() => router.push(`/projects/${id}/artifacts/${artifact.id}`)}
-                                  className="flex flex-col rounded-xl border border-[#E8EAED] bg-[#FAFAFA] p-3.5 text-left transition-all hover:border-[#DADCE0] hover:bg-white hover:shadow-[0_1px_6px_rgba(32,33,36,0.08)]">
-                                  <p className="line-clamp-2 text-[13px] font-medium leading-snug text-[#1F1F1F]">{artifact.name}</p>
-                                  <div className="mt-2 flex items-center justify-between">
-                                    <span className={STATUS_BADGE[artifact.status] ?? badge.grey}>{artifact.status}</span>
-                                    <span className="text-[11px] text-[#80868B]">v{artifact.version}</span>
-                                  </div>
-                                </button>
-                              ))}
-                              <button onClick={() => router.push(`/projects/${project.id}/artifacts/new`)}
-                                className="flex flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[#DADCE0] p-3.5 text-[#80868B] transition-all hover:border-[#D0103A] hover:bg-[#FFF8F9] hover:text-[#D0103A]"
-                                style={{ minHeight: 80 }}>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                                </svg>
-                                <span className="text-[11px] font-medium">New</span>
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="space-y-1.5">
-                              {items.map((artifact) => (
-                                <button key={artifact.id}
-                                  onClick={() => router.push(`/projects/${id}/artifacts/${artifact.id}`)}
-                                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-[#F8F9FA]">
-                                  <div className="min-w-0 flex-1">
-                                    <p className="truncate text-[13px] font-medium text-[#1F1F1F]">{artifact.name}</p>
-                                  </div>
-                                  <span className={STATUS_BADGE[artifact.status] ?? badge.grey}>{artifact.status}</span>
-                                  <span className="shrink-0 text-[11px] text-[#80868B]">v{artifact.version}</span>
-                                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#DADCE0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M6 4l4 4-4 4"/>
-                                  </svg>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#E8EAED] bg-white py-16">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F1F3F4] text-2xl">🎨</div>
-              <p className="mt-3 text-[14px] font-medium text-[#1F1F1F]">No artifacts yet</p>
-              <p className="mt-1 text-[13px] text-[#80868B]">Create your first artifact for this project</p>
-              <button onClick={() => router.push(`/projects/${project.id}/artifacts/new`)}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-[#1F1F1F] px-4 py-2 text-[13px] font-medium text-white transition-colors hover:bg-[#3C4043]">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                  <line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/>
-                </svg>
-                New artifact
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Suggestions tab */}
-      {activeTab === "suggestions" && (
-        <div>
-          {selectedSuggestions.length > 0 ? (
-            <div className="space-y-1.5">
-              {selectedSuggestions.map((s) => {
-                const meta = TYPE_META[s.artifact_type] ?? { icon: "◻", bg: "bg-violet-600", label: s.artifact_type };
-                const icon = meta.icon;
-                const bg   = meta.bg;
-                return (
-                  <div key={s.id} className="group flex items-center gap-3 rounded-xl border border-[#E8EAED] bg-white px-4 py-3 transition-all hover:border-[#DADCE0] hover:shadow-[0_1px_4px_rgba(32,33,36,0.08)]">
-                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm text-white ${bg}`}>{icon}</div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-medium text-[#1F1F1F]">{s.artifact_name}</p>
-                      <p className="truncate text-[12px] text-[#80868B]">{s.description}</p>
-                    </div>
-                    <button
-                      onClick={() => router.push(`/projects/${id}/artifacts/new`)}
-                      className="shrink-0 rounded-full border border-[#E8EAED] px-3 py-1.5 text-[12px] font-medium text-[#5F6368] opacity-0 transition-all group-hover:opacity-100 hover:bg-[#F1F3F4]"
-                    >
-                      Start →
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#E8EAED] bg-white py-16">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F1F3F4] text-2xl">💡</div>
-              <p className="mt-3 text-[14px] font-medium text-[#1F1F1F]">No suggestions</p>
-              <p className="mt-1 text-[13px] text-[#80868B]">Suggestions will appear based on your project brief</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Brief tab */}
+      {/* ══════════════════════════════════════════════════
+          BRIEF TAB
+      ══════════════════════════════════════════════════ */}
       {activeTab === "brief" && (
-        <div className="max-w-xl space-y-3">
+        <Box sx={{ maxWidth: 560 }}>
           {/* Key-value fields */}
-          <div className="rounded-xl border border-[#E8EAED] bg-white divide-y divide-[#F1F3F4]">
+          <Box sx={{ borderRadius: "14px", border: "1px solid #F0F0F0", bgcolor: "#FFFFFF", overflow: "hidden", mb: 2 }}>
             {[
-              { label: "Product",   value: project.product },
-              { label: "Audience",  value: project.target_audience },
-              { label: "Period",    value: project.campaign_period },
-              { label: "Brand kit", value: project.brand_kit_id ? "Active" : null, green: true },
+              { label: "Product",     value: project.product },
+              { label: "Audience",    value: project.target_audience },
+              { label: "Period",      value: project.campaign_period },
+              { label: "Brand kit",   value: project.brand_kit_id ? "Active" : null, green: true },
               { label: "Key message", value: project.key_message },
-            ].filter((f) => f.value).map(({ label, value, green }) => (
-              <div key={label} className="flex items-baseline gap-6 px-5 py-3.5">
-                <span className="w-24 shrink-0 text-[12px] text-[#80868B]">{label}</span>
-                <span className={`text-[14px] font-medium ${green ? "text-[#188038]" : "text-[#1F1F1F]"}`}>{value}</span>
-              </div>
+            ].filter((f) => f.value).map(({ label, value, green }, i, arr) => (
+              <Box
+                key={label}
+                sx={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: 4,
+                  px: 2.5,
+                  py: 1.75,
+                  borderBottom: i < arr.length - 1 ? "1px solid #F5F5F5" : "none",
+                }}
+              >
+                <Typography sx={{ width: 96, flexShrink: 0, fontSize: "12px", color: "#9E9E9E" }}>{label}</Typography>
+                <Typography sx={{ fontSize: "14px", fontWeight: 500, color: green ? "#188038" : "#1F1F1F" }}>{value}</Typography>
+              </Box>
             ))}
-          </div>
+          </Box>
 
           {/* Stats */}
-          <div className="rounded-xl border border-[#E8EAED] bg-white px-5 py-4">
-            <p className="mb-3 text-[12px] font-medium text-[#80868B]">Stats</p>
-            <div className="flex gap-8">
+          <Box sx={{ borderRadius: "14px", border: "1px solid #F0F0F0", bgcolor: "#FFFFFF", px: 2.5, py: 2.5 }}>
+            <Typography sx={{ mb: 2, fontSize: "12px", fontWeight: 600, color: "#9E9E9E", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Stats
+            </Typography>
+            <Box sx={{ display: "flex", gap: 5 }}>
               {[
                 { label: "Artifacts",   value: project.artifact_count },
                 { label: "Suggestions", value: project.suggestion_count },
                 ...(isTeam ? [{ label: "Members", value: project.member_count }] : []),
               ].map(({ label, value }) => (
-                <div key={label}>
-                  <p className="text-[24px] font-semibold text-[#1F1F1F]">{value}</p>
-                  <p className="text-[12px] text-[#80868B]">{label}</p>
-                </div>
+                <Box key={label}>
+                  <Typography sx={{ fontSize: "26px", fontWeight: 700, color: "#1A1A1A", lineHeight: 1.1 }}>{value}</Typography>
+                  <Typography sx={{ fontSize: "12px", color: "#9E9E9E", mt: 0.5 }}>{label}</Typography>
+                </Box>
               ))}
-              <div>
-                <span className="inline-block rounded-full bg-[#E6F4EA] px-2.5 py-0.5 text-[12px] font-medium text-[#188038]">{project.status}</span>
-                <p className="mt-1 text-[12px] text-[#80868B]">Status</p>
-              </div>
-            </div>
-          </div>
-        </div>
+              <Box>
+                <Chip
+                  label={project.status}
+                  size="small"
+                  color={project.status === "active" ? "success" : "default"}
+                  sx={{ height: 24, fontSize: "12px", fontWeight: 600, mb: 0.5 }}
+                />
+                <Typography sx={{ fontSize: "12px", color: "#9E9E9E" }}>Status</Typography>
+              </Box>
+            </Box>
+          </Box>
+        </Box>
       )}
 
-      {/* Members tab — team only */}
+      {/* ══════════════════════════════════════════════════
+          ARTIFACTS TAB
+      ══════════════════════════════════════════════════ */}
+      {activeTab === "artifacts" && (
+        <Box>
+          {artifacts.length === 0 ? (
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: "20px", background: "linear-gradient(135deg,#FFF8FA 0%,#FAFCFF 100%)", border: "1.5px dashed #E8EAED", py: 12 }}>
+              <Box sx={{ width: 56, height: 56, borderRadius: "16px", bgcolor: "#FCE8EC", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "26px", mb: 2 }}>🎨</Box>
+              <Typography sx={{ fontSize: "16px", fontWeight: 700, color: "#1F1F1F" }}>No artifacts yet</Typography>
+              <Typography sx={{ fontSize: "13px", color: "#9E9E9E", mt: 0.75, mb: 3 }}>Create your first artifact for this project</Typography>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => router.push(`/projects/${project.id}/artifacts/new`)}
+                startIcon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>}
+                sx={{ fontWeight: 600, fontSize: "13px", px: 3 }}
+              >
+                New artifact
+              </Button>
+            </Box>
+          ) : (
+            <>
+              {/* Toolbar */}
+              <Box sx={{ mb: 3, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 1 }}>
+                <ToggleButtonGroup exclusive value={view} onChange={(_, v) => { if (v) setView(v); }} size="small"
+                  sx={{ "& .MuiToggleButton-root": { px: 1.25, py: 0.625, border: "1px solid #E8EAED", color: "#9E9E9E", "&.Mui-selected": { bgcolor: "#1F1F1F", color: "#FFFFFF", borderColor: "#1F1F1F" }, "&:hover:not(.Mui-selected)": { bgcolor: "#F5F5F5" } } }}>
+                  <ToggleButton value="grid" title="Grid view">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                      <rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/>
+                      <rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/>
+                    </svg>
+                  </ToggleButton>
+                  <ToggleButton value="list" title="List view">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                      <line x1="3" y1="4" x2="13" y2="4"/><line x1="3" y1="8" x2="13" y2="8"/><line x1="3" y1="12" x2="13" y2="12"/>
+                    </svg>
+                  </ToggleButton>
+                </ToggleButtonGroup>
+
+                <Box sx={{ display: "flex", alignItems: "center", borderRadius: 9999, border: "1px solid #E8EAED", bgcolor: "#FFFFFF", px: 1.75, height: 34, "&:hover": { bgcolor: "#F5F5F5" }, transition: "background 0.15s ease" }}>
+                  <Select
+                    variant="standard"
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as "recent" | "name" | "oldest")}
+                    disableUnderline
+                    sx={{ fontSize: "13px", fontWeight: 500, color: "#3C4043", "& .MuiSelect-select": { p: 0, pr: "20px !important" }, "& .MuiSelect-icon": { right: 0, color: "#757575", fontSize: "18px" } }}
+                  >
+                    {SORT_OPTIONS.map((o) => <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+                  </Select>
+                </Box>
+
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  onClick={() => router.push(`/projects/${project.id}/artifacts/new`)}
+                  startIcon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>}
+                  sx={{ fontWeight: 600, fontSize: "13px", px: 2, height: 34 }}
+                >
+                  New artifact
+                </Button>
+              </Box>
+
+              {/* Type groups */}
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                {Object.entries(groupedArtifacts).map(([type, items]) => {
+                  const meta = TYPE_META[type] ?? { hex: "#6B7280", pastel: "#F5F5F5", label: type, icon: <span>◻</span>, iconLg: <span>◻</span> };
+                  const isCollapsed = collapsed[type];
+
+                  return (
+                    <Box key={type}>
+                      {/* Section header — clean, no box */}
+                      <Box
+                        onClick={() => setCollapsed((c) => ({ ...c, [type]: !c[type] }))}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.25,
+                          mb: 1.5,
+                          cursor: "pointer",
+                          userSelect: "none",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: "9px",
+                            bgcolor: meta.hex,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {meta.icon}
+                        </Box>
+                        <Typography sx={{ fontSize: "14px", fontWeight: 700, color: "#1F1F1F" }}>{meta.label}</Typography>
+                        <Box
+                          component="span"
+                          sx={{ borderRadius: 9999, bgcolor: meta.pastel, color: meta.hex, px: 1, py: 0.25, fontSize: "11px", fontWeight: 700 }}
+                        >
+                          {items.length}
+                        </Box>
+                        <Box sx={{ ml: "auto", color: "#BDBDBD", display: "flex", alignItems: "center", transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform 0.2s ease" }}>
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M4 6l4 4 4-4"/>
+                          </svg>
+                        </Box>
+                      </Box>
+
+                      {/* Group content */}
+                      {!isCollapsed && (
+                        view === "grid" ? (
+                          <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5, "@media (min-width:600px)": { gridTemplateColumns: "repeat(3, 1fr)" }, "@media (min-width:900px)": { gridTemplateColumns: "repeat(5, 1fr)" } }}>
+                            {items.map((artifact) => {
+                              const sc = STATUS_CHIP[artifact.status] ?? STATUS_CHIP.draft;
+                              return (
+                                <Box
+                                  key={artifact.id}
+                                  onClick={() => router.push(`/projects/${id}/artifacts/${artifact.id}`)}
+                                  role="button"
+                                  tabIndex={0}
+                                  onKeyDown={(e) => { if (e.key === "Enter") router.push(`/projects/${id}/artifacts/${artifact.id}`); }}
+                                  sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    borderRadius: "14px",
+                                    overflow: "hidden",
+                                    cursor: "pointer",
+                                    transition: "all 0.18s ease",
+                                    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                                    "&:hover": { transform: "translateY(-2px)", boxShadow: "0 6px 20px rgba(0,0,0,0.10)" },
+                                  }}
+                                >
+                                  {/* Card thumbnail area */}
+                                  <Box sx={{
+                                    bgcolor: meta.pastel,
+                                    height: 88,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    position: "relative",
+                                  }}>
+                                    <Box sx={{ opacity: 0.6 }}>{meta.iconLg}</Box>
+                                    <Box component="span" sx={{ position: "absolute", top: 8, right: 8, borderRadius: 9999, bgcolor: sc.bg, color: sc.color, px: 1, py: 0.25, fontSize: "10px", fontWeight: 700 }}>
+                                      {sc.label}
+                                    </Box>
+                                  </Box>
+                                  {/* Card info area */}
+                                  <Box sx={{ bgcolor: "#FFFFFF", px: 1.5, py: 1.25 }}>
+                                    <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "#1F1F1F", lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", mb: 0.5 }}>
+                                      {artifact.name}
+                                    </Typography>
+                                    <Typography sx={{ fontSize: "11px", color: "#BDBDBD" }}>v{artifact.version}</Typography>
+                                  </Box>
+                                </Box>
+                              );
+                            })}
+
+                            {/* New artifact card */}
+                            <Box
+                              onClick={() => router.push(`/projects/${project.id}/artifacts/new`)}
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => { if (e.key === "Enter") router.push(`/projects/${project.id}/artifacts/new`); }}
+                              sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: 0.75,
+                                borderRadius: "14px",
+                                border: "1.5px dashed #E0E0E0",
+                                minHeight: 130,
+                                cursor: "pointer",
+                                color: "#C0C0C0",
+                                bgcolor: "#FAFAFA",
+                                transition: "all 0.18s ease",
+                                "&:hover": { borderColor: "#D0103A", bgcolor: "#FFF5F7", color: "#D0103A" },
+                              }}
+                            >
+                              <Box sx={{ width: 32, height: 32, borderRadius: "50%", bgcolor: "currentColor", opacity: 0.12, position: "absolute" }} />
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                              </svg>
+                              <Typography sx={{ fontSize: "12px", fontWeight: 600, color: "inherit" }}>New</Typography>
+                            </Box>
+                          </Box>
+                        ) : (
+                          /* List view */
+                          <Box sx={{ borderRadius: "14px", border: "1px solid #F0F0F0", bgcolor: "#FFFFFF", overflow: "hidden" }}>
+                            {items.map((artifact, idx) => {
+                              const sc = STATUS_CHIP[artifact.status] ?? STATUS_CHIP.draft;
+                              return (
+                                <Box
+                                  key={artifact.id}
+                                  onClick={() => router.push(`/projects/${id}/artifacts/${artifact.id}`)}
+                                  role="button"
+                                  tabIndex={0}
+                                  onKeyDown={(e) => { if (e.key === "Enter") router.push(`/projects/${id}/artifacts/${artifact.id}`); }}
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 2,
+                                    px: 2,
+                                    py: 1.5,
+                                    cursor: "pointer",
+                                    borderBottom: idx < items.length - 1 ? "1px solid #F5F5F5" : "none",
+                                    transition: "background 0.15s ease",
+                                    "&:hover": { bgcolor: "#FAFAFA" },
+                                  }}
+                                >
+                                  <Box sx={{ width: 36, height: 36, borderRadius: "9px", bgcolor: meta.pastel, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                    <Box sx={{ opacity: 0.8 }}>{meta.iconLg && <svg width="16" height="16" viewBox="0 0 24 24" fill={meta.hex}>{type === "video" || type === "reel" ? <path d="M5 4l15 8L5 20V4z"/> : type === "whatsapp_card" ? <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/> : null}</svg>}</Box>
+                                  </Box>
+                                  <Typography sx={{ flex: 1, fontSize: "13px", fontWeight: 500, color: "#1F1F1F", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {artifact.name}
+                                  </Typography>
+                                  <Box component="span" sx={{ borderRadius: 9999, bgcolor: sc.bg, color: sc.color, px: 1.25, py: 0.375, fontSize: "11px", fontWeight: 600, flexShrink: 0 }}>
+                                    {sc.label}
+                                  </Box>
+                                  <Typography sx={{ fontSize: "11px", color: "#BDBDBD", flexShrink: 0, minWidth: 24 }}>v{artifact.version}</Typography>
+                                  <Box sx={{ color: "#D0D0D0", flexShrink: 0, display: "flex" }}>
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M6 4l4 4-4 4"/>
+                                    </svg>
+                                  </Box>
+                                </Box>
+                              );
+                            })}
+                          </Box>
+                        )
+                      )}
+                    </Box>
+                  );
+                })}
+              </Box>
+            </>
+          )}
+        </Box>
+      )}
+
+      {/* ══════════════════════════════════════════════════
+          SUGGESTIONS TAB
+      ══════════════════════════════════════════════════ */}
+      {activeTab === "suggestions" && (
+        <Box>
+          {selectedSuggestions.length > 0 ? (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {selectedSuggestions.map((s) => {
+                const meta = TYPE_META[s.artifact_type] ?? { hex: "#7C3AED", label: s.artifact_type, icon: <span>◻</span> };
+                return (
+                  <Box
+                    key={s.id}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      borderRadius: "14px",
+                      border: "1px solid #F0F0F0",
+                      bgcolor: "#FFFFFF",
+                      px: 2,
+                      py: 1.5,
+                      transition: "all 0.15s ease",
+                      "& .start-btn": { opacity: 0 },
+                      "&:hover": { borderColor: "#E0E0E0", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", "& .start-btn": { opacity: 1 } },
+                    }}
+                  >
+                    <Box sx={{ width: 32, height: 32, borderRadius: "8px", bgcolor: meta.hex, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {meta.icon}
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography sx={{ fontSize: "13px", fontWeight: 600, color: "#1F1F1F", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {s.artifact_name}
+                      </Typography>
+                      <Typography sx={{ fontSize: "12px", color: "#9E9E9E", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {s.description}
+                      </Typography>
+                    </Box>
+                    <Button
+                      className="start-btn"
+                      variant="outlined"
+                      size="small"
+                      onClick={() => router.push(`/projects/${id}/artifacts/new`)}
+                      sx={{ fontSize: "12px", fontWeight: 500, borderColor: "#E8EAED", color: "#5F6368", flexShrink: 0, transition: "opacity 0.15s ease", "&:hover": { borderColor: "#DADCE0", bgcolor: "#F1F3F4" } }}
+                    >
+                      Start →
+                    </Button>
+                  </Box>
+                );
+              })}
+            </Box>
+          ) : (
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", borderRadius: "16px", border: "1.5px dashed #E8EAED", py: 10, gap: 1 }}>
+              <Box sx={{ width: 48, height: 48, borderRadius: "14px", bgcolor: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px" }}>💡</Box>
+              <Typography sx={{ fontSize: "15px", fontWeight: 600, color: "#1F1F1F" }}>No suggestions</Typography>
+              <Typography sx={{ fontSize: "13px", color: "#9E9E9E" }}>Suggestions will appear based on your project brief</Typography>
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {/* ══════════════════════════════════════════════════
+          MEMBERS TAB
+      ══════════════════════════════════════════════════ */}
       {activeTab === "members" && isTeam && (
-        <div className="max-w-xl">
-          <div className="mb-4 flex items-center justify-between">
-            <p className="text-[13px] text-[#80868B]">{members.length} member{members.length !== 1 ? "s" : ""}</p>
+        <Box sx={{ maxWidth: 560 }}>
+          <Box sx={{ mb: 2.5, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Typography sx={{ fontSize: "13px", color: "#9E9E9E" }}>
+              {members.length} member{members.length !== 1 ? "s" : ""}
+            </Typography>
             {isOwner && isCreator && (
-              <button className="inline-flex items-center gap-1.5 rounded-full border border-[#E8EAED] px-3 py-1.5 text-[13px] font-medium text-[#D0103A] transition-colors hover:bg-[#FFF8F9]">
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                  <line x1="8" y1="3" x2="8" y2="13" /><line x1="3" y1="8" x2="13" y2="8" />
-                </svg>
+              <Button
+                variant="outlined"
+                size="small"
+                sx={{ fontSize: "13px", fontWeight: 500, color: "#D0103A", borderColor: "#FADDE1", "&:hover": { borderColor: "#D0103A", bgcolor: "#FFF0F3" } }}
+                startIcon={<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg>}
+              >
                 Invite member
-              </button>
+              </Button>
             )}
-          </div>
-          <div className="space-y-1.5">
+          </Box>
+
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {members.map((member) => {
-              const initials = member.user_name.split(" ").map((n) => n[0]).join("").slice(0, 2);
+              const initials = member.user_name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
               return (
-                <div key={member.id} className="flex items-center gap-3 rounded-xl border border-[#E8EAED] bg-white px-4 py-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E8EAED] text-[12px] font-semibold text-[#3C4043]">
+                <Box
+                  key={member.id}
+                  sx={{ display: "flex", alignItems: "center", gap: 2, borderRadius: "14px", border: "1px solid #F0F0F0", bgcolor: "#FFFFFF", px: 2, py: 1.5 }}
+                >
+                  <Avatar sx={{ width: 36, height: 36, bgcolor: "#F1F3F4", color: "#3C4043", fontSize: "12px", fontWeight: 600 }}>
                     {initials}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-medium text-[#1F1F1F]">{member.user_name}</p>
-                    <p className="text-[12px] text-[#80868B]">{member.user_role.replace("_", " ")}</p>
-                  </div>
+                  </Avatar>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography sx={{ fontSize: "14px", fontWeight: 500, color: "#1F1F1F" }}>{member.user_name}</Typography>
+                    <Typography sx={{ fontSize: "12px", color: "#9E9E9E" }}>{member.user_role.replace("_", " ")}</Typography>
+                  </Box>
                   {member.role === "owner" && (
-                    <span className={badge.amber}>Owner</span>
+                    <Chip label="Owner" size="small" color="warning" sx={{ height: 20, fontSize: "10px", fontWeight: 600 }} />
                   )}
-                </div>
+                </Box>
               );
             })}
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
 
-    </div>
+      {/* ── Delete confirmation dialog ── */}
+      <Dialog open={showDelete} onClose={() => setShowDelete(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 0.5 }}>
+            <Box sx={{ width: 40, height: 40, borderRadius: "12px", bgcolor: "#FFF0F3", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D0103A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+              </svg>
+            </Box>
+            <Typography sx={{ fontSize: "17px", fontWeight: 700, color: "#1A1A1A" }}>
+              Delete &ldquo;{project.name}&rdquo;?
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: "0 !important" }}>
+          <Typography sx={{ fontSize: "13px", color: "#5F6368", lineHeight: 1.6, mb: 2.5 }}>
+            This will permanently delete the project and all its artifacts, suggestions, and members. This action cannot be undone.
+          </Typography>
+          <Typography sx={{ fontSize: "12px", fontWeight: 500, color: "#3C4043", mb: 1 }}>
+            Type <Box component="span" sx={{ fontWeight: 700, color: "#1F1F1F" }}>{project.name}</Box> to confirm
+          </Typography>
+          <TextField
+            fullWidth
+            size="small"
+            value={deleteConfirm}
+            onChange={(e) => setDeleteConfirm(e.target.value)}
+            placeholder={project.name}
+            autoFocus
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={() => setShowDelete(false)}
+            sx={{ borderColor: "#E8EAED", color: "#3C4043", fontWeight: 500, "&:hover": { bgcolor: "#F1F3F4" } }}
+          >
+            Cancel
+          </Button>
+          <Button
+            fullWidth
+            variant="contained"
+            color="primary"
+            onClick={handleDelete}
+            disabled={deleteConfirm !== project.name || isActing}
+            sx={{ fontWeight: 600 }}
+          >
+            {isActing ? "Deleting…" : "Delete project"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+    </Box>
   );
 }

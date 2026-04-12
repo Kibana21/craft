@@ -1,5 +1,8 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Skeleton from "@mui/material/Skeleton";
 import {
   LineChart,
   Line,
@@ -19,20 +22,39 @@ interface ActivityChartProps {
 
 export function ActivityChart({ data, isLoading }: ActivityChartProps) {
   if (isLoading) {
-    return <div className="h-48 animate-pulse rounded-xl bg-[#F7F7F7]" />;
+    return (
+      <Skeleton
+        variant="rectangular"
+        width="100%"
+        height={192}
+        sx={{ borderRadius: "12px", bgcolor: "#F7F7F7" }}
+      />
+    );
   }
 
   if (data.length === 0) {
     return (
-      <div className="flex h-48 items-center justify-center text-sm text-[#B0B0B0]">
-        No activity data yet
-      </div>
+      <Box
+        sx={{
+          height: 192,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Typography sx={{ fontSize: 14, color: "#B0B0B0" }}>
+          No activity data yet
+        </Typography>
+      </Box>
     );
   }
 
   const formatted = data.map((d) => ({
     ...d,
-    date: new Date(d.date).toLocaleDateString("en-SG", { month: "short", day: "numeric" }),
+    date: new Date(d.date).toLocaleDateString("en-SG", {
+      month: "short",
+      day: "numeric",
+    }),
   }));
 
   return (
@@ -52,7 +74,11 @@ export function ActivityChart({ data, isLoading }: ActivityChartProps) {
           allowDecimals={false}
         />
         <Tooltip
-          contentStyle={{ borderRadius: 8, border: "1px solid #EBEBEB", fontSize: 12 }}
+          contentStyle={{
+            borderRadius: 8,
+            border: "1px solid #EBEBEB",
+            fontSize: 12,
+          }}
         />
         <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
         <Line

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
 import { ToneSelector } from "../tone-selector";
 import { FormatSelector } from "../format-selector";
 import { TaglineGenerator } from "../tagline-generator";
@@ -28,7 +31,7 @@ export function PosterCreator({ product, audience, onSave, isSaving }: PosterCre
   };
 
   return (
-    <div className="space-y-6">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <TaglineGenerator
         product={product}
         audience={audience}
@@ -46,33 +49,64 @@ export function PosterCreator({ product, audience, onSave, isSaving }: PosterCre
       />
 
       {/* Preview placeholder */}
-      <div className="overflow-hidden rounded-xl border border-[#EBEBEB] bg-gradient-to-br from-red-600 to-red-500">
-        <div className="flex h-64 flex-col items-center justify-center p-8 text-center text-white">
-          <p className="text-xs font-semibold uppercase tracking-wider opacity-60">
+      <Box
+        sx={{
+          overflow: "hidden",
+          borderRadius: "12px",
+          border: "1px solid #EBEBEB",
+          background: "linear-gradient(135deg, #dc2626, #ef4444)",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: 256,
+            p: 4,
+            textAlign: "center",
+            color: "#FFFFFF",
+          }}
+        >
+          <Typography sx={{ fontSize: "12px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.6 }}>
             Preview
-          </p>
-          <p className="mt-4 text-xl font-bold">
+          </Typography>
+          <Typography sx={{ mt: 2, fontSize: "20px", fontWeight: 700 }}>
             {headline || "Your headline here"}
-          </p>
-          <p className="mt-2 text-sm opacity-70">{product}</p>
-          <div className="mt-4 flex gap-2">
-            <span className="rounded-full bg-white/20 px-3 py-1 text-xs">
-              {tone}
-            </span>
-            <span className="rounded-full bg-white/20 px-3 py-1 text-xs">
-              {format}
-            </span>
-          </div>
-        </div>
-      </div>
+          </Typography>
+          <Typography sx={{ mt: 1, fontSize: "14px", opacity: 0.7 }}>{product}</Typography>
+          <Box sx={{ mt: 2, display: "flex", gap: 1 }}>
+            <Box sx={{ borderRadius: 9999, bgcolor: "rgba(255,255,255,0.2)", px: 1.5, py: 0.5 }}>
+              <Typography sx={{ fontSize: "12px", color: "#FFFFFF" }}>{tone}</Typography>
+            </Box>
+            <Box sx={{ borderRadius: 9999, bgcolor: "rgba(255,255,255,0.2)", px: 1.5, py: 0.5 }}>
+              <Typography sx={{ fontSize: "12px", color: "#FFFFFF" }}>{format}</Typography>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
 
-      <button
+      <Button
+        fullWidth
+        variant="contained"
+        disableElevation
         onClick={handleSave}
         disabled={isSaving || !headline.trim()}
-        className="w-full rounded-lg bg-[#D0103A] px-6 py-3 text-base font-semibold text-white transition-all hover:bg-[#B80E33] disabled:cursor-not-allowed disabled:opacity-40"
+        sx={{
+          borderRadius: 9999,
+          textTransform: "none",
+          bgcolor: "#D0103A",
+          color: "#FFFFFF",
+          fontSize: "16px",
+          fontWeight: 600,
+          py: 1.5,
+          "&:hover": { bgcolor: "#B80E33" },
+          "&:disabled": { opacity: 0.4, bgcolor: "#D0103A", color: "#FFFFFF", cursor: "not-allowed" },
+        }}
       >
         {isSaving ? "Creating artifact..." : "Create poster"}
-      </button>
-    </div>
+      </Button>
+    </Box>
   );
 }

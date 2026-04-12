@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
 import { useAuth } from "@/components/providers/auth-provider";
 import { BrandPreview } from "@/components/brand-kit/brand-preview";
 import { ColorPicker } from "@/components/brand-kit/color-picker";
@@ -103,61 +106,124 @@ export default function BrandKitPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-12 lg:px-8">
-        <div className="space-y-4">
+      <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 4 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-xl bg-[#F7F7F7]" />
+            <Box
+              key={i}
+              sx={{
+                height: 80,
+                borderRadius: "12px",
+                backgroundColor: "#F7F7F7",
+                "@keyframes pulse": {
+                  "0%, 100%": { opacity: 1 },
+                  "50%": { opacity: 0.4 },
+                },
+                animation: "pulse 1.5s ease-in-out infinite",
+              }}
+            />
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
     );
   }
 
   if (!kit || !previewKit) {
     return (
-      <div className="mx-auto max-w-5xl px-6 py-12 lg:px-8">
-        <p className="text-sm text-[#717171]">Brand kit not available.</p>
-      </div>
+      <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 4 }}>
+        <Typography sx={{ fontSize: 14, color: "#717171" }}>
+          Brand kit not available.
+        </Typography>
+      </Box>
     );
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-12 lg:px-8">
+    <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 4 }}>
       {/* Header */}
-      <div className="mb-10 flex items-start justify-between">
-        <div>
-          <h1 className="text-[28px] font-bold text-[#222222]">Brand Kit</h1>
-          <p className="mt-1 text-base text-[#717171]">
+      <Box
+        sx={{
+          mb: 5,
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+        }}
+      >
+        <Box>
+          <Typography
+            component="h1"
+            sx={{ fontSize: 28, fontWeight: 700, color: "#1F1F1F" }}
+          >
+            Brand Kit
+          </Typography>
+          <Typography sx={{ mt: 0.5, fontSize: 16, color: "#5F6368" }}>
             {isAdmin
               ? "Manage AIA brand assets — logos, colors, and typography"
               : "View the current AIA brand kit used across all content"}
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <span className="rounded-full bg-[#F7F7F7] px-3 py-1 text-xs text-[#717171]">
+          </Typography>
+        </Box>
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 0.5 }}>
+          <Box
+            component="span"
+            sx={{
+              borderRadius: 9999,
+              backgroundColor: "#F7F7F7",
+              px: 1.5,
+              py: 0.5,
+              fontSize: 12,
+              color: "#717171",
+            }}
+          >
             Version {kit.version}
-          </span>
+          </Box>
           {savedAt && (
-            <span className="text-xs text-[#1B9D74]">
+            <Typography sx={{ fontSize: 12, color: "#1B9D74" }}>
               Saved {savedAt.toLocaleTimeString()}
-            </span>
+            </Typography>
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {error && (
-        <div className="mb-6 rounded-xl bg-[#FFF0F3] px-4 py-3 text-sm text-[#D0103A]">
+        <Box
+          sx={{
+            mb: 3,
+            borderRadius: "12px",
+            backgroundColor: "#FFF0F3",
+            px: 2,
+            py: 1.5,
+            fontSize: 14,
+            color: "#D0103A",
+          }}
+        >
           {error}
-        </div>
+        </Box>
       )}
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_280px]">
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", lg: "1fr 280px" },
+          gap: 4,
+        }}
+      >
         {/* Left: settings */}
-        <div className="space-y-10">
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 5 }}>
           {/* Logos */}
-          <section>
-            <h2 className="mb-5 text-base font-semibold text-[#222222]">Logos</h2>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <Box component="section">
+            <Typography
+              component="h2"
+              sx={{ mb: 2.5, fontSize: 16, fontWeight: 600, color: "#1F1F1F" }}
+            >
+              Logos
+            </Typography>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                gap: 2.5,
+              }}
+            >
               <LogoUpload
                 label="Primary logo"
                 currentUrl={kit.logo_url}
@@ -170,13 +236,24 @@ export default function BrandKitPage() {
                 onUpload={(file) => handleLogoUpload(file, "secondary")}
                 disabled={!isAdmin}
               />
-            </div>
-          </section>
+            </Box>
+          </Box>
 
           {/* Colors */}
-          <section>
-            <h2 className="mb-5 text-base font-semibold text-[#222222]">Brand colors</h2>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <Box component="section">
+            <Typography
+              component="h2"
+              sx={{ mb: 2.5, fontSize: 16, fontWeight: 600, color: "#1F1F1F" }}
+            >
+              Brand colors
+            </Typography>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr 1fr" },
+                gap: 2.5,
+              }}
+            >
               <ColorPicker
                 label="Primary"
                 value={primaryColor}
@@ -195,36 +272,61 @@ export default function BrandKitPage() {
                 onChange={setAccentColor}
                 disabled={!isAdmin}
               />
-            </div>
+            </Box>
             {isAdmin && (
-              <div className="mt-4 flex items-center gap-3">
-                <button
+              <Box sx={{ mt: 2, display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Button
                   onClick={handleSaveColors}
                   disabled={!hasColorChanges || isSaving}
-                  className="rounded-xl bg-[#D0103A] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#B80E33] disabled:cursor-not-allowed disabled:opacity-40"
+                  disableElevation
+                  variant="contained"
+                  sx={{
+                    borderRadius: 9999,
+                    textTransform: "none",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    px: 2.5,
+                    py: 1.25,
+                    backgroundColor: "#D0103A",
+                    "&:hover": { backgroundColor: "#B80E33" },
+                    "&:disabled": { opacity: 0.4, cursor: "not-allowed" },
+                  }}
                 >
                   {isSaving ? "Saving…" : "Save colors"}
-                </button>
+                </Button>
                 {hasColorChanges && (
-                  <button
+                  <Button
                     onClick={() => {
                       setPrimaryColor(kit.primary_color);
                       setSecondaryColor(kit.secondary_color);
                       setAccentColor(kit.accent_color);
                     }}
-                    className="text-sm text-[#717171] hover:text-[#222222]"
+                    variant="text"
+                    disableElevation
+                    sx={{
+                      borderRadius: 9999,
+                      textTransform: "none",
+                      fontSize: 14,
+                      color: "#717171",
+                      "&:hover": { color: "#1F1F1F", backgroundColor: "transparent" },
+                    }}
                   >
                     Discard changes
-                  </button>
+                  </Button>
                 )}
-              </div>
+              </Box>
             )}
-          </section>
+          </Box>
 
           {/* Fonts */}
-          <section>
-            <h2 className="mb-5 text-base font-semibold text-[#222222]">Typography</h2>
-            <div className="space-y-3">
+          <Box component="section">
+            <Typography
+              component="h2"
+              sx={{ mb: 2.5, fontSize: 16, fontWeight: 600, color: "#1F1F1F" }}
+            >
+              Typography
+            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
               {(["heading", "body", "accent"] as const).map((slot) => (
                 <FontUpload
                   key={slot}
@@ -234,15 +336,15 @@ export default function BrandKitPage() {
                   disabled={!isAdmin}
                 />
               ))}
-            </div>
-          </section>
-        </div>
+            </Box>
+          </Box>
+        </Box>
 
         {/* Right: live preview */}
-        <div className="lg:sticky lg:top-24 lg:self-start">
+        <Box sx={{ position: { lg: "sticky" }, top: { lg: 96 }, alignSelf: { lg: "flex-start" } }}>
           <BrandPreview brandKit={previewKit} />
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 }

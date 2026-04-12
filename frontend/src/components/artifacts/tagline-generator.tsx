@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import ButtonBase from "@mui/material/ButtonBase";
+import TextField from "@mui/material/TextField";
 import { generateTaglines } from "@/lib/api/ai";
 
 interface TaglineGeneratorProps {
@@ -34,47 +38,90 @@ export function TaglineGenerator({
   };
 
   return (
-    <div>
-      <div className="mb-2 flex items-center justify-between">
-        <label className="text-sm font-medium text-[#484848]">
+    <Box>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+        <Typography
+          component="label"
+          sx={{ fontSize: "14px", fontWeight: 500, color: "#484848" }}
+        >
           Headline / Tagline
-        </label>
-        <button
-          type="button"
+        </Typography>
+        <ButtonBase
           onClick={handleGenerate}
           disabled={isGenerating}
-          className="rounded-lg bg-[#F7F7F7] px-3 py-1.5 text-xs font-semibold text-[#484848] transition-all hover:bg-[#EBEBEB] disabled:opacity-50"
+          sx={{
+            borderRadius: "8px",
+            px: 1.5,
+            py: 0.75,
+            fontSize: "12px",
+            fontWeight: 600,
+            bgcolor: "#F7F7F7",
+            color: "#484848",
+            transition: "all 0.15s",
+            "&:hover": { bgcolor: "#EBEBEB" },
+            "&:disabled": { opacity: 0.5 },
+          }}
         >
           {isGenerating ? "Generating..." : "✨ Generate taglines"}
-        </button>
-      </div>
+        </ButtonBase>
+      </Box>
 
-      <input
-        type="text"
+      <TextField
+        fullWidth
+        size="small"
+        variant="outlined"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Enter a headline or generate with AI"
-        className="mb-3 w-full rounded-lg border border-[#DDDDDD] px-4 py-3.5 text-base text-[#222222] placeholder-[#B0B0B0] focus:border-[#222222] focus:outline-none focus:ring-0"
+        sx={{
+          mb: 1.5,
+          "& .MuiOutlinedInput-root": {
+            borderRadius: "10px",
+            fontSize: "16px",
+            color: "#222222",
+            "& fieldset": { borderColor: "#DDDDDD" },
+            "&:hover fieldset": { borderColor: "#BBBBBB" },
+            "&.Mui-focused fieldset": {
+              borderColor: "#D0103A",
+              boxShadow: "0 0 0 3px rgba(208,16,58,0.08)",
+            },
+          },
+          "& input::placeholder": { color: "#B0B0B0", opacity: 1 },
+        }}
       />
 
       {taglines.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
           {taglines.map((tagline, i) => (
-            <button
+            <ButtonBase
               key={i}
-              type="button"
               onClick={() => onChange(tagline)}
-              className={`rounded-full px-4 py-2 text-sm transition-all duration-200 ${
-                value === tagline
-                  ? "bg-[#222222] text-white"
-                  : "border border-[#DDDDDD] bg-white text-[#484848] hover:border-[#222222]"
-              }`}
+              sx={{
+                borderRadius: 9999,
+                px: 2,
+                py: 1,
+                fontSize: "14px",
+                border: "1px solid",
+                transition: "all 0.2s",
+                ...(value === tagline
+                  ? {
+                      bgcolor: "#222222",
+                      color: "#FFFFFF",
+                      borderColor: "#222222",
+                    }
+                  : {
+                      bgcolor: "#FFFFFF",
+                      color: "#484848",
+                      borderColor: "#DDDDDD",
+                      "&:hover": { borderColor: "#222222" },
+                    }),
+              }}
             >
               {tagline}
-            </button>
+            </ButtonBase>
           ))}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

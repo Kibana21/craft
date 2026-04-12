@@ -1,5 +1,7 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 import type { ProjectPurpose } from "@/types/project";
 
 const TYPE_ICONS: Record<string, string> = {
@@ -13,19 +15,19 @@ const TYPE_ICONS: Record<string, string> = {
 };
 
 const TYPE_BG: Record<string, string> = {
-  video:         "bg-emerald-600",
-  poster:        "bg-violet-600",
-  whatsapp_card: "bg-red-600",
-  reel:          "bg-emerald-600",
-  story:         "bg-amber-600",
-  infographic:   "bg-cyan-600",
-  slide_deck:    "bg-slate-700",
+  video:         "#059669",
+  poster:        "#7c3aed",
+  whatsapp_card: "#dc2626",
+  reel:          "#059669",
+  story:         "#d97706",
+  infographic:   "#0891b2",
+  slide_deck:    "#334155",
 };
 
-const AUDIENCE_LABELS: Record<string, { text: string; className: string }> = {
-  internal: { text: "Internal", className: "bg-[#F1F3F4] text-[#5F6368]" },
-  external: { text: "External", className: "bg-blue-50 text-blue-700" },
-  both:     { text: "Both",     className: "bg-violet-50 text-violet-700" },
+const AUDIENCE_LABELS: Record<string, { text: string; bg: string; color: string }> = {
+  internal: { text: "Internal", bg: "#F1F3F4", color: "#5F6368" },
+  external: { text: "External", bg: "#EFF6FF", color: "#1d4ed8" },
+  both:     { text: "Both",     bg: "#F5F3FF", color: "#6d28d9" },
 };
 
 const PURPOSE_LABELS: Record<string, string> = {
@@ -53,67 +55,125 @@ export function StepSuggestions({ purpose, suggestions, onToggle }: StepSuggesti
   const selectedCount = suggestions.filter((s) => s.selected).length;
 
   return (
-    <div>
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-[18px] font-semibold text-[#1F1F1F]">
+    <Box>
+      {/* Header */}
+      <Box sx={{ mb: 2, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 2 }}>
+        <Box>
+          <Typography sx={{ fontSize: 18, fontWeight: 600, color: "#1F1F1F" }}>
             CRAFT suggests
-          </h2>
-          <p className="mt-0.5 text-[13px] text-[#80868B]">
+          </Typography>
+          <Typography sx={{ mt: 0.25, fontSize: 13, color: "#9E9E9E" }}>
             Artifacts for {PURPOSE_LABELS[purpose] || "your project"} · select what you need
-          </p>
-        </div>
-        <span className="shrink-0 text-[13px] font-medium text-[#5F6368]">
+          </Typography>
+        </Box>
+        <Typography sx={{ flexShrink: 0, fontSize: 13, fontWeight: 500, color: "#5F6368" }}>
           {selectedCount} of {suggestions.length} selected
-        </span>
-      </div>
+        </Typography>
+      </Box>
 
-      <div className="space-y-1.5">
+      {/* Suggestion rows */}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
         {suggestions.map((suggestion, index) => {
           const icon     = TYPE_ICONS[suggestion.type] || "◻";
-          const bg       = TYPE_BG[suggestion.type] || "bg-violet-600";
+          const bgColor  = TYPE_BG[suggestion.type] || "#7c3aed";
           const audience = AUDIENCE_LABELS[suggestion.audience] || AUDIENCE_LABELS.external;
 
           return (
-            <button
+            <Box
               key={index}
+              component="button"
               onClick={() => onToggle(index)}
-              className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left transition-all ${
-                suggestion.selected
-                  ? "border-[#D0103A] bg-[#FFF8F9]"
-                  : "border-[#E8EAED] bg-white hover:border-[#DADCE0] hover:bg-[#F8F9FA]"
-              }`}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                borderRadius: "12px",
+                border: suggestion.selected ? "1px solid #D0103A" : "1px solid #E8EAED",
+                bgcolor: suggestion.selected ? "#FFF8F9" : "#FFFFFF",
+                px: 1.75,
+                py: 1.25,
+                textAlign: "left",
+                cursor: "pointer",
+                width: "100%",
+                transition: "all 0.15s",
+                "&:hover": suggestion.selected
+                  ? {}
+                  : { borderColor: "#DADCE0", bgcolor: "#F8F9FA" },
+              }}
             >
               {/* Checkbox */}
-              <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors ${
-                suggestion.selected ? "bg-[#D0103A] text-white" : "border border-[#DADCE0] bg-white"
-              }`}>
+              <Box
+                sx={{
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 20,
+                  height: 20,
+                  borderRadius: "4px",
+                  border: suggestion.selected ? "none" : "1px solid #DADCE0",
+                  bgcolor: suggestion.selected ? "#D0103A" : "#FFFFFF",
+                  color: "#FFFFFF",
+                  transition: "all 0.15s",
+                }}
+              >
                 {suggestion.selected && (
-                  <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                     <path d="M13 4L6 11L3 8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
-              </div>
+              </Box>
 
-              {/* Type icon */}
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm text-white ${bg}`}>
+              {/* Type icon badge */}
+              <Box
+                sx={{
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 32,
+                  height: 32,
+                  borderRadius: "8px",
+                  bgcolor: bgColor,
+                  color: "#FFFFFF",
+                  fontSize: 14,
+                }}
+              >
                 {icon}
-              </div>
+              </Box>
 
-              {/* Info */}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-medium text-[#1F1F1F]">{suggestion.name}</p>
-                <p className="truncate text-[12px] text-[#80868B]">{suggestion.description}</p>
-              </div>
+              {/* Name + description */}
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography
+                  noWrap
+                  sx={{ fontSize: 13, fontWeight: 500, color: "#1F1F1F" }}
+                >
+                  {suggestion.name}
+                </Typography>
+                <Typography noWrap sx={{ fontSize: 12, color: "#9E9E9E" }}>
+                  {suggestion.description}
+                </Typography>
+              </Box>
 
               {/* Audience badge */}
-              <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${audience.className}`}>
+              <Box
+                sx={{
+                  flexShrink: 0,
+                  borderRadius: 9999,
+                  px: 1.25,
+                  py: 0.25,
+                  bgcolor: audience.bg,
+                  color: audience.color,
+                  fontSize: 11,
+                  fontWeight: 500,
+                }}
+              >
                 {audience.text}
-              </span>
-            </button>
+              </Box>
+            </Box>
           );
         })}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import { useAuth } from "@/components/providers/auth-provider";
 import { WizardProgress } from "@/components/projects/wizard/wizard-progress";
 import { StepPurposeType } from "@/components/projects/wizard/step-purpose-type";
@@ -108,11 +110,18 @@ export default function NewProjectPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
+    <Box sx={{ mx: "auto", maxWidth: 768, px: 3, py: 6 }}>
       <WizardProgress steps={STEPS} currentStep={step} />
 
       {/* Step content */}
-      <div className="rounded-xl border border-[#EBEBEB] bg-white p-8 lg:p-10">
+      <Box
+        sx={{
+          borderRadius: "16px",
+          border: "1px solid #F0F0F0",
+          bgcolor: "#FFFFFF",
+          p: { xs: 4, lg: 5 },
+        }}
+      >
         {step === 0 && (
           <StepPurposeType value={purpose} onChange={setPurpose} />
         )}
@@ -125,13 +134,31 @@ export default function NewProjectPage() {
             onToggle={handleToggleSuggestion}
           />
         )}
-      </div>
+      </Box>
 
       {/* Navigation */}
-      <div className="mt-8 flex items-center justify-between">
-        <button
+      <Box sx={{ mt: 4, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* Back / Cancel */}
+        <Button
           onClick={step === 0 ? () => router.back() : handleBack}
-          className="inline-flex items-center gap-1.5 rounded-full border border-[#E8EAED] px-3 py-1.5 text-[13px] font-medium text-[#5F6368] transition-colors hover:border-[#DADCE0] hover:bg-[#F1F3F4] hover:text-[#1F1F1F]"
+          variant="outlined"
+          disableElevation
+          sx={{
+            borderRadius: 9999,
+            textTransform: "none",
+            borderColor: "#E8EAED",
+            color: "#5F6368",
+            fontSize: 13,
+            fontWeight: 500,
+            px: 1.5,
+            py: 0.75,
+            gap: 0.5,
+            "&:hover": {
+              borderColor: "#DADCE0",
+              bgcolor: "#F1F3F4",
+              color: "#1F1F1F",
+            },
+          }}
         >
           {step > 0 && (
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -139,26 +166,53 @@ export default function NewProjectPage() {
             </svg>
           )}
           {step === 0 ? "Cancel" : "Back"}
-        </button>
+        </Button>
 
+        {/* Continue / Create */}
         {step < STEPS.length - 1 ? (
-          <button
+          <Button
             onClick={handleNext}
             disabled={!canProceed()}
-            className="rounded-lg bg-[#D0103A] px-8 py-3 text-base font-semibold text-white transition-all duration-200 hover:bg-[#B80E33] disabled:cursor-not-allowed disabled:opacity-40"
+            variant="contained"
+            disableElevation
+            sx={{
+              borderRadius: 9999,
+              textTransform: "none",
+              bgcolor: "#D0103A",
+              color: "#FFFFFF",
+              fontSize: 16,
+              fontWeight: 600,
+              px: 4,
+              py: 1.5,
+              "&:hover": { bgcolor: "#B80E33" },
+              "&.Mui-disabled": { opacity: 0.4, color: "#FFFFFF", bgcolor: "#D0103A" },
+            }}
           >
             Continue →
-          </button>
+          </Button>
         ) : (
-          <button
+          <Button
             onClick={handleSubmit}
             disabled={isSubmitting || !canProceed()}
-            className="rounded-lg bg-[#D0103A] px-8 py-3 text-base font-semibold text-white transition-all duration-200 hover:bg-[#B80E33] disabled:cursor-not-allowed disabled:opacity-40"
+            variant="contained"
+            disableElevation
+            sx={{
+              borderRadius: 9999,
+              textTransform: "none",
+              bgcolor: "#D0103A",
+              color: "#FFFFFF",
+              fontSize: 16,
+              fontWeight: 600,
+              px: 4,
+              py: 1.5,
+              "&:hover": { bgcolor: "#B80E33" },
+              "&.Mui-disabled": { opacity: 0.4, color: "#FFFFFF", bgcolor: "#D0103A" },
+            }}
           >
             {isSubmitting ? "Creating..." : "Create project →"}
-          </button>
+          </Button>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

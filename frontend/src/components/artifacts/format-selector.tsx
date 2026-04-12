@@ -1,5 +1,9 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import ButtonBase from "@mui/material/ButtonBase";
+
 const FORMATS = [
   { key: "1:1", label: "1:1 Instagram", width: 40, height: 40 },
   { key: "4:5", label: "4:5 Portrait", width: 36, height: 45 },
@@ -19,36 +23,62 @@ export function FormatSelector({ value, onChange, options }: FormatSelectorProps
     : FORMATS;
 
   return (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-[#484848]">
+    <Box>
+      <Typography
+        component="label"
+        sx={{
+          display: "block",
+          mb: 1,
+          fontSize: "14px",
+          fontWeight: 500,
+          color: "#484848",
+        }}
+      >
         Output format
-      </label>
-      <div className="flex gap-3">
+      </Typography>
+      <Box sx={{ display: "flex", gap: 1.5 }}>
         {available.map((format) => (
-          <button
+          <ButtonBase
             key={format.key}
-            type="button"
             onClick={() => onChange(format.key)}
-            className={`flex flex-col items-center gap-2 rounded-xl p-4 transition-all duration-200 ${
-              value === format.key
-                ? "border-2 border-[#222222] bg-[#F7F7F7]"
-                : "border-2 border-[#EBEBEB] bg-white hover:border-[#DDDDDD]"
-            }`}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 1,
+              borderRadius: "12px",
+              p: 2,
+              border: "2px solid",
+              transition: "all 0.2s",
+              ...(value === format.key
+                ? {
+                    borderColor: "#222222",
+                    bgcolor: "#F7F7F7",
+                  }
+                : {
+                    borderColor: "#EBEBEB",
+                    bgcolor: "#FFFFFF",
+                    "&:hover": { borderColor: "#DDDDDD" },
+                  }),
+            }}
           >
-            <div
-              className={`rounded border-2 ${
-                value === format.key
-                  ? "border-[#222222] bg-[#EBEBEB]"
-                  : "border-[#DDDDDD] bg-[#F7F7F7]"
-              }`}
-              style={{ width: format.width, height: format.height }}
+            <Box
+              sx={{
+                width: format.width,
+                height: format.height,
+                borderRadius: "4px",
+                border: "2px solid",
+                ...(value === format.key
+                  ? { borderColor: "#222222", bgcolor: "#EBEBEB" }
+                  : { borderColor: "#DDDDDD", bgcolor: "#F7F7F7" }),
+              }}
             />
-            <span className="text-xs font-medium text-[#484848]">
+            <Typography sx={{ fontSize: "12px", fontWeight: 500, color: "#484848" }}>
               {format.label}
-            </span>
-          </button>
+            </Typography>
+          </ButtonBase>
         ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

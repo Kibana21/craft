@@ -1,5 +1,8 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+
 interface ColorPickerProps {
   label: string;
   value: string;
@@ -11,41 +14,87 @@ export function ColorPicker({ label, value, onChange, disabled }: ColorPickerPro
   const isValidHex = /^#[0-9A-Fa-f]{6}$/.test(value);
 
   return (
-    <div className="flex flex-col gap-2">
-      <label className="text-sm font-medium text-[#484848]">{label}</label>
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <input
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+      <Typography
+        component="label"
+        sx={{ fontSize: "0.875rem", fontWeight: 500, color: "#484848" }}
+      >
+        {label}
+      </Typography>
+
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+        {/* Native color swatch input */}
+        <Box sx={{ position: "relative" }}>
+          <Box
+            component="input"
             type="color"
             value={isValidHex ? value : "#000000"}
-            onChange={(e) => onChange(e.target.value.toUpperCase())}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              onChange(e.target.value.toUpperCase())
+            }
             disabled={disabled}
-            className="h-10 w-10 cursor-pointer rounded-lg border border-[#DDDDDD] p-0.5 disabled:cursor-not-allowed disabled:opacity-50"
             title={label}
+            sx={{
+              width: 40,
+              height: 40,
+              cursor: disabled ? "not-allowed" : "pointer",
+              borderRadius: "8px",
+              border: "1px solid #DDDDDD",
+              p: 0.25,
+              opacity: disabled ? 0.5 : 1,
+              "&:disabled": { cursor: "not-allowed" },
+            }}
           />
-        </div>
-        <input
+        </Box>
+
+        {/* Hex text input */}
+        <Box
+          component="input"
           type="text"
           value={value}
-          onChange={(e) => {
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             const v = e.target.value.toUpperCase();
             if (v.length <= 7) onChange(v);
           }}
           disabled={disabled}
           placeholder="#D0103A"
-          className={`w-28 rounded-lg border px-3 py-2 text-sm font-mono transition-colors focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50 ${
-            isValidHex
-              ? "border-[#DDDDDD] text-[#222222] focus:border-[#222222]"
-              : "border-[#FF5A5F] text-[#FF5A5F]"
-          }`}
+          sx={{
+            width: 112,
+            borderRadius: "8px",
+            border: `1px solid ${isValidHex ? "#DDDDDD" : "#FF5A5F"}`,
+            px: 1.5,
+            py: 1,
+            fontSize: "0.875rem",
+            fontFamily: "monospace",
+            color: isValidHex ? "#222222" : "#FF5A5F",
+            outline: "none",
+            transition: "border-color 0.15s",
+            bgcolor: "#FFFFFF",
+            "&:focus": {
+              borderColor: isValidHex ? "#222222" : "#FF5A5F",
+            },
+            "&:disabled": {
+              cursor: "not-allowed",
+              opacity: 0.5,
+            },
+          }}
         />
+
+        {/* Live color preview swatch */}
         {isValidHex && (
-          <div
-            className="h-8 w-8 flex-shrink-0 rounded-full border border-[#DDDDDD] shadow-sm"
-            style={{ backgroundColor: value }}
+          <Box
+            sx={{
+              width: 32,
+              height: 32,
+              flexShrink: 0,
+              borderRadius: "50%",
+              border: "1px solid #DDDDDD",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+              bgcolor: value,
+            }}
           />
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

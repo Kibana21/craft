@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 import { AnalyticsFilters } from "@/components/analytics/analytics-filters";
 import { OverviewMetrics } from "@/components/analytics/overview-metrics";
 import { TopRemixedChart } from "@/components/analytics/top-remixed-chart";
@@ -51,17 +53,19 @@ export function AnalyticsTab() {
   }, [period]);
 
   return (
-    <div className="space-y-8">
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
       {/* Header + filters */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-[#222222]">Analytics</h2>
-          <p className="mt-0.5 text-sm text-[#717171]">
+      <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <Box>
+          <Typography sx={{ fontSize: 18, fontWeight: 600, color: "#1F1F1F" }}>
+            Analytics
+          </Typography>
+          <Typography sx={{ mt: 0.25, fontSize: 14, color: "#5F6368" }}>
             How FSCs are using CRAFT
-          </p>
-        </div>
+          </Typography>
+        </Box>
         <AnalyticsFilters period={period} onPeriodChange={setPeriod} />
-      </div>
+      </Box>
 
       {/* Overview metrics */}
       {overview ? (
@@ -74,36 +78,65 @@ export function AnalyticsTab() {
       )}
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" },
+          gap: 3,
+        }}
+      >
         {/* Activity */}
-        <div className="rounded-xl border border-[#EBEBEB] bg-white p-6">
-          <h3 className="mb-4 text-sm font-semibold text-[#222222]">
+        <Box
+          sx={{
+            borderRadius: "16px",
+            border: "1px solid #F0F0F0",
+            bgcolor: "#FFFFFF",
+            p: 3,
+          }}
+        >
+          <Typography sx={{ mb: 2, fontSize: 14, fontWeight: 600, color: "#1F1F1F" }}>
             Creation &amp; Export Activity
-          </h3>
+          </Typography>
           <ActivityChart data={activity} isLoading={loadingCharts} />
-        </div>
+        </Box>
 
         {/* Top remixed */}
-        <div className="rounded-xl border border-[#EBEBEB] bg-white p-6">
-          <h3 className="mb-4 text-sm font-semibold text-[#222222]">
+        <Box
+          sx={{
+            borderRadius: "16px",
+            border: "1px solid #F0F0F0",
+            bgcolor: "#FFFFFF",
+            p: 3,
+          }}
+        >
+          <Typography sx={{ mb: 2, fontSize: 14, fontWeight: 600, color: "#1F1F1F" }}>
             Most Remixed Library Items
-          </h3>
+          </Typography>
           <TopRemixedChart items={topRemixed} isLoading={loadingCharts} />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {/* Content gaps */}
-      <div className="rounded-xl border border-[#EBEBEB] bg-white p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-[#222222]">Content Gaps</h3>
-            <p className="mt-0.5 text-xs text-[#717171]">
+      <Box
+        sx={{
+          borderRadius: "16px",
+          border: "1px solid #F0F0F0",
+          bgcolor: "#FFFFFF",
+          p: 3,
+        }}
+      >
+        <Box sx={{ mb: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Box>
+            <Typography sx={{ fontSize: 14, fontWeight: 600, color: "#1F1F1F" }}>
+              Content Gaps
+            </Typography>
+            <Typography sx={{ mt: 0.25, fontSize: 12, color: "#5F6368" }}>
               Types FSCs create without a library template
-            </p>
-          </div>
-        </div>
+            </Typography>
+          </Box>
+        </Box>
         <ContentGaps gaps={gaps} isLoading={loadingCharts} />
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

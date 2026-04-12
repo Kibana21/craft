@@ -34,8 +34,10 @@ export function ProjectCard({ project, onClick }: { project: Project; onClick?: 
 
   return (
     <Box
-      component="button"
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClick?.(); }}
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -116,8 +118,10 @@ export function ProjectCard({ project, onClick }: { project: Project; onClick?: 
 export function NewProjectCard({ onClick }: { onClick?: () => void }) {
   return (
     <Box
-      component="button"
       onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClick?.(); }}
       sx={{
         display: "flex",
         flexDirection: "column",

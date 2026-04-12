@@ -1,5 +1,8 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Skeleton from "@mui/material/Skeleton";
 import type { OverviewMetrics } from "@/types/analytics";
 
 interface OverviewMetricsProps {
@@ -42,18 +45,54 @@ const METRICS = [
 
 export function OverviewMetrics({ data, isLoading }: OverviewMetricsProps) {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: {
+          xs: "repeat(2, 1fr)",
+          sm: "repeat(3, 1fr)",
+          lg: "repeat(5, 1fr)",
+        },
+        gap: 2,
+      }}
+    >
       {METRICS.map((m) => (
-        <div key={m.key} className="rounded-xl border border-[#EBEBEB] bg-white p-5">
-          <div className="mb-3 text-2xl">{m.icon}</div>
+        <Box
+          key={m.key}
+          sx={{
+            borderRadius: "12px",
+            border: "1px solid #EBEBEB",
+            bgcolor: "#FFFFFF",
+            p: 2.5,
+          }}
+        >
+          <Typography sx={{ fontSize: 24, mb: 1.5, lineHeight: 1 }}>
+            {m.icon}
+          </Typography>
           {isLoading ? (
-            <div className="h-7 w-16 animate-pulse rounded bg-[#F7F7F7]" />
+            <Skeleton
+              variant="rectangular"
+              width={64}
+              height={28}
+              sx={{ borderRadius: "6px", bgcolor: "#F7F7F7" }}
+            />
           ) : (
-            <p className="text-2xl font-bold text-[#222222]">{m.format(data[m.key])}</p>
+            <Typography
+              sx={{
+                fontSize: 24,
+                fontWeight: 700,
+                color: "#222222",
+                lineHeight: 1,
+              }}
+            >
+              {m.format(data[m.key])}
+            </Typography>
           )}
-          <p className="mt-1 text-xs text-[#717171]">{m.label}</p>
-        </div>
+          <Typography sx={{ mt: 0.75, fontSize: 12, color: "#717171" }}>
+            {m.label}
+          </Typography>
+        </Box>
       ))}
-    </div>
+    </Box>
   );
 }

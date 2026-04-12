@@ -1,5 +1,8 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+
 const MILESTONES = [
   { threshold: 0, label: "Bronze Creator", color: "#CD7F32" },
   { threshold: 500, label: "Silver Creator", color: "#C0C0C0" },
@@ -29,46 +32,82 @@ export function PointsProgress({
 
   if (compact) {
     return (
-      <div className="flex items-center gap-2">
-        <div className="flex-1">
-          <div className="h-2 overflow-hidden rounded-full bg-[#EBEBEB]">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${progress}%`, backgroundColor: current.color }}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ flex: 1 }}>
+          <Box
+            sx={{
+              height: 8,
+              overflow: "hidden",
+              borderRadius: 9999,
+              bgcolor: "#EBEBEB",
+            }}
+          >
+            <Box
+              sx={{
+                height: "100%",
+                borderRadius: 9999,
+                transition: "width 500ms ease",
+                width: `${progress}%`,
+                bgcolor: current.color,
+              }}
             />
-          </div>
-        </div>
-        <span className="text-xs text-[#717171]">
+          </Box>
+        </Box>
+        <Typography variant="caption" sx={{ color: "#5F6368", whiteSpace: "nowrap" }}>
           {points.toLocaleString()} / {nextMilestone.toLocaleString()}
-        </span>
-      </div>
+        </Typography>
+      </Box>
     );
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div
-            className="h-3 w-3 rounded-full"
-            style={{ backgroundColor: current.color }}
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Box
+            sx={{
+              height: 12,
+              width: 12,
+              borderRadius: "50%",
+              bgcolor: current.color,
+            }}
           />
-          <span className="text-sm font-semibold text-[#222222]">{currentLevel}</span>
-        </div>
-        <span className="text-xs text-[#717171]">
+          <Typography variant="body2" sx={{ fontWeight: 600, color: "#1F1F1F" }}>
+            {currentLevel}
+          </Typography>
+        </Box>
+        <Typography variant="caption" sx={{ color: "#5F6368" }}>
           {points.toLocaleString()} pts
-        </span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-[#EBEBEB]">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${progress}%`, backgroundColor: current.color }}
+        </Typography>
+      </Box>
+
+      <Box
+        sx={{
+          height: 8,
+          overflow: "hidden",
+          borderRadius: 9999,
+          bgcolor: "#EBEBEB",
+        }}
+      >
+        <Box
+          sx={{
+            height: "100%",
+            borderRadius: 9999,
+            transition: "width 700ms ease",
+            width: `${progress}%`,
+            bgcolor: current.color,
+          }}
         />
-      </div>
-      <div className="flex justify-between text-xs text-[#717171]">
-        <span>{points.toLocaleString()}</span>
-        <span>{nextMilestone.toLocaleString()} for next level</span>
-      </div>
-    </div>
+      </Box>
+
+      <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+        <Typography variant="caption" sx={{ color: "#5F6368" }}>
+          {points.toLocaleString()}
+        </Typography>
+        <Typography variant="caption" sx={{ color: "#5F6368" }}>
+          {nextMilestone.toLocaleString()} for next level
+        </Typography>
+      </Box>
+    </Box>
   );
 }

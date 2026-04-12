@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { fetchScoreBreakdown, type ComplianceScore } from "@/lib/api/compliance";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import IconButton from "@mui/material/IconButton";
+import Skeleton from "@mui/material/Skeleton";
 
 interface ScoreBreakdownProps {
   artifactId: string;
@@ -26,95 +30,207 @@ export function ScoreBreakdown({ artifactId, isOpen, onClose }: ScoreBreakdownPr
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
-      <div
-        className="mx-4 max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-xl border border-[#EBEBEB] bg-white p-6 shadow-xl"
+    /* Backdrop */
+    <Box
+      onClick={onClose}
+      sx={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: "rgba(0,0,0,0.4)",
+        backdropFilter: "blur(4px)",
+      }}
+    >
+      {/* Modal panel */}
+      <Box
         onClick={(e) => e.stopPropagation()}
+        sx={{
+          mx: 2,
+          maxHeight: "80vh",
+          width: "100%",
+          maxWidth: 512,
+          overflowY: "auto",
+          borderRadius: "16px",
+          border: "1px solid #F0F0F0",
+          bgcolor: "#FFFFFF",
+          p: 3,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+        }}
       >
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-[#222222]">Compliance Score</h2>
-          <button onClick={onClose} className="rounded-lg p-2 text-[#717171] hover:bg-[#F7F7F7] hover:text-[#222222]">
+        {/* Modal header */}
+        <Box sx={{ mb: 3, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: "#1F1F1F" }}>
+            Compliance Score
+          </Typography>
+          <IconButton
+            onClick={onClose}
+            size="small"
+            sx={{
+              borderRadius: "8px",
+              color: "#5F6368",
+              "&:hover": { bgcolor: "#F8F9FA", color: "#1F1F1F" },
+            }}
+          >
             ✕
-          </button>
-        </div>
+          </IconButton>
+        </Box>
 
         {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => <div key={i} className="h-12 animate-pulse rounded-xl bg-[#F7F7F7]" />)}
-          </div>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} variant="rounded" height={48} sx={{ borderRadius: "16px" }} />
+            ))}
+          </Box>
         ) : data ? (
-          <div className="space-y-6">
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {/* Overall score */}
-            <div className="flex items-center justify-center">
-              <div className={`flex h-20 w-20 items-center justify-center rounded-full text-2xl font-bold text-white ${
-                data.score >= 90 ? "bg-[#008A05]" : data.score >= 70 ? "bg-amber-500" : "bg-[#D0103A]"
-              }`}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Box
+                sx={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                  color: "#fff",
+                  bgcolor:
+                    data.score >= 90
+                      ? "#188038"
+                      : data.score >= 70
+                      ? "#B45309"
+                      : "#D0103A",
+                }}
+              >
                 {Math.round(data.score)}
-              </div>
-            </div>
+              </Box>
+            </Box>
 
-            {/* Rules */}
+            {/* Rules checked */}
             {data.breakdown.rules && data.breakdown.rules.length > 0 && (
-              <div>
-                <h3 className="mb-3 text-sm font-semibold text-[#484848]">Rules checked</h3>
-                <div className="space-y-2">
+              <Box>
+                <Typography sx={{ mb: 1.5, fontSize: "0.875rem", fontWeight: 600, color: "#5F6368" }}>
+                  Rules checked
+                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                   {data.breakdown.rules.map((rule, i) => (
-                    <div key={i} className={`flex items-start gap-3 rounded-xl p-3 ${rule.passed ? "bg-[#F0FFF0]" : "bg-[#FFF0F3]"}`}>
-                      <span className={`mt-0.5 text-sm ${rule.passed ? "text-[#008A05]" : "text-[#D0103A]"}`}>
+                    <Box
+                      key={i}
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 1.5,
+                        borderRadius: "16px",
+                        p: 1.5,
+                        bgcolor: rule.passed ? "#E6F4EA" : "#FCE8E6",
+                      }}
+                    >
+                      <Typography
+                        component="span"
+                        sx={{
+                          mt: 0.5,
+                          fontSize: "0.875rem",
+                          color: rule.passed ? "#188038" : "#C5221F",
+                        }}
+                      >
                         {rule.passed ? "✓" : "✗"}
-                      </span>
-                      <div className="flex-1">
-                        <p className="text-sm text-[#484848]">{rule.rule_text}</p>
+                      </Typography>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography sx={{ fontSize: "0.875rem", color: "#5F6368" }}>
+                          {rule.rule_text}
+                        </Typography>
                         {rule.details && (
-                          <p className="mt-1 text-xs text-[#D0103A]">{rule.details}</p>
+                          <Typography sx={{ mt: 0.5, fontSize: "0.75rem", color: "#C5221F" }}>
+                            {rule.details}
+                          </Typography>
                         )}
-                      </div>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                        rule.severity === "error" ? "bg-[#FFF0F3] text-[#D0103A]" : "bg-amber-50 text-amber-700"
-                      }`}>
+                      </Box>
+                      <Box
+                        component="span"
+                        sx={{
+                          borderRadius: 9999,
+                          px: 1,
+                          py: 0.25,
+                          fontSize: "0.625rem",
+                          fontWeight: 600,
+                          ...(rule.severity === "error"
+                            ? { bgcolor: "#FCE8E6", color: "#C5221F" }
+                            : { bgcolor: "#FEF7E0", color: "#B45309" }),
+                        }}
+                      >
                         {rule.severity}
-                      </span>
-                    </div>
+                      </Box>
+                    </Box>
                   ))}
-                </div>
-              </div>
+                </Box>
+              </Box>
             )}
 
-            {/* Disclaimers */}
+            {/* Required disclaimers */}
             {data.breakdown.disclaimers && data.breakdown.disclaimers.length > 0 && (
-              <div>
-                <h3 className="mb-3 text-sm font-semibold text-[#484848]">Required disclaimers</h3>
-                <div className="space-y-2">
+              <Box>
+                <Typography sx={{ mb: 1.5, fontSize: "0.875rem", fontWeight: 600, color: "#5F6368" }}>
+                  Required disclaimers
+                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                   {data.breakdown.disclaimers.map((d, i) => (
-                    <div key={i} className={`flex items-start gap-3 rounded-xl p-3 ${d.present ? "bg-[#F0FFF0]" : "bg-[#FFF0F3]"}`}>
-                      <span className={`mt-0.5 text-sm ${d.present ? "text-[#008A05]" : "text-[#D0103A]"}`}>
+                    <Box
+                      key={i}
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 1.5,
+                        borderRadius: "16px",
+                        p: 1.5,
+                        bgcolor: d.present ? "#E6F4EA" : "#FCE8E6",
+                      }}
+                    >
+                      <Typography
+                        component="span"
+                        sx={{
+                          mt: 0.5,
+                          fontSize: "0.875rem",
+                          color: d.present ? "#188038" : "#C5221F",
+                        }}
+                      >
                         {d.present ? "✓" : "✗"}
-                      </span>
-                      <p className="flex-1 text-xs text-[#484848]">{d.disclaimer}</p>
-                    </div>
+                      </Typography>
+                      <Typography sx={{ flex: 1, fontSize: "0.75rem", color: "#5F6368" }}>
+                        {d.disclaimer}
+                      </Typography>
+                    </Box>
                   ))}
-                </div>
-              </div>
+                </Box>
+              </Box>
             )}
 
             {/* Suggestions */}
             {data.suggestions.length > 0 && (
-              <div>
-                <h3 className="mb-3 text-sm font-semibold text-[#484848]">Suggestions</h3>
-                <div className="space-y-2">
+              <Box>
+                <Typography sx={{ mb: 1.5, fontSize: "0.875rem", fontWeight: 600, color: "#5F6368" }}>
+                  Suggestions
+                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                   {data.suggestions.map((s, i) => (
-                    <div key={i} className="rounded-xl bg-amber-50 p-3">
-                      <p className="text-sm text-amber-800">{s}</p>
-                    </div>
+                    <Box key={i} sx={{ borderRadius: "16px", bgcolor: "#FEF7E0", p: 1.5 }}>
+                      <Typography sx={{ fontSize: "0.875rem", color: "#B45309" }}>{s}</Typography>
+                    </Box>
                   ))}
-                </div>
-              </div>
+                </Box>
+              </Box>
             )}
-          </div>
+          </Box>
         ) : (
-          <p className="text-center text-sm text-[#717171]">Failed to load score breakdown</p>
+          <Typography sx={{ textAlign: "center", fontSize: "0.875rem", color: "#9E9E9E" }}>
+            Failed to load score breakdown
+          </Typography>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

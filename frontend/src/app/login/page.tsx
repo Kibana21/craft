@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { useAuth } from "@/components/providers/auth-provider";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import CircularProgress from "@mui/material/CircularProgress";
 
 const TEST_ACCOUNTS = [
   { email: "sarah@aia.com.sg", name: "Sarah Lim", role: "Brand Admin", initials: "SL" },
@@ -9,6 +14,8 @@ const TEST_ACCOUNTS = [
   { email: "michael@aia.com.sg", name: "Michael Chen", role: "Agency Leader", initials: "MC" },
   { email: "maya@agent.aia.com.sg", name: "Maya Raj", role: "FSC · Agent", initials: "MR" },
 ];
+
+const fontStack = "var(--font-geist-sans), -apple-system, sans-serif";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -36,103 +43,421 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-white px-4">
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "100vh",
+        backgroundColor: "#FFFFFF",
+        px: 2,
+        fontFamily: fontStack,
+      }}
+    >
       {/* Logo */}
-      <div className="mb-8 flex flex-col items-center">
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#D0103A]">
+      <Box
+        sx={{
+          mb: 4,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
+        <Box
+          sx={{
+            mb: 2,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 48,
+            height: 48,
+            borderRadius: "12px",
+            backgroundColor: "#D0103A",
+          }}
+        >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
           </svg>
-        </div>
-        <h1 className="text-[22px] font-semibold tracking-tight text-[#1F1F1F]">CRAFT</h1>
-        <p className="mt-1 text-[13px] text-[#5F6368]">AI-powered content platform by AIA</p>
-      </div>
+        </Box>
+        <Typography
+          component="h1"
+          sx={{
+            fontSize: "22px",
+            fontWeight: 600,
+            letterSpacing: "-0.02em",
+            color: "#1F1F1F",
+            fontFamily: fontStack,
+          }}
+        >
+          CRAFT
+        </Typography>
+        <Typography
+          sx={{
+            mt: 0.5,
+            fontSize: "13px",
+            color: "#5F6368",
+            fontFamily: fontStack,
+          }}
+        >
+          AI-powered content platform by AIA
+        </Typography>
+      </Box>
 
       {/* Card */}
-      <div className="w-full max-w-[400px] rounded-2xl border border-[#E8EAED] bg-white p-8 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_16px_rgba(0,0,0,0.04)]">
-        <h2 className="mb-6 text-center text-[18px] font-semibold text-[#1F1F1F]">Sign in</h2>
+      <Box
+        sx={{
+          width: "100%",
+          maxWidth: 400,
+          borderRadius: "16px",
+          border: "1px solid #E8EAED",
+          backgroundColor: "#FFFFFF",
+          p: 4,
+          boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)",
+        }}
+      >
+        <Typography
+          component="h2"
+          sx={{
+            mb: 3,
+            textAlign: "center",
+            fontSize: "18px",
+            fontWeight: 600,
+            color: "#1F1F1F",
+            fontFamily: fontStack,
+          }}
+        >
+          Sign in
+        </Typography>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="mb-1.5 block text-[13px] font-medium text-[#3C4043]">
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+        >
+          {/* Email field */}
+          <Box>
+            <Typography
+              component="label"
+              htmlFor="email"
+              sx={{
+                display: "block",
+                mb: 0.75,
+                fontSize: "13px",
+                fontWeight: 500,
+                color: "#3C4043",
+                fontFamily: fontStack,
+              }}
+            >
               Email
-            </label>
-            <input
+            </Typography>
+            <TextField
               id="email"
               type="email"
               placeholder="name@aia.com.sg"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full rounded-lg border border-[#DADCE0] bg-white px-3.5 py-2.5 text-[14px] text-[#1F1F1F] placeholder-[#BDC1C6] outline-none transition-all focus:border-[#D0103A] focus:shadow-[0_0_0_3px_rgba(208,16,58,0.08)]"
+              fullWidth
+              variant="outlined"
+              size="small"
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "10px",
+                  backgroundColor: "#FFFFFF",
+                  fontFamily: fontStack,
+                  fontSize: "14px",
+                  color: "#1F1F1F",
+                  "& fieldset": {
+                    borderColor: "#DADCE0",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#DADCE0",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#D0103A",
+                    borderWidth: "1px",
+                    boxShadow: "0 0 0 3px rgba(208,16,58,0.08)",
+                  },
+                },
+                "& .MuiOutlinedInput-input": {
+                  px: 1.75,
+                  py: 1.25,
+                  fontFamily: fontStack,
+                  "&::placeholder": {
+                    color: "#BDC1C6",
+                    opacity: 1,
+                  },
+                },
+              }}
             />
-          </div>
+          </Box>
 
-          <div>
-            <div className="mb-1.5 flex items-center justify-between">
-              <label htmlFor="password" className="text-[13px] font-medium text-[#3C4043]">
+          {/* Password field */}
+          <Box>
+            <Box
+              sx={{
+                mb: 0.75,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Typography
+                component="label"
+                htmlFor="password"
+                sx={{
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  color: "#3C4043",
+                  fontFamily: fontStack,
+                }}
+              >
                 Password
-              </label>
-              <button type="button" className="text-[13px] text-[#D0103A] hover:underline">
+              </Typography>
+              <Button
+                type="button"
+                disableRipple
+                sx={{
+                  fontSize: "13px",
+                  color: "#D0103A",
+                  fontFamily: fontStack,
+                  textTransform: "none",
+                  p: 0,
+                  minWidth: 0,
+                  lineHeight: 1,
+                  background: "none",
+                  "&:hover": {
+                    background: "none",
+                    textDecoration: "underline",
+                  },
+                }}
+              >
                 Forgot password?
-              </button>
-            </div>
-            <input
+              </Button>
+            </Box>
+            <TextField
               id="password"
               type="password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={8}
-              className="w-full rounded-lg border border-[#DADCE0] bg-white px-3.5 py-2.5 text-[14px] text-[#1F1F1F] placeholder-[#BDC1C6] outline-none transition-all focus:border-[#D0103A] focus:shadow-[0_0_0_3px_rgba(208,16,58,0.08)]"
+              fullWidth
+              variant="outlined"
+              size="small"
+              slotProps={{ htmlInput: { minLength: 8 } }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "10px",
+                  backgroundColor: "#FFFFFF",
+                  fontFamily: fontStack,
+                  fontSize: "14px",
+                  color: "#1F1F1F",
+                  "& fieldset": {
+                    borderColor: "#DADCE0",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "#DADCE0",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#D0103A",
+                    borderWidth: "1px",
+                    boxShadow: "0 0 0 3px rgba(208,16,58,0.08)",
+                  },
+                },
+                "& .MuiOutlinedInput-input": {
+                  px: 1.75,
+                  py: 1.25,
+                  fontFamily: fontStack,
+                  "&::placeholder": {
+                    color: "#BDC1C6",
+                    opacity: 1,
+                  },
+                },
+              }}
             />
-          </div>
+          </Box>
 
+          {/* Error */}
           {error && (
-            <p className="rounded-lg bg-[#FCE8E6] px-3.5 py-2.5 text-[13px] text-[#C5221F]">
-              {error}
-            </p>
+            <Box
+              sx={{
+                borderRadius: "10px",
+                backgroundColor: "#FCE8E6",
+                px: 1.75,
+                py: 1.25,
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: "13px",
+                  color: "#C5221F",
+                  fontFamily: fontStack,
+                }}
+              >
+                {error}
+              </Typography>
+            </Box>
           )}
 
-          <button
+          {/* Submit */}
+          <Button
             type="submit"
+            variant="contained"
+            disableElevation
             disabled={isLoading}
-            className="mt-2 w-full rounded-lg bg-[#D0103A] py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[#B80E33] disabled:opacity-60"
+            fullWidth
+            sx={{
+              mt: 1,
+              borderRadius: 9999,
+              textTransform: "none",
+              fontSize: "14px",
+              fontWeight: 600,
+              fontFamily: fontStack,
+              backgroundColor: "#D0103A",
+              color: "#FFFFFF",
+              py: 1.25,
+              "&:hover": {
+                backgroundColor: "#B80E33",
+              },
+              "&.Mui-disabled": {
+                backgroundColor: "#D0103A",
+                color: "#FFFFFF",
+                opacity: 0.6,
+              },
+            }}
           >
             {isLoading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 1,
+                }}
+              >
+                <CircularProgress
+                  size={16}
+                  thickness={4}
+                  sx={{ color: "rgba(255,255,255,0.85)" }}
+                />
                 Signing in…
-              </span>
-            ) : "Sign in"}
-          </button>
-        </form>
-      </div>
+              </Box>
+            ) : (
+              "Sign in"
+            )}
+          </Button>
+        </Box>
+      </Box>
 
       {/* Demo accounts */}
-      <div className="mt-6 w-full max-w-[400px]">
-        <p className="mb-3 text-center text-[12px] font-medium text-[#80868B]">Demo accounts</p>
-        <div className="grid grid-cols-2 gap-2">
+      <Box sx={{ mt: 3, width: "100%", maxWidth: 400 }}>
+        <Typography
+          sx={{
+            mb: 1.5,
+            textAlign: "center",
+            fontSize: "12px",
+            fontWeight: 500,
+            color: "#80868B",
+            fontFamily: fontStack,
+          }}
+        >
+          Demo accounts
+        </Typography>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 1,
+          }}
+        >
           {TEST_ACCOUNTS.map((acct) => (
-            <button
+            <Box
               key={acct.email}
+              component="button"
               onClick={() => quickLogin(acct.email)}
-              className="flex items-center gap-2.5 rounded-xl border border-[#E8EAED] bg-white px-3 py-2.5 text-left transition-colors hover:bg-[#F8F9FA] active:scale-[0.98]"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.25,
+                borderRadius: "12px",
+                border: "1px solid #E8EAED",
+                backgroundColor: "#FFFFFF",
+                px: 1.5,
+                py: 1.25,
+                textAlign: "left",
+                cursor: "pointer",
+                transition: "background-color 0.15s ease",
+                fontFamily: fontStack,
+                "&:hover": {
+                  backgroundColor: "#F8F9FA",
+                },
+                "&:active": {
+                  transform: "scale(0.98)",
+                },
+              }}
             >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#D0103A] text-[10px] font-bold text-white">
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 32,
+                  height: 32,
+                  flexShrink: 0,
+                  borderRadius: "50%",
+                  backgroundColor: "#D0103A",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  color: "#FFFFFF",
+                  fontFamily: fontStack,
+                }}
+              >
                 {acct.initials}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-[12px] font-medium text-[#1F1F1F]">{acct.name}</p>
-                <p className="truncate text-[11px] text-[#80868B]">{acct.role}</p>
-              </div>
-            </button>
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  sx={{
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    color: "#1F1F1F",
+                    fontFamily: fontStack,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {acct.name}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: "11px",
+                    color: "#80868B",
+                    fontFamily: fontStack,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {acct.role}
+                </Typography>
+              </Box>
+            </Box>
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
-      <p className="mt-8 text-[11px] text-[#BDC1C6]">© 2026 AIA Singapore · Internal use only</p>
-    </div>
+      <Typography
+        sx={{
+          mt: 4,
+          fontSize: "11px",
+          color: "#BDC1C6",
+          fontFamily: fontStack,
+        }}
+      >
+        © 2026 AIA Singapore · Internal use only
+      </Typography>
+    </Box>
   );
 }

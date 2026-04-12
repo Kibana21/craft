@@ -1,5 +1,9 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import ButtonBase from "@mui/material/ButtonBase";
+
 interface AnalyticsFiltersProps {
   period: "week" | "month" | "quarter";
   onPeriodChange: (p: "week" | "month" | "quarter") => void;
@@ -13,23 +17,44 @@ const PERIODS = [
 
 export function AnalyticsFilters({ period, onPeriodChange }: AnalyticsFiltersProps) {
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-sm text-[#717171]">Period:</span>
-      <div className="flex rounded-lg border border-[#DDDDDD] bg-white overflow-hidden">
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <Typography sx={{ fontSize: 14, color: "#717171" }}>Period:</Typography>
+      <Box
+        sx={{
+          display: "flex",
+          borderRadius: "8px",
+          border: "1px solid #DDDDDD",
+          bgcolor: "#FFFFFF",
+          overflow: "hidden",
+        }}
+      >
         {PERIODS.map((p) => (
-          <button
+          <ButtonBase
             key={p.value}
             onClick={() => onPeriodChange(p.value)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              period === p.value
-                ? "bg-[#222222] text-white"
-                : "text-[#484848] hover:bg-[#F7F7F7]"
-            }`}
+            sx={{
+              px: 2,
+              py: 1,
+              fontSize: 14,
+              fontWeight: 500,
+              transition: "background-color 0.15s, color 0.15s",
+              ...(period === p.value
+                ? {
+                    bgcolor: "#1F1F1F",
+                    color: "#FFFFFF",
+                  }
+                : {
+                    color: "#6B6B6B",
+                    "&:hover": {
+                      bgcolor: "#F7F7F7",
+                    },
+                  }),
+            }}
           >
             {p.label}
-          </button>
+          </ButtonBase>
         ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

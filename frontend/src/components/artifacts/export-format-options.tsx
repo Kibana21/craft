@@ -1,5 +1,7 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 import type { ExportAspectRatio, ExportFormat } from "@/types/export";
 
 interface ExportOption {
@@ -44,31 +46,58 @@ export function ExportFormatOptions({ artifactType, selected, onSelect }: Export
   const options = getOptions(artifactType);
 
   return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+        gap: 1,
+      }}
+    >
       {options.map((opt) => {
         const isSelected =
           selected?.format === opt.format && selected?.aspectRatio === opt.aspectRatio;
+
         return (
-          <button
+          <Box
             key={`${opt.format}-${opt.aspectRatio}`}
+            component="button"
             type="button"
             onClick={() => onSelect(opt.format, opt.aspectRatio)}
-            className={`flex items-center gap-3 rounded-xl border p-4 text-left transition-all ${
-              isSelected
-                ? "border-[#D0103A] bg-[#FFF0F3] shadow-sm"
-                : "border-[#DDDDDD] bg-white hover:border-[#AAAAAA]"
-            }`}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              borderRadius: "12px",
+              border: `1px solid ${isSelected ? "#D0103A" : "#DDDDDD"}`,
+              bgcolor: isSelected ? "#FFF0F3" : "#FFFFFF",
+              boxShadow: isSelected ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+              p: 2,
+              textAlign: "left",
+              cursor: "pointer",
+              transition: "border-color 0.15s, background-color 0.15s",
+              "&:hover": {
+                borderColor: isSelected ? "#D0103A" : "#AAAAAA",
+              },
+            }}
           >
-            <span className="text-2xl">{opt.icon}</span>
-            <div>
-              <p className={`text-sm font-semibold ${isSelected ? "text-[#D0103A]" : "text-[#222222]"}`}>
+            <Typography sx={{ fontSize: "1.5rem", lineHeight: 1 }}>{opt.icon}</Typography>
+            <Box>
+              <Typography
+                sx={{
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  color: isSelected ? "#D0103A" : "#222222",
+                }}
+              >
                 {opt.label}
-              </p>
-              <p className="text-xs text-[#717171]">{opt.description}</p>
-            </div>
-          </button>
+              </Typography>
+              <Typography sx={{ fontSize: "0.75rem", color: "#717171" }}>
+                {opt.description}
+              </Typography>
+            </Box>
+          </Box>
         );
       })}
-    </div>
+    </Box>
   );
 }

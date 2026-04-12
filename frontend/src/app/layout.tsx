@@ -33,9 +33,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable}`}
+      style={{ height: "100%", WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale" }}
     >
-      <body className="min-h-full flex flex-col">
+      <body style={{ minHeight: "100vh", display: "flex", flexDirection: "column", margin: 0 }}>
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <MuiThemeProvider>
             <AuthProvider>{children}</AuthProvider>

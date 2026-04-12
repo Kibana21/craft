@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
 import { useAuth } from "@/components/providers/auth-provider";
 import { LibraryItemCard } from "@/components/cards/library-item-card";
 import { fetchLibraryItems, remixLibraryItem } from "@/lib/api/brand-library";
-import { btn, text } from "@/lib/ui";
 import type { BrandLibraryItem } from "@/types/brand-library";
 
 export function BrandLibraryTab() {
@@ -24,27 +26,58 @@ export function BrandLibraryTab() {
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-[72px] animate-pulse rounded-xl border border-[#E8EAED] bg-[#F8F9FA]" />
+          <Box
+            key={i}
+            sx={{
+              height: 72,
+              borderRadius: "12px",
+              border: "1px solid #E8EAED",
+              bgcolor: "#F8F9FA",
+              "@keyframes pulse": {
+                "0%, 100%": { opacity: 1 },
+                "50%": { opacity: 0.5 },
+              },
+              animation: "pulse 1.5s ease-in-out infinite",
+            }}
+          />
         ))}
-      </div>
+      </Box>
     );
   }
 
   return (
-    <div>
-      <div className="mb-5 flex items-center justify-between">
-        <h2 className={text.h2}>Brand library</h2>
-        <button onClick={() => router.push("/brand-library")} className={btn.outline}>
+    <Box>
+      <Box sx={{ mb: 2.5, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Typography sx={{ fontSize: "16px", fontWeight: 600, color: "#1F1F1F" }}>
+          Brand library
+        </Typography>
+        <Button
+          variant="outlined"
+          size="small"
+          disableElevation
+          onClick={() => router.push("/brand-library")}
+          endIcon={
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 4l4 4-4 4" />
+            </svg>
+          }
+          sx={{
+            borderRadius: 9999,
+            textTransform: "none",
+            fontSize: "14px",
+            fontWeight: 500,
+            color: "#3C4043",
+            borderColor: "#DADCE0",
+            "&:hover": { bgcolor: "#F1F3F4", borderColor: "#DADCE0" },
+          }}
+        >
           {isAdmin ? "Manage library" : "Browse all"}
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 4l4 4-4 4" />
-          </svg>
-        </button>
-      </div>
+        </Button>
+      </Box>
 
-      <div className="space-y-2">
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         {items.map((item) => (
           <LibraryItemCard
             key={item.id}
@@ -57,19 +90,34 @@ export function BrandLibraryTab() {
             onManage={() => router.push(`/brand-library/${item.id}`)}
           />
         ))}
-      </div>
+      </Box>
 
       {items.length === 0 && (
-        <div className="mt-20 flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F1F3F4] text-2xl">📚</div>
-          <p className="text-[15px] font-medium text-[#1F1F1F]">
+        <Box sx={{ mt: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 56,
+              height: 56,
+              borderRadius: "16px",
+              bgcolor: "#F1F3F4",
+              fontSize: "24px",
+            }}
+          >
+            📚
+          </Box>
+          <Typography sx={{ fontSize: "15px", fontWeight: 500, color: "#1F1F1F" }}>
             {isAdmin ? "Brand Library is empty" : "Nothing here yet"}
-          </p>
-          <p className="text-[13px] text-[#80868B]">
-            {isAdmin ? "Publish your first artifact for FSCs to remix" : "Your brand team will publish content here soon"}
-          </p>
-        </div>
+          </Typography>
+          <Typography sx={{ fontSize: "13px", color: "#80868B" }}>
+            {isAdmin
+              ? "Publish your first artifact for FSCs to remix"
+              : "Your brand team will publish content here soon"}
+          </Typography>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

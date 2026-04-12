@@ -1,26 +1,45 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+
 export default function ComplianceReviewPage() {
   return (
-    <div className="mx-auto max-w-4xl px-6 py-12">
-      <div className="mb-10">
-        <h1 className="text-[28px] font-bold text-[#222222]">Review Queue</h1>
-        <p className="mt-1 text-base text-[#717171]">
+    <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 4 }}>
+      {/* Header */}
+      <Box sx={{ mb: 5 }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, color: "#1F1F1F", fontSize: "28px" }}>
+          Review Queue
+        </Typography>
+        <Typography sx={{ mt: 0.5, fontSize: "1rem", color: "#5F6368" }}>
           Pending Brand Library items and low-compliance artifacts
-        </p>
-      </div>
+        </Typography>
+      </Box>
 
-      <div className="mt-12 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#F7F7F7] text-3xl">
+      {/* Empty state */}
+      <Box sx={{ mt: 6, textAlign: "center" }}>
+        <Box
+          sx={{
+            mx: "auto",
+            width: 64,
+            height: 64,
+            borderRadius: "50%",
+            bgcolor: "#F8F9FA",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "1.875rem",
+          }}
+        >
           ✅
-        </div>
-        <h3 className="mt-4 text-lg font-semibold text-[#222222]">
+        </Box>
+        <Typography sx={{ mt: 2, fontSize: "1.125rem", fontWeight: 600, color: "#1F1F1F" }}>
           All clear
-        </h3>
-        <p className="mt-1 text-sm text-[#717171]">
+        </Typography>
+        <Typography sx={{ mt: 0.5, fontSize: "0.875rem", color: "#5F6368" }}>
           No items requiring review right now. Check the Brand Library for pending publications.
-        </p>
-      </div>
-    </div>
+        </Typography>
+      </Box>
+    </Box>
   );
 }

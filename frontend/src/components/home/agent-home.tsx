@@ -1,6 +1,8 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
+import Box from "@mui/material/Box";
+import ButtonBase from "@mui/material/ButtonBase";
 import { QuickCreateStrip } from "./quick-create-strip";
 import { GamificationStrip } from "./gamification-strip";
 import { MyProjectsTab } from "./tabs/my-projects-tab";
@@ -23,42 +25,63 @@ export function AgentHome() {
   };
 
   return (
-    <div className="pb-16">
+    <Box sx={{ pb: 8 }}>
       {/* Quick Create */}
       <QuickCreateStrip />
 
       {/* Underline tabs */}
-      <div className="px-6 py-8">
-        <div className="mx-auto max-w-3xl">
-          <div className="mb-8 flex gap-6 border-b border-[#EBEBEB]">
+      <Box sx={{ px: 3, py: 4 }}>
+        <Box sx={{ mx: "auto", maxWidth: "48rem" }}>
+          <Box
+            sx={{
+              mb: 4,
+              display: "flex",
+              gap: 3,
+              borderBottom: "1px solid #EBEBEB",
+            }}
+          >
             {TABS.map((tab) => (
-              <button
+              <ButtonBase
                 key={tab.key}
                 onClick={() => setTab(tab.key)}
-                className={`pb-3 text-sm font-medium transition-all duration-200 ${
-                  activeTab === tab.key
-                    ? "border-b-2 border-[#D0103A] text-[#D0103A] font-semibold"
-                    : "text-[#717171] hover:text-[#222222]"
-                }`}
+                sx={{
+                  pb: 1.5,
+                  fontSize: "0.875rem",
+                  fontWeight: activeTab === tab.key ? 600 : 500,
+                  color: activeTab === tab.key ? "#D0103A" : "#717171",
+                  borderBottom: activeTab === tab.key ? "2px solid #D0103A" : "2px solid transparent",
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    color: activeTab === tab.key ? "#D0103A" : "#222222",
+                  },
+                }}
               >
                 {tab.label}
-              </button>
+              </ButtonBase>
             ))}
-          </div>
+          </Box>
 
           {/* Tab content */}
-          <div>
+          <Box>
             {activeTab === "my-projects" && <MyProjectsTab />}
             {activeTab === "team-projects" && <TeamProjectsTab />}
             {activeTab === "brand-library" && <BrandLibraryTab />}
-          </div>
-        </div>
-      </div>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Gamification — fixed bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-40">
+      <Box
+        sx={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 40,
+        }}
+      >
         <GamificationStrip />
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

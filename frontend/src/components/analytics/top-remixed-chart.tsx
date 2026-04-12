@@ -1,5 +1,8 @@
 "use client";
 
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Skeleton from "@mui/material/Skeleton";
 import {
   BarChart,
   Bar,
@@ -19,25 +22,41 @@ interface TopRemixedChartProps {
 export function TopRemixedChart({ items, isLoading }: TopRemixedChartProps) {
   if (isLoading) {
     return (
-      <div className="space-y-2">
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className="h-4 w-36 animate-pulse rounded bg-[#F7F7F7]" />
-            <div
-              className="h-4 animate-pulse rounded bg-[#F7F7F7]"
-              style={{ width: `${(6 - i) * 14}%` }}
+          <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Skeleton
+              variant="rectangular"
+              width={144}
+              height={16}
+              sx={{ borderRadius: "4px", bgcolor: "#F7F7F7", flexShrink: 0 }}
             />
-          </div>
+            <Skeleton
+              variant="rectangular"
+              width={`${(6 - i) * 14}%`}
+              height={16}
+              sx={{ borderRadius: "4px", bgcolor: "#F7F7F7" }}
+            />
+          </Box>
         ))}
-      </div>
+      </Box>
     );
   }
 
   if (items.length === 0) {
     return (
-      <div className="flex h-40 items-center justify-center text-sm text-[#B0B0B0]">
-        No remixed items yet
-      </div>
+      <Box
+        sx={{
+          height: 160,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Typography sx={{ fontSize: 14, color: "#B0B0B0" }}>
+          No remixed items yet
+        </Typography>
+      </Box>
     );
   }
 
@@ -53,8 +72,17 @@ export function TopRemixedChart({ items, isLoading }: TopRemixedChartProps) {
   return (
     <ResponsiveContainer width="100%" height={240}>
       <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16 }}>
-        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#EBEBEB" />
-        <XAxis type="number" tick={{ fontSize: 11, fill: "#B0B0B0" }} axisLine={false} tickLine={false} />
+        <CartesianGrid
+          strokeDasharray="3 3"
+          horizontal={false}
+          stroke="#EBEBEB"
+        />
+        <XAxis
+          type="number"
+          tick={{ fontSize: 11, fill: "#B0B0B0" }}
+          axisLine={false}
+          tickLine={false}
+        />
         <YAxis
           type="category"
           dataKey="name"
@@ -64,7 +92,11 @@ export function TopRemixedChart({ items, isLoading }: TopRemixedChartProps) {
           tickLine={false}
         />
         <Tooltip
-          contentStyle={{ borderRadius: 8, border: "1px solid #EBEBEB", fontSize: 12 }}
+          contentStyle={{
+            borderRadius: 8,
+            border: "1px solid #EBEBEB",
+            fontSize: 12,
+          }}
           formatter={(value) => [value, "Remixes"]}
           labelFormatter={(label) => label}
         />

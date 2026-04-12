@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 import { fetchMyGamification } from "@/lib/api/gamification";
 import type { GamificationStats } from "@/types/gamification";
 
@@ -32,27 +34,64 @@ export function GamificationStrip() {
       : 100;
 
   return (
-    <div className="border-t border-[#EBEBEB] bg-white px-6 py-3">
-      <div className="mx-auto flex max-w-3xl items-center gap-4">
-        <span className="text-xl" title={`${streak}-day streak`}>
+    <Box
+      sx={{
+        borderTop: "1px solid #EBEBEB",
+        bgcolor: "#FFFFFF",
+        px: 3,
+        py: 1.5,
+      }}
+    >
+      <Box
+        sx={{
+          mx: "auto",
+          display: "flex",
+          maxWidth: "48rem",
+          alignItems: "center",
+          gap: 2,
+        }}
+      >
+        <Typography
+          component="span"
+          sx={{ fontSize: "1.25rem" }}
+          title={`${streak}-day streak`}
+        >
           {streak > 0 ? "🔥" : "💤"}
-        </span>
-        <span className="text-sm font-semibold text-[#222222]">
+        </Typography>
+        <Typography
+          component="span"
+          sx={{ fontSize: "0.875rem", fontWeight: 600, color: "#222222" }}
+        >
           {streak}-day streak
-        </span>
-        <div className="flex-1">
-          <div className="h-2 overflow-hidden rounded-full bg-[#EBEBEB]">
-            <div
-              className="h-full rounded-full bg-[#D0103A] transition-all duration-500"
-              style={{ width: stats ? `${progress}%` : "0%" }}
+        </Typography>
+        <Box sx={{ flex: 1 }}>
+          <Box
+            sx={{
+              height: 8,
+              overflow: "hidden",
+              borderRadius: 9999,
+              bgcolor: "#EBEBEB",
+            }}
+          >
+            <Box
+              sx={{
+                height: "100%",
+                borderRadius: 9999,
+                bgcolor: "#D0103A",
+                transition: "width 0.5s ease",
+                width: stats ? `${progress}%` : "0%",
+              }}
             />
-          </div>
-        </div>
-        <span className="whitespace-nowrap text-sm text-[#717171]">
+          </Box>
+        </Box>
+        <Typography
+          component="span"
+          sx={{ whiteSpace: "nowrap", fontSize: "0.875rem", color: "#717171" }}
+        >
           {points.toLocaleString()} pts
           {percentile !== null && ` · Top ${percentile.toFixed(0)}%`}
-        </span>
-      </div>
-    </div>
+        </Typography>
+      </Box>
+    </Box>
   );
 }

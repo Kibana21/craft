@@ -2,6 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { fetchDocuments, uploadDocument, deleteDocument, type ComplianceDocument } from "@/lib/api/compliance";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import Skeleton from "@mui/material/Skeleton";
 
 export default function ComplianceDocumentsPage() {
   const [docs, setDocs] = useState<ComplianceDocument[]>([]);
@@ -28,82 +35,215 @@ export default function ComplianceDocumentsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-12">
-      <div className="mb-10 flex items-start justify-between">
-        <div>
-          <h1 className="text-[28px] font-bold text-[#222222]">Compliance Documents</h1>
-          <p className="mt-1 text-base text-[#717171]">MAS regulations and product fact sheets for RAG-based compliance checking</p>
-        </div>
-        <button
+    <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 4 }}>
+      {/* Header */}
+      <Box sx={{ mb: 5, display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: "#1F1F1F", fontSize: "28px" }}>
+            Compliance Documents
+          </Typography>
+          <Typography sx={{ mt: 0.5, fontSize: "1rem", color: "#5F6368" }}>
+            MAS regulations and product fact sheets for RAG-based compliance checking
+          </Typography>
+        </Box>
+        <Button
           onClick={() => setShowUpload(!showUpload)}
-          className="rounded-lg bg-[#D0103A] px-6 py-3 text-base font-semibold text-white transition-all hover:bg-[#B80E33]"
+          disableElevation
+          sx={{
+            borderRadius: 9999,
+            textTransform: "none",
+            bgcolor: "#D0103A",
+            color: "#fff",
+            px: 3,
+            py: 1.5,
+            fontWeight: 600,
+            fontSize: "1rem",
+            "&:hover": { bgcolor: "#B80E33" },
+          }}
         >
           + Upload document
-        </button>
-      </div>
+        </Button>
+      </Box>
 
+      {/* Upload form */}
       {showUpload && (
-        <div className="mb-8 rounded-xl border border-[#EBEBEB] bg-white p-6">
-          <h3 className="mb-4 text-base font-semibold text-[#222222]">Upload document</h3>
-          <div className="space-y-4">
-            <input
+        <Box
+          sx={{
+            mb: 4,
+            borderRadius: "16px",
+            border: "1px solid #F0F0F0",
+            bgcolor: "#FFFFFF",
+            p: 3,
+          }}
+        >
+          <Typography sx={{ mb: 2, fontWeight: 600, color: "#1F1F1F" }}>Upload document</Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField
               type="text"
               value={newDoc.title}
               onChange={(e) => setNewDoc({ ...newDoc, title: e.target.value })}
               placeholder="Document title"
-              className="w-full rounded-lg border border-[#DDDDDD] px-4 py-3.5 text-base focus:border-[#222222] focus:outline-none focus:ring-0"
+              fullWidth
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "8px",
+                  "& fieldset": { borderColor: "#E8EAED" },
+                  "&:hover fieldset": { borderColor: "#DADCE0" },
+                  "&.Mui-focused fieldset": { borderColor: "#1F1F1F" },
+                },
+              }}
             />
-            <select
+            <Select
               value={newDoc.document_type}
               onChange={(e) => setNewDoc({ ...newDoc, document_type: e.target.value })}
-              className="rounded-lg border border-[#DDDDDD] px-4 py-3.5 text-base focus:border-[#222222] focus:outline-none focus:ring-0"
+              size="small"
+              sx={{
+                borderRadius: "8px",
+                "& .MuiOutlinedInput-notchedOutline": { borderColor: "#E8EAED" },
+                "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#DADCE0" },
+              }}
             >
-              <option value="mas_regulation">MAS Regulation</option>
-              <option value="product_fact_sheet">Product Fact Sheet</option>
-              <option value="disclaimer">Disclaimer Template</option>
-            </select>
-            <textarea
+              <MenuItem value="mas_regulation">MAS Regulation</MenuItem>
+              <MenuItem value="product_fact_sheet">Product Fact Sheet</MenuItem>
+              <MenuItem value="disclaimer">Disclaimer Template</MenuItem>
+            </Select>
+            <TextField
+              multiline
+              rows={6}
               value={newDoc.content}
               onChange={(e) => setNewDoc({ ...newDoc, content: e.target.value })}
               placeholder="Paste document content here..."
-              rows={6}
-              className="w-full rounded-lg border border-[#DDDDDD] px-4 py-3.5 text-base focus:border-[#222222] focus:outline-none focus:ring-0"
+              fullWidth
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "8px",
+                  "& fieldset": { borderColor: "#E8EAED" },
+                  "&:hover fieldset": { borderColor: "#DADCE0" },
+                  "&.Mui-focused fieldset": { borderColor: "#1F1F1F" },
+                },
+              }}
             />
-            <button
+            <Button
               onClick={handleUpload}
               disabled={newDoc.title.length < 1 || newDoc.content.length < 10}
-              className="rounded-lg bg-[#008A05] px-6 py-3 text-base font-semibold text-white disabled:opacity-40"
+              disableElevation
+              sx={{
+                alignSelf: "flex-start",
+                borderRadius: 9999,
+                textTransform: "none",
+                bgcolor: "#188038",
+                color: "#fff",
+                px: 3,
+                py: 1.5,
+                fontWeight: 600,
+                fontSize: "1rem",
+                "&:hover": { bgcolor: "#146830" },
+                "&.Mui-disabled": { opacity: 0.4, color: "#fff", bgcolor: "#188038" },
+              }}
             >
               Upload
-            </button>
-          </div>
-        </div>
+            </Button>
+          </Box>
+        </Box>
       )}
 
+      {/* Documents list */}
       {isLoading ? (
-        <div className="space-y-4">{[1,2].map(i => <div key={i} className="h-16 animate-pulse rounded-xl bg-[#F7F7F7]" />)}</div>
-      ) : docs.length > 0 ? (
-        <div className="space-y-4">
-          {docs.map((doc) => (
-            <div key={doc.id} className="flex items-center gap-4 rounded-xl border border-[#EBEBEB] bg-white p-5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-sm text-white">📄</div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-[#222222]">{doc.title}</p>
-                <p className="text-xs text-[#717171]">{doc.document_type.replace("_", " ")} · Chunk {doc.chunk_index}</p>
-              </div>
-              <button onClick={() => handleDelete(doc.id)} className="rounded-lg bg-[#FFF0F3] px-3 py-1.5 text-xs font-semibold text-[#D0103A] hover:bg-red-100">
-                Delete
-              </button>
-            </div>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {[1, 2].map((i) => (
+            <Skeleton key={i} variant="rounded" height={64} sx={{ borderRadius: "16px" }} />
           ))}
-        </div>
+        </Box>
+      ) : docs.length > 0 ? (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {docs.map((doc) => (
+            <Box
+              key={doc.id}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                borderRadius: "16px",
+                border: "1px solid #F0F0F0",
+                bgcolor: "#FFFFFF",
+                p: 2.5,
+              }}
+            >
+              {/* Icon */}
+              <Box
+                sx={{
+                  flexShrink: 0,
+                  width: 40,
+                  height: 40,
+                  borderRadius: "10px",
+                  bgcolor: "#1A73E8",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "0.875rem",
+                  color: "#fff",
+                }}
+              >
+                📄
+              </Box>
+
+              {/* Content */}
+              <Box sx={{ flex: 1 }}>
+                <Typography sx={{ fontSize: "0.875rem", fontWeight: 600, color: "#1F1F1F" }}>
+                  {doc.title}
+                </Typography>
+                <Typography sx={{ fontSize: "0.75rem", color: "#5F6368" }}>
+                  {doc.document_type.replace("_", " ")} · Chunk {doc.chunk_index}
+                </Typography>
+              </Box>
+
+              {/* Delete button */}
+              <Button
+                onClick={() => handleDelete(doc.id)}
+                disableElevation
+                size="small"
+                sx={{
+                  borderRadius: 9999,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  fontSize: "0.75rem",
+                  px: 1.5,
+                  py: 0.75,
+                  bgcolor: "#FCE8E6",
+                  color: "#C5221F",
+                  "&:hover": { bgcolor: "#FADAD8" },
+                }}
+              >
+                Delete
+              </Button>
+            </Box>
+          ))}
+        </Box>
       ) : (
-        <div className="mt-12 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#F7F7F7] text-3xl">📄</div>
-          <h3 className="mt-4 text-lg font-semibold text-[#222222]">No documents uploaded</h3>
-          <p className="mt-1 text-sm text-[#717171]">Upload MAS regulations for compliance checking</p>
-        </div>
+        <Box sx={{ mt: 6, textAlign: "center" }}>
+          <Box
+            sx={{
+              mx: "auto",
+              width: 64,
+              height: 64,
+              borderRadius: "50%",
+              bgcolor: "#F8F9FA",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "1.875rem",
+            }}
+          >
+            📄
+          </Box>
+          <Typography sx={{ mt: 2, fontSize: "1.125rem", fontWeight: 600, color: "#1F1F1F" }}>
+            No documents uploaded
+          </Typography>
+          <Typography sx={{ mt: 0.5, fontSize: "0.875rem", color: "#5F6368" }}>
+            Upload MAS regulations for compliance checking
+          </Typography>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
