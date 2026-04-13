@@ -142,7 +142,7 @@ async def generate_image_gemini(
             parts.append(types.Part.from_bytes(data=raw, mime_type=mime_type))
 
     response = await client.aio.models.generate_content(
-        model="gemini-2.5-flash-image",
+        model="gemini-3.1-flash-image-preview",
         contents=parts,
     )
 

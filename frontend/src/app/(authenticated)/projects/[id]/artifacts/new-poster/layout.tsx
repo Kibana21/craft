@@ -1,13 +1,13 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { useParams, usePathname, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import Box from "@mui/material/Box";
 import ButtonBase from "@mui/material/ButtonBase";
 import CircularProgress from "@mui/material/CircularProgress";
 import Typography from "@mui/material/Typography";
 import { WizardProgress } from "@/components/projects/wizard/wizard-progress";
-import { createArtifact } from "@/lib/api/artifacts";
+import { createArtifact, fetchArtifactDetail } from "@/lib/api/artifacts";
 import { fetchProjectDetail } from "@/lib/api/projects";
 import type {
   PosterBriefContent,
@@ -92,13 +92,19 @@ export default function PosterWizardLayout({ children }: { children: React.React
   const { id: projectId } = useParams<{ id: string }>();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const loadArtifactId = searchParams.get("load");
 
   const [artifactId, setArtifactId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-  // Guard against React StrictMode double-invoking the effect (which would create two draft artifacts)
-  const initRanRef = useRef(false);
+  // Track which artifact / "new" session we have already initialised.
+  // Using the load-key (artifact id or "new") as the guard is more robust
+  // than a simple boolean ref: it survives Next.js router-cache restores and
+  // correctly re-initialises when the user opens a *different* existing poster.
+  const loadedKeyRef = useRef<string | null>(null);
   const [projectName, setProjectName] = useState<string>("");
+  const [artifactName, setArtifactName] = useState<string>("");
 
   const [brief, setBriefState] = useState<PosterBriefContent>(DEFAULT_BRIEF);
   const [subject, setSubjectState] = useState<PosterSubjectContent>(DEFAULT_SUBJECT);
@@ -106,23 +112,56 @@ export default function PosterWizardLayout({ children }: { children: React.React
   const [composition, setCompositionState] = useState<PosterCompositionContent>(DEFAULT_COMPOSITION);
   const [generation, setGenerationState] = useState<PosterGenerationState>(DEFAULT_GENERATION);
 
-  // On mount: fetch project name and create a draft artifact for this session.
+  // On mount / when the load target changes: fetch project + artifact.
   useEffect(() => {
-    if (!projectId || initRanRef.current) return;
-    initRanRef.current = true;
+    if (!projectId) return;
+    const requestedKey = loadArtifactId ?? "new";
+    // Skip only when we already handled this exact key.  Using the key (not a
+    // boolean) means navigating to a *different* existing poster correctly
+    // re-initialises, and StrictMode double-invokes are still blocked.
+    if (loadedKeyRef.current === requestedKey) return;
+    loadedKeyRef.current = requestedKey;
+    setIsInitializing(true);
 
     const init = async () => {
       try {
-        const [project, artifact] = await Promise.all([
-          fetchProjectDetail(projectId),
-          createArtifact(projectId, {
-            type: "poster",
-            name: "Untitled poster",
-            content: { schema_version: 1 },
-          }),
-        ]);
-        setProjectName(project.name);
-        setArtifactId(artifact.id);
+        if (loadArtifactId) {
+          // Loading an existing poster artifact
+          const [project, artifact] = await Promise.all([
+            fetchProjectDetail(projectId),
+            fetchArtifactDetail(loadArtifactId),
+          ]);
+          setProjectName(project.name);
+          setArtifactName(artifact.name || "Untitled poster");
+          setArtifactId(artifact.id);
+          // Reset wizard state to defaults before applying saved content so
+          // stale state from a previous session doesn't bleed through.
+          setBriefState(DEFAULT_BRIEF);
+          setSubjectState(DEFAULT_SUBJECT);
+          setCopyState(DEFAULT_COPY);
+          setCompositionState(DEFAULT_COMPOSITION);
+          setGenerationState(DEFAULT_GENERATION);
+          // Restore saved sections
+          const c = (artifact.content ?? {}) as Record<string, unknown>;
+          if (c.brief) setBriefState((prev) => ({ ...prev, ...(c.brief as Partial<PosterBriefContent>) }));
+          if (c.subject) setSubjectState((prev) => ({ ...prev, ...(c.subject as Partial<PosterSubjectContent>) }));
+          if (c.copy) setCopyState((prev) => ({ ...prev, ...(c.copy as Partial<PosterCopyContent>) }));
+          if (c.composition) setCompositionState((prev) => ({ ...prev, ...(c.composition as Partial<PosterCompositionContent>) }));
+          if (c.generation) setGenerationState((prev) => ({ ...prev, ...(c.generation as Partial<PosterGenerationState>) }));
+        } else {
+          // Creating a new poster artifact
+          const [project, artifact] = await Promise.all([
+            fetchProjectDetail(projectId),
+            createArtifact(projectId, {
+              type: "poster",
+              name: "Untitled poster",
+              content: { schema_version: 1 },
+            }),
+          ]);
+          setProjectName(project.name);
+          setArtifactName("New poster");
+          setArtifactId(artifact.id);
+        }
       } catch {
         router.push(`/projects/${projectId}`);
       } finally {
@@ -132,7 +171,7 @@ export default function PosterWizardLayout({ children }: { children: React.React
 
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
+  }, [projectId, loadArtifactId]);
 
   const getContentPayload = (): Record<string, unknown> => ({
     schema_version: 1,
@@ -194,7 +233,7 @@ export default function PosterWizardLayout({ children }: { children: React.React
             {projectName || "Project"}
           </ButtonBase>
           <Typography sx={{ fontSize: "14px", color: "#717171" }}>/</Typography>
-          <Typography sx={{ fontSize: "14px", color: "#222222" }}>New poster</Typography>
+          <Typography sx={{ fontSize: "14px", color: "#222222" }}>{artifactName || "Poster"}</Typography>
         </Box>
 
         {/* Step indicator */}

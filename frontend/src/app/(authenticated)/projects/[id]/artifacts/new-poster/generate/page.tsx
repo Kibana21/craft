@@ -178,7 +178,7 @@ function VariantTile({
 export default function PosterGeneratePage() {
   const { id: projectId } = useParams<{ id: string }>();
   const router = useRouter();
-  const { composition, subject, artifactId, setSubject } = usePosterWizard();
+  const { composition, subject, artifactId, setSubject, generation } = usePosterWizard();
 
   // Variant grid selection — tracked by variant id after initial generation
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
@@ -207,10 +207,13 @@ export default function PosterGeneratePage() {
   const isLoading = status === "loading";
 
   // ── Auto-dispatch on mount ────────────────────────────────────────────────────
+  // Skip auto-generation if the artifact already has saved variants (loaded from
+  // an existing poster). The user can trigger regeneration manually if needed.
 
   useEffect(() => {
     if (hasAutoDispatched.current) return;
     if (!artifactId || !composition.merged_prompt || !subject.type) return;
+    if (generation.variants.length > 0) return;  // existing poster — don't clobber saved variants
     hasAutoDispatched.current = true;
 
     generate({
@@ -220,7 +223,7 @@ export default function PosterGeneratePage() {
       referenceImageIds: subject.product_asset.reference_image_ids,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [artifactId]);
+  }, [artifactId, generation.variants.length]);
 
   // ── Regen all ─────────────────────────────────────────────────────────────────
 

@@ -29,6 +29,18 @@ import TextField from "@mui/material/TextField";
 import Avatar from "@mui/material/Avatar";
 import Skeleton from "@mui/material/Skeleton";
 
+// ─── Artifact navigation ──────────────────────────────────────────────────────
+
+function artifactUrl(projectId: string, artifact: { id: string; type: string }): string {
+  if (artifact.type === "poster") {
+    return `/projects/${projectId}/artifacts/new-poster/brief?load=${artifact.id}`;
+  }
+  if (artifact.type === "video" || artifact.type === "reel") {
+    return `/projects/${projectId}/artifacts/${artifact.id}/video/brief`;
+  }
+  return `/projects/${projectId}/artifacts/${artifact.id}`;
+}
+
 // ─── Type metadata ────────────────────────────────────────────────────────────
 
 const TYPE_META: Record<string, { hex: string; pastel: string; label: string; icon: React.ReactNode; iconLg: React.ReactNode }> = {
@@ -503,10 +515,10 @@ export default function ProjectDetailPage() {
                               return (
                                 <Box
                                   key={artifact.id}
-                                  onClick={() => router.push(`/projects/${id}/artifacts/${artifact.id}`)}
+                                  onClick={() => router.push(artifactUrl(id, artifact))}
                                   role="button"
                                   tabIndex={0}
-                                  onKeyDown={(e) => { if (e.key === "Enter") router.push(`/projects/${id}/artifacts/${artifact.id}`); }}
+                                  onKeyDown={(e) => { if (e.key === "Enter") router.push(artifactUrl(id, artifact)); }}
                                   sx={{
                                     display: "flex",
                                     flexDirection: "column",
@@ -582,10 +594,10 @@ export default function ProjectDetailPage() {
                               return (
                                 <Box
                                   key={artifact.id}
-                                  onClick={() => router.push(`/projects/${id}/artifacts/${artifact.id}`)}
+                                  onClick={() => router.push(artifactUrl(id, artifact))}
                                   role="button"
                                   tabIndex={0}
-                                  onKeyDown={(e) => { if (e.key === "Enter") router.push(`/projects/${id}/artifacts/${artifact.id}`); }}
+                                  onKeyDown={(e) => { if (e.key === "Enter") router.push(artifactUrl(id, artifact)); }}
                                   sx={{
                                     display: "flex",
                                     alignItems: "center",

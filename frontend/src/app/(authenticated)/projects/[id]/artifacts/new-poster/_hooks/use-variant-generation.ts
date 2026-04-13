@@ -15,12 +15,15 @@ export type GenerationStatus = "idle" | "loading" | "success" | "error";
 
 interface UseVariantGenerationOptions {
   artifactId: string | null;
+  initialVariants?: GeneratedVariant[];
   onVariantsReady?: (variants: GeneratedVariant[]) => void;
 }
 
-export function useVariantGeneration({ artifactId, onVariantsReady }: UseVariantGenerationOptions) {
-  const [status, setStatus] = useState<GenerationStatus>("idle");
-  const [variants, setVariants] = useState<GeneratedVariant[]>([]);
+export function useVariantGeneration({ artifactId, initialVariants, onVariantsReady }: UseVariantGenerationOptions) {
+  const [status, setStatus] = useState<GenerationStatus>(
+    initialVariants && initialVariants.length > 0 ? "success" : "idle",
+  );
+  const [variants, setVariants] = useState<GeneratedVariant[]>(initialVariants ?? []);
   const [jobId, setJobId] = useState<string | null>(null);
   const [partialFailure, setPartialFailure] = useState(false);
   const [error, setError] = useState<string | null>(null);
