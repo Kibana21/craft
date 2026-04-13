@@ -38,22 +38,31 @@ frontend/src/
 │           ├── new/page.tsx        # 5-step project creation wizard
 │           ├── [id]/page.tsx       # Project detail
 │           └── [id]/artifacts/
-│               ├── new/page.tsx    # Artifact type selector + creator
+│               ├── new/page.tsx         # Artifact type selector + creator
 │               ├── [artifactId]/page.tsx
-│               └── [artifactId]/video/
-│                   ├── layout.tsx  # VideoWizardContext + step indicator
+│               ├── [artifactId]/video/  # 5-step video wizard
+│               │   ├── layout.tsx  # VideoWizardContext + step indicator
+│               │   ├── brief/page.tsx
+│               │   ├── presenter/page.tsx
+│               │   ├── script/page.tsx
+│               │   ├── storyboard/page.tsx
+│               │   └── generate/page.tsx
+│               └── new-poster/          # 5-step poster wizard (Phase A–D shipped)
+│                   ├── layout.tsx  # PosterWizardContext + clickable step indicator + auto-resume to deepest step
 │                   ├── brief/page.tsx
-│                   ├── presenter/page.tsx
-│                   ├── script/page.tsx
-│                   ├── storyboard/page.tsx
-│                   └── generate/page.tsx
+│                   ├── subject/page.tsx
+│                   ├── copy/page.tsx
+│                   ├── compose/page.tsx
+│                   ├── generate/page.tsx      # canvas + thumb strip + chat + merged-prompt disclosure + history dialog
+│                   └── _hooks/               # use-variant-generation, use-chat-refinement, etc.
 ├── components/
 │   ├── nav/                        # CreatorNav, AgentNav
 │   ├── home/                       # CreatorHome, AgentHome, tab components
 │   ├── providers/                  # AuthProvider, MuiThemeProvider
 │   ├── projects/wizard/            # WizardProgress (shared)
-│   ├── artifacts/create/           # PosterCreator, WhatsAppCreator, etc.
+│   ├── artifacts/create/           # WhatsAppCreator, older inline creators
 │   ├── video/                      # All video wizard components
+│   ├── poster-wizard/              # Phase D: ChatPanel, InpaintOverlay, shared (AI assist chip, locked badge, field compliance warning)
 │   ├── brand-kit/                  # Color/logo/font editors
 │   ├── gamification/               # Leaderboard, streak, points
 │   ├── analytics/                  # Charts, metrics cards
@@ -79,7 +88,7 @@ frontend/src/
 - **No Redux / Zustand.** Global state via React Context (`AuthProvider`, `VideoWizardContext`). Local UI state via `useState`.
 - **Every page route** under `(authenticated)/` gets the auth guard automatically from the group layout.
 - **Path alias `@/`** maps to `src/`. Use `@/lib/...`, `@/types/...`, etc. everywhere.
-- **API proxy**: Next.js rewrites `/api/*` → `http://localhost:8000/api/*`. API client points to `http://localhost:8000` directly.
+- **API base URL**: in dev, set `NEXT_PUBLIC_API_URL=http://localhost:8000` in `frontend/.env.local` so the browser calls the backend directly. The Next.js `rewrites()` proxy still exists in `next.config.ts` as a fallback, but going direct avoids a Node undici ↔ uvicorn HTTP keep-alive race that produced random `socket hang up / ECONNRESET` errors. CORS for `localhost:3000` is allow-listed in the backend (`backend/app/main.py`).
 
 ---
 
@@ -306,6 +315,49 @@ staticVideoUrl(fileUrl) → string    // builds /uploads/... URL for <video> src
 deleteVideo(videoId) → void
 ```
 
+### `poster-wizard.ts` (Phase B / C / D / E — client for `/api/ai/poster/*` and related)
+```typescript
+// Phase B — text AI
+generateBrief(params)                                            → { brief, generation_id }
+generateAppearanceParagraph(params)                              → { paragraph, word_count }
+generateSceneDescription(params)                                 → { description }
+copyDraftAll(params)                                             → { headline, subheadline, body, cta_text }
+copyDraftField(params)                                           → { value }
+toneRewrite({ rewrite_tone, current_copy })                      → { rewritten: CopyValues }
+classifyStructuralChange(message)                                → { is_structural, target, confidence }
+
+// Phase C — image generation
+generateCompositionPrompt(params)                                → { merged_prompt, style_sentence }
+generateVariants(params)                                         → { job_id, status: "QUEUED" }        // 202
+getVariantJobStatus(jobId)                                       → { status, variants, partial_failure, error }  // poll 2s
+retryVariant(params)                                             → { variant }
+uploadReferenceImage(file, artifactId?)                          → { id, storage_url, expires_at }
+deleteReferenceImage(imageId)                                    → void
+
+// Phase D — refinement + history
+refineChat({ artifact_id, variant_id, user_message,
+             change_history, original_merged_prompt })           → { turn_id, ai_response, change_description,
+                                                                     new_image_url, action_type, redirect_target,
+                                                                     turn_index }
+inpaintRegion(artifactId, variantId, description,
+              originalMergedPrompt, maskPng)                     → { turn_id, new_image_url, change_description }
+saveAsVariant(artifactId, variantId)                             → { new_variant: GeneratedVariant }
+listVariantTurns(artifactId, variantId)                          → { turns: VariantTurnItem[] }
+restoreVariantTurn(artifactId, variantId, turnId)                → { image_url }
+
+// Phase E
+upscaleVariant(artifactId, variantId)                            → { image_url, width, height }
+checkField(params)                                               → { flags, cached }
+```
+
+### Poster Wizard surface notes
+- **Routes:** `src/app/(authenticated)/projects/[id]/artifacts/new-poster/{brief,subject,copy,compose,generate}/page.tsx`. Common state lives in `new-poster/layout.tsx` (`usePosterWizard()`).
+- **Deep-link resume:** `layout.tsx` fetches the artifact on mount and, when the user lands on `/brief`, auto-replaces to the deepest step that already has data.
+- **Step indicator is clickable** via `onStepClick` — the layout wires it so users can jump between any step.
+- **Hook:** `new-poster/_hooks/use-variant-generation.ts` owns the variant list for Step 5; dispatches generation, polls, retries, appends. Seed persisted variants via its `initialVariants` option when re-opening an existing poster (the generate page maps `generation.variants` to `GeneratedVariant[]` and passes them).
+- **Step 5 components:** `components/poster-wizard/chat/chat-panel.tsx` (messages + 6-turn counter + change-log pills + undo + turn-limit nudge + redirect notice), `chat/inpaint-overlay.tsx` (mask drag-box + coverage calc). Error mapping: 429 + `error_code=TURN_LIMIT_REACHED` → "Save as variant" prompt; 501 → "still in development".
+- **History dialog** on the generate page fetches `listVariantTurns()` for the selected variant and offers per-row Restore.
+
 ---
 
 ## TypeScript Types (`src/types/`)
@@ -392,9 +444,14 @@ type ExportStatus = "processing" | "ready" | "failed";
 
 ### `WizardProgress` — `src/components/projects/wizard/wizard-progress.tsx`
 ```tsx
-<WizardProgress steps={["Brief", "Subject", "Copy"]} currentStep={1} />
+<WizardProgress
+  steps={["Brief", "Subject", "Copy"]}
+  currentStep={1}
+  onStepClick={(i) => router.push(urlForStep(i))}  // optional — makes circles/labels clickable
+  clickableSteps="all"                              // or "completed-and-current"
+/>
 ```
-Renders numbered circles (red = current, green = completed, grey = pending) + a segmented progress bar. Used for any multi-step wizard.
+Renders numbered circles (red = current, green = completed, grey = pending) + a segmented progress bar. Used for any multi-step wizard. `onStepClick` is opt-in; omit it for display-only progress (as in `projects/new`).
 
 ### `VideoWizardContext` — `src/app/(authenticated)/projects/[id]/artifacts/[artifactId]/video/layout.tsx`
 ```tsx
@@ -580,4 +637,4 @@ const handleUpload = async (file: File) => {
 NEXT_PUBLIC_API_URL=http://localhost:8000   # used by ApiClient (optional; defaults to localhost:8000)
 ```
 
-Next.js rewrites `/api/*` → `http://localhost:8000/api/*` (configured in `next.config.ts`). The `ApiClient` calls the backend directly at port 8000, not via the Next.js proxy.
+Set `NEXT_PUBLIC_API_URL=http://localhost:8000` in `frontend/.env.local` for dev — the browser then hits the backend directly (recommended, avoids a Node proxy keep-alive race). The Next.js `rewrites()` in `next.config.ts` maps `/api/*` → `http://localhost:8000/api/*` but is only used if `NEXT_PUBLIC_API_URL` is unset.

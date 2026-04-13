@@ -8,7 +8,7 @@ FastAPI async backend for the CRAFT platform. Python 3.12+, SQLAlchemy 2.0 (asyn
 
 ```bash
 # Dev server (from repo root)
-make backend              # uvicorn app.main:app --reload --port 8000
+make backend              # uvicorn app.main:app --reload --port 8000 --timeout-keep-alive 75
 
 # Database
 make migrate              # alembic upgrade head
@@ -32,7 +32,7 @@ make lint                 # ruff + mypy
 backend/
 ├── app/
 │   ├── main.py                  # FastAPI app, lifespan, CORS, router mounting
-│   ├── celery_app.py            # Celery broker config (Redis, video queue)
+│   ├── celery_app.py            # Celery broker config (Redis; video + poster queues)
 │   ├── core/
 │   │   ├── config.py            # Pydantic Settings (all env vars)
 │   │   ├── database.py          # Async engine, session factory, get_db()
@@ -251,6 +251,12 @@ user_id (unique FK), total_points (int), current_streak, longest_streak, last_ac
 ### `PointsLog` — `points_log`
 user_id (FK), action (CREATE_ARTIFACT / EXPORT / REMIX / STREAK_BONUS / VIDEO_GENERATED), points (int), related_artifact_id (FK?), created_at.
 
+### `PosterChatTurn` — `poster_chat_turns`
+Append-only log of Step 5 refinements. artifact_id (FK, indexed), variant_id (UUID referencing `content.generation.variants[].id` — not a real FK because JSONB), turn_index (0-based), user_message, ai_response, action_type (CHAT_REFINE / INPAINT / REDIRECT / TURN_LIMIT_NUDGE — check constraint), resulting_image_url?, inpaint_mask_url?, structural_change_detected (bool), deleted_at?. The row count per (artifact, variant) filtered to `action_type != 'REDIRECT'` is the **authoritative 6-turn cap** — never rely on the JSONB mirror alone.
+
+### `PosterReferenceImage` — `poster_reference_images`
+Session-temp uploads for Step 2 product/asset subjects. uploader_id (FK), artifact_id (FK?), storage_url, mime_type (png/jpeg/webp — check constraint), size_bytes (≤ 20 MB — check constraint), expires_at. TTL enforced by `poster_sweep_service`.
+
 ---
 
 ## API Routes
@@ -369,6 +375,35 @@ Mock endpoints (real AIA hierarchy requires network access — deferred)
 ### `scenes`, `generated_videos`
 Standalone routers for PATCH/DELETE outside the session namespace.
 
+### `poster_ai` — `/api/ai/poster`
+| Phase | Method + Path | Notes |
+|---|---|---|
+| B | POST /generate-brief | Gemini narrative from campaign inputs |
+| B | POST /generate-appearance-paragraph | 40–80-word subject description |
+| B | POST /generate-scene-description | Scene-abstract text |
+| B | POST /copy-draft-all | Headline + subhead + body + CTA (all fields) |
+| B | POST /copy-draft-field | Single-field draft (regenerate) |
+| B | POST /tone-rewrite | Rewrite copy with SHARPER / WARMER / MORE_URGENT / SHORTER |
+| B | POST /classify-structural-change | Heuristic + LLM fallback; returns {is_structural, target, confidence} |
+| C | POST /generate-composition-prompt | Deterministic assembler + Gemini style sentence → merged_prompt |
+| C | POST /generate-variants | → 202 {job_id}; Celery `poster.generate` runs 4-up in parallel |
+| C | GET  /generate-variants/{job_id}/status | Polling target — READY / FAILED |
+| C | POST /generate-variants/retry | Single-slot retry (HMAC retry token) |
+| **D** | POST /refine-chat | One chat-refine turn. Enforces 6-turn cap (429 TURN_LIMIT_REACHED). Structural changes return `action_type=REDIRECT` with a step target and do not count against the cap. Turn 6 carries `action_type=TURN_LIMIT_NUDGE`. Undo pill: message prefix `"undo the change: "` skips the counter. |
+| **D** | POST /inpaint | Multipart with mask PNG. Reuses poster_image_service.inpaint_variant() — mask coverage > 60% rejected with 400. Counts against the turn cap. |
+| E | POST /upscale | 2× via Gemini or Pillow Lanczos fallback |
+| E | POST /compliance/check-field | Per-field MAS pattern scan |
+
+### `artifacts` (poster extensions) — `/api/artifacts`
+| Phase | Method + Path | Notes |
+|---|---|---|
+| **D** | POST /{id}/save-as-variant | Clone selected variant into a new JSONB entry. Sets `parent_variant_id` lineage, deselects prior variants, resets `turn_count_on_selected` to 0. Returns the full `Variant` object. |
+| **D** | GET  /{id}/variants/{variant_id}/turns | Image-producing history (REDIRECT rows excluded) ordered by turn_index. Powers the History dialog on the generate page. |
+| **D** | POST /{id}/variants/{variant_id}/restore-turn | Swap `variants[i].image_url` to an earlier turn's `resulting_image_url`. Intentionally does **not** reset the counter — restore is a view swap, not a cap bypass. |
+
+### `poster` — `/api/poster`
+Admin sweep. `POST /sweep/chat-turns` (30-day) and `POST /sweep/reference-images` (24h TTL). Wired via `poster_sweep_service`.
+
 ---
 
 ## Services
@@ -448,6 +483,18 @@ Points: CREATE_ARTIFACT=10, EXPORT=20, REMIX=15, STREAK_BONUS=50, VIDEO_GENERATE
 ### `app/services/suggestion_service.py`
 `generate_suggestions(db, project)` — Gemini-powered artifact type suggestions per project context.
 
+### Poster Wizard services
+
+| File | Purpose |
+|---|---|
+| `poster_ai_service.py` | Phase B text AI (brief / appearance / scene / copy / tone-rewrite) + deterministic `build_composition_prompt()` + Gemini `build_style_sentence()` + `classify_structural_change()` (keyword fast path → LLM fallback) |
+| `poster_image_service.py` | Phase C orchestrator: 4-variant parallel Gemini calls via `asyncio.gather`, seed-phrase diversity, exponential backoff, retry tokens (HMAC), daily project quota (Redis), reference image downscaling. Plus `inpaint_variant()` (mask validation, red overlay, Gemini image-edit, PIL composite, upload) and `upscale_variant()`. |
+| `poster_generation_worker.py` | Celery task `poster.generate` on the `poster` queue — runs the parallel generation, writes variants back to `artifact.content.generation.variants[]`, mirrors status to Redis for polling. |
+| `poster_refine_service.py` | **Phase D.** `refine_chat_turn()` — full chat-refinement flow: lock artifact → `enforce_turn_limit()` → structural-change pre-check → prompt stacking (original + accepted change history + user message) → Gemini image call → `_summarise_change()` for ≤5-word pill → PosterChatTurn row + JSONB variant update + mirror `turn_count_on_selected`. Also exports `count_turns()` + `enforce_turn_limit()` used by the inpaint endpoint. |
+| `poster_sweep_service.py` | TTL sweeps — 24h on reference images, 30d on chat turns. Call periodically (cron / manual). |
+| `print_pdf_service.py` | Phase E CMYK/300DPI poster export (partial). |
+| `upscale_service.py` | Phase E upscaling helpers (partial). |
+
 ---
 
 ## Video Generation Pipeline
@@ -472,7 +519,8 @@ Points: CREATE_ARTIFACT=10, EXPORT=20, REMIX=15, STREAK_BONUS=50, VIDEO_GENERATE
 **Celery config** (`celery_app.py`):
 - Broker + backend: Redis (`REDIS_URL`)
 - `task_acks_late=True`, `worker_prefetch_multiplier=1` (reliable at-least-once)
-- Route: `video.generate` → `"video"` queue (scale independently)
+- Routes: `video.generate` → `"video"` queue; `poster.generate` → `"poster"` queue (scale independently)
+- Run worker: `celery -A app.celery_app worker --queues=video,poster,celery -l info` (see `make worker`)
 - Timezone: `Asia/Singapore`
 - Result expiry: 24h (status tracked in DB, not Redis)
 
@@ -504,7 +552,8 @@ Revision chain oldest → newest:
 | `d3e4f5a6b7c8` | Phase 7 gamification + video refinements |
 | `4906a5094a60` | Compliance check + export log adjustments |
 | `a1b2c3d4e5f6` | Export log status + download_url columns |
-| `53f0e01db9b9` | Scene.setting widened to TEXT (current HEAD) |
+| `53f0e01db9b9` | Scene.setting widened to TEXT |
+| `e1f2a3b4c5d6` | Poster Wizard tables — `poster_chat_turns` (append-only refinement log) + `poster_reference_images` (TTL temp uploads) (current HEAD) |
 
 **Adding a migration:**
 ```bash

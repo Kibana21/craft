@@ -147,6 +147,8 @@ Cards: `border: "1px solid #E8EAED"`, `borderRadius: "16px"`, white background.
 | `PointsLog` | `points_log` | user_id, action, points, related_artifact_id | CREATE_ARTIFACT=10, EXPORT=20, REMIX=15, VIDEO_GENERATED=50 |
 | `Comment` | `comments` | artifact_id, user_id, text | |
 | `Notification` | `notifications` | user_id, type, title, data (JSONB), read | Partial index on unread |
+| `PosterChatTurn` | `poster_chat_turns` | artifact_id (FK), variant_id (UUID into JSONB), turn_index, user_message, ai_response, action_type (CHAT_REFINE / INPAINT / REDIRECT / TURN_LIMIT_NUDGE), resulting_image_url, inpaint_mask_url, structural_change_detected, deleted_at | Append-only log of Step 5 refinement turns. Row count per (artifact, variant) is the source of truth for the 6-turn cap (REDIRECT excluded). |
+| `PosterReferenceImage` | `poster_reference_images` | uploader_id (FK), artifact_id (FK, nullable), storage_url, mime_type, size_bytes (≤ 20 MB), expires_at | Session-temporary uploads for Step 2 product/asset subjects; TTL enforced by sweep job |
 
 ## API Surface
 
@@ -176,6 +178,8 @@ Cards: `border: "1px solid #E8EAED"`, `borderRadius: "16px"`, white background.
 | `suggestions` | GET/POST /projects/{id}/suggestions |
 | `hierarchy` | Mock (real AIA hierarchy requires network access) |
 | `health` | GET /health |
+| `poster_ai` | Phase B: /generate-brief, /generate-appearance-paragraph, /generate-scene-description, /copy-draft-all, /copy-draft-field, /tone-rewrite, /classify-structural-change. Phase C: /generate-composition-prompt, /generate-variants + /generate-variants/{job_id}/status + /generate-variants/retry. **Phase D**: /refine-chat, /inpaint. Phase E: /upscale, /compliance/check-field |
+| `artifacts` (poster extensions) | POST /save-as-variant, GET /variants/{variant_id}/turns, POST /variants/{variant_id}/restore-turn |
 
 ## Video Generation Pipeline
 
@@ -233,12 +237,12 @@ Cards: `border: "1px solid #E8EAED"`, `borderRadius: "16px"`, white background.
 - Analytics (overview metrics, activity trends, content gaps, top remixed)
 - Comments + notifications + presenters library
 
-**In Planning (Poster Wizard — see `.claude/plans/poster-generation/`):**
-- Phase A: Wizard scaffold + data model migration
-- Phase B: Real text AI (brief, copy, scene description)
-- Phase C: Image generation via `gemini-2.5-flash-image` (4-variant parallel)
-- Phase D: Chat refinement + region edit (inpainting)
-- Phase E: Per-field compliance inline + print-ready PDF export
+**Poster Wizard (see `.claude/plans/poster-generation/`):**
+- Phase A: Wizard scaffold + data model migration — **shipped**
+- Phase B: Real text AI (brief, copy, scene description) — **shipped**
+- Phase C: Image generation via `gemini-2.5-flash-image` (4-variant parallel) — **shipped**
+- Phase D: Chat refinement (6-turn cap) + region inpainting + structural-change redirect + save-as-variant + turn history/restore — **shipped** (impl notes: `.claude/plans/poster-generation/12-phase-d-implementation.md`)
+- Phase E: Per-field compliance inline + print-ready PDF export + 2× upscale — partial
 
 **Deferred (Phase 2 — see `.claude/specs/unimplemented-features.md`):**
 1. Compliance review queue UI
@@ -251,7 +255,7 @@ Cards: `border: "1px solid #E8EAED"`, `borderRadius: "16px"`, white background.
 
 ## Alembic Migration Chain
 
-Current HEAD: `53f0e01db9b9`
+Current HEAD: `e1f2a3b4c5d6`
 
 | Revision | What it adds |
 |---|---|
@@ -262,8 +266,7 @@ Current HEAD: `53f0e01db9b9`
 | `4906a5094a60` | Compliance check + export log adjustments |
 | `a1b2c3d4e5f6` | Export log status + download_url |
 | `53f0e01db9b9` | Scene.setting widened to TEXT |
-
-Next migration for Poster Wizard: `005_poster_wizard.py` (adds `poster_chat_turns`, `poster_reference_images`).
+| `e1f2a3b4c5d6` | Poster Wizard tables — `poster_chat_turns`, `poster_reference_images` (supports Phase D refinement logs + temp reference image uploads) |
 
 ## Test Accounts (seed.py — password: `craft2026`)
 
