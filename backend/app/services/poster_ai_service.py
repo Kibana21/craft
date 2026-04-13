@@ -337,7 +337,10 @@ def build_composition_prompt(
         "No embedded text — copy will be overlaid separately."
     )
     if brief_narrative:
-        merged_prompt += f"\n\nCampaign context: {brief_narrative[:300]}"
+        # Pass the narrative in full — it's already length-bounded by the brief
+        # form (60–120 words, per PRD). Trimming here drops useful context and
+        # tends to end the prompt mid-sentence, which reads as a bug to users.
+        merged_prompt += f"\n\nCampaign context: {brief_narrative.strip()}"
 
     return merged_prompt, style_sentence
 

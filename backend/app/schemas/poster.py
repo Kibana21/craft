@@ -452,7 +452,41 @@ class SaveAsVariantRequest(BaseModel):
 
 
 class SaveAsVariantResponse(BaseModel):
-    new_variant_id: uuid.UUID
+    """Returns the full GeneratedVariant-shaped object so the frontend can drop
+    it straight into its strip state without a follow-up fetch.
+    """
+    new_variant: Variant
+
+
+# ── Phase D — Turn history (list + restore) ───────────────────────────────────
+
+
+class VariantTurnItem(BaseModel):
+    """One refinement turn in a variant's history. Filtered to actionable
+    turns only (CHAT_REFINE / INPAINT / TURN_LIMIT_NUDGE) — REDIRECT turns are
+    audit-only and have no image to restore, so they're excluded from this
+    response.
+    """
+    turn_id: uuid.UUID
+    turn_index: int
+    action_type: Literal["CHAT_REFINE", "INPAINT", "TURN_LIMIT_NUDGE"]
+    user_message: str
+    ai_response: str
+    resulting_image_url: str
+    created_at: datetime
+
+
+class VariantTurnsResponse(BaseModel):
+    turns: list[VariantTurnItem]
+
+
+class RestoreTurnRequest(BaseModel):
+    """POST /api/artifacts/{id}/variants/{variant_id}/restore-turn"""
+    turn_id: uuid.UUID
+
+
+class RestoreTurnResponse(BaseModel):
+    image_url: str
 
 
 # ── Phase E — Per-field compliance ────────────────────────────────────────────

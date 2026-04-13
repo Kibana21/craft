@@ -6,7 +6,7 @@ Phase B  (implemented): generate-brief, generate-appearance-paragraph,
                         classify-structural-change (heuristic)
 Phase C  (implemented): generate-composition-prompt, generate-variants,
                         generate-variants/retry
-Phase D  (stub — 501):  refine-chat, inpaint
+Phase D  (implemented): refine-chat, inpaint, save-as-variant (artifacts.py)
 
 The composition-prompt assembler is deterministic and does not call Gemini;
 it is implemented here and returns 200 even in Phase B builds.
@@ -498,17 +498,23 @@ async def retry_variant(
 )
 async def refine_chat(
     data: RefineChatRequest,
-    _current_user: User = Depends(get_current_user),
-    _db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> RefineChatResponse:
-    """Chat-based poster refinement. Phase D — not yet implemented."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail={
-            "detail": "Chat refinement is coming in Phase D.",
-            "error_code": "PHASE_NOT_IMPLEMENTED",
-        },
+    """Chat-based poster refinement. See poster_refine_service for the flow."""
+    # Ownership / RBAC — reuse the shared artifact-access dependency.
+    await require_artifact_access(data.artifact_id, current_user, db)
+    from app.services.poster_refine_service import refine_chat_turn
+    response = await refine_chat_turn(
+        db,
+        artifact_id=data.artifact_id,
+        variant_id=data.variant_id,
+        user_message=data.user_message,
+        change_history=data.change_history,
+        original_merged_prompt=data.original_merged_prompt,
     )
+    await db.commit()
+    return response
 
 
 @router.post(
@@ -522,17 +528,35 @@ async def inpaint(
     description: str = Form(...),
     original_merged_prompt: str = Form(...),
     mask_png: UploadFile = File(...),
-    _current_user: User = Depends(get_current_user),
-    _db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> InpaintResponse:
-    """Inpaint a masked region of a poster variant. Phase D — not yet implemented."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail={
-            "detail": "Inpainting is coming in Phase D.",
-            "error_code": "PHASE_NOT_IMPLEMENTED",
-        },
-    )
+    """Inpaint a masked region of a poster variant.
+
+    Counts against the 6-turn cap per variant (doc 07 §Inpainting from Chat).
+    """
+    from app.services.poster_image_service import inpaint_variant
+    from app.services.poster_refine_service import enforce_turn_limit
+
+    await require_artifact_access(artifact_id, current_user, db)
+    # Enforce turn cap BEFORE doing expensive Gemini work; raises 429 if hit.
+    await enforce_turn_limit(db, artifact_id, variant_id)
+
+    mask_bytes = await mask_png.read()
+    try:
+        result = await inpaint_variant(
+            db,
+            artifact_id=artifact_id,
+            variant_id=str(variant_id),
+            mask_png_bytes=mask_bytes,
+            description=description,
+            original_merged_prompt=original_merged_prompt,
+        )
+    except ValueError as exc:
+        # Service raises ValueError for 404-ish + validation failures (mask
+        # coverage > 60%, mask size mismatch, missing variant image).
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return InpaintResponse(**result)
 
 
 # ── Phase E — 2× Upscale ──────────────────────────────────────────────────────

@@ -366,14 +366,24 @@ export function ChatPanel({
           ]);
         }
       }
-    } catch {
+    } catch (err: unknown) {
+      const apiErr = err as { detail?: unknown; status?: number };
+      const detail = typeof apiErr.detail === "object" && apiErr.detail !== null
+        ? (apiErr.detail as { error_code?: string; detail?: string })
+        : null;
+      let friendly = "Something went wrong. Try rephrasing or try again.";
+      if (detail?.error_code === "TURN_LIMIT_REACHED") {
+        friendly = "You've hit the 6-turn limit. Save as a new variant to keep refining.";
+        // Keep the counter correct so the input locks.
+        setTurnCount(TURN_LIMIT);
+      } else if (apiErr.status === 501) {
+        friendly = "This refinement feature isn't available yet — please try again shortly.";
+      } else if (detail?.detail) {
+        friendly = String(detail.detail);
+      }
       setMessages((prev) => [
         ...prev,
-        {
-          id: `err-${Date.now()}`,
-          type: "ai",
-          text: "Something went wrong. Try rephrasing or try again.",
-        },
+        { id: `err-${Date.now()}`, type: "ai", text: friendly },
       ]);
     } finally {
       setIsLoading(false);

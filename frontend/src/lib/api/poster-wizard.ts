@@ -326,3 +326,35 @@ export async function saveAsVariant(
     { variant_id: variantId },
   );
 }
+
+// ── Phase D — Variant refinement history ─────────────────────────────────────
+
+export interface VariantTurnItem {
+  turn_id: string;
+  turn_index: number;
+  action_type: "CHAT_REFINE" | "INPAINT" | "TURN_LIMIT_NUDGE";
+  user_message: string;
+  ai_response: string;
+  resulting_image_url: string;
+  created_at: string;
+}
+
+export async function listVariantTurns(
+  artifactId: string,
+  variantId: string,
+): Promise<{ turns: VariantTurnItem[] }> {
+  return apiClient.get<{ turns: VariantTurnItem[] }>(
+    `/api/artifacts/${artifactId}/variants/${variantId}/turns`,
+  );
+}
+
+export async function restoreVariantTurn(
+  artifactId: string,
+  variantId: string,
+  turnId: string,
+): Promise<{ image_url: string }> {
+  return apiClient.post<{ image_url: string }>(
+    `/api/artifacts/${artifactId}/variants/${variantId}/restore-turn`,
+    { turn_id: turnId },
+  );
+}

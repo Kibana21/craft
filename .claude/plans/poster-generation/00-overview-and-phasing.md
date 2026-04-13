@@ -67,13 +67,14 @@ Five phases, each individually demoable. No feature flag system exists in this c
 - Text→Image vs Image→Image branching driven by Step 2 subject type
 - **Exit criteria:** user can reach Step 5 and see 4 generated variants within 45s (PRD §14.1).
 
-### Phase D — Chat Refinement + Inpainting *(depends on C)*
+### Phase D — Chat Refinement + Inpainting *(depends on C)* — **shipped**
 - Chat panel UI with change log, turn counter (max 6), suggestion chips
-- `POST /api/ai/refine-chat` endpoint
-- Inpainting endpoint + region-select UI
+- `POST /api/ai/poster/refine-chat` endpoint — `poster_refine_service.refine_chat_turn()`
+- `POST /api/ai/poster/inpaint` endpoint — `poster_image_service.inpaint_variant()`
 - Structural-change classifier + redirect-to-wizard nudge
-- Save-as-variant flow (new artifact record, lineage pointer)
-- **Exit criteria:** user can make 6 refinement turns, trigger inpainting, get a redirect nudge when asking for copy changes, and save-as-variant to reset the turn counter.
+- Save-as-variant flow: `POST /api/artifacts/{id}/save-as-variant`, resets `turn_count_on_selected`, sets `parent_variant_id` lineage
+- Implementation details: `.claude/plans/poster-generation/12-phase-d-implementation.md`
+- **Exit criteria met:** user can make 6 refinement turns, trigger inpainting, get a redirect nudge when asking for copy changes, and save-as-variant to reset the turn counter.
 
 ### Phase E — Compliance Inline + Export Hardening *(depends on B and C; can overlap D)*
 - `POST /api/compliance/check-field` per-field inline scorer

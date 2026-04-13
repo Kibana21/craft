@@ -754,18 +754,19 @@ async def inpaint_variant(
 
     # ── Create PosterChatTurn row ──────────────────────────────────────────────
     from app.models.poster import PosterChatTurn
+    from app.services.poster_refine_service import count_turns
 
     turn_id = uuid.uuid4()
-    existing_turns_count = len([
-        v for v in variants
-        if v.get("id") == variant_id
-    ])  # simplification; proper turn count from DB
+    variant_uuid = uuid.UUID(variant_id)
+    # Authoritative turn index: count rows in poster_chat_turns, excluding
+    # REDIRECT turns which don't consume the 6-turn budget (doc 07).
+    current_turn_index = await count_turns(db, artifact_id, variant_uuid)
 
     chat_turn = PosterChatTurn(
         id=turn_id,
         artifact_id=artifact_id,
-        variant_id=uuid.UUID(variant_id),
-        turn_index=existing_turns_count,
+        variant_id=variant_uuid,
+        turn_index=current_turn_index,
         user_message=f"Region edit: {description}",
         ai_response=f"Applied region edit to the highlighted area: {description}",
         action_type="INPAINT",
@@ -775,12 +776,21 @@ async def inpaint_variant(
     )
     db.add(chat_turn)
 
-    # ── Update variant in artifact content ─────────────────────────────────────
+    # ── Update variant in artifact content + mirror turn counter ──────────────
+    now_iso = datetime.now(UTC).isoformat()
+    change_description = f"Region edit: {description[:30]}"
     for v in variants:
         if v.get("id") == variant_id:
             v["image_url"] = new_url
-            v["generated_at"] = datetime.now(UTC).isoformat()
+            v["generated_at"] = now_iso
+            v["status"] = "READY"
+            v.setdefault("change_log", []).append({
+                "id": str(turn_id),
+                "description": change_description,
+                "accepted_at": now_iso,
+            })
             break
+    generation["turn_count_on_selected"] = current_turn_index + 1
     content["generation"] = generation
     artifact.content = content
     await db.flush()
@@ -789,7 +799,7 @@ async def inpaint_variant(
     return {
         "turn_id": turn_id,
         "new_image_url": new_url,
-        "change_description": f"Region edit: {description[:30]}",
+        "change_description": change_description,
     }
 
 
