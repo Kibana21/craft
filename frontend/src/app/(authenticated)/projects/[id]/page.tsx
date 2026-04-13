@@ -6,7 +6,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { ProjectPurposeBadge } from "@/components/projects/project-purpose-badge";
 import { fetchProjectDetail, setProjectStatus, deleteProject, type ProjectDetail } from "@/lib/api/projects";
 import { fetchSuggestions } from "@/lib/api/suggestions";
-import { fetchProjectArtifacts } from "@/lib/api/artifacts";
+import { fetchProjectArtifacts, deleteArtifact } from "@/lib/api/artifacts";
 import { fetchMembers, type ProjectMember } from "@/lib/api/members";
 import type { ArtifactSuggestion } from "@/types/suggestion";
 import type { Artifact } from "@/types/artifact";
@@ -114,6 +114,8 @@ export default function ProjectDetailPage() {
   const [showDelete, setShowDelete]   = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [isActing, setIsActing]       = useState(false);
+  const [artifactToDelete, setArtifactToDelete] = useState<Artifact | null>(null);
+  const [isDeletingArtifact, setIsDeletingArtifact] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -198,6 +200,18 @@ export default function ProjectDetailPage() {
       await deleteProject(project.id);
       router.push("/home");
     } catch { setIsActing(false); }
+  };
+
+  const handleDeleteArtifact = async () => {
+    if (!artifactToDelete) return;
+    setIsDeletingArtifact(true);
+    try {
+      await deleteArtifact(artifactToDelete.id);
+      setArtifacts((prev) => prev.filter((a) => a.id !== artifactToDelete.id));
+      setArtifactToDelete(null);
+    } finally {
+      setIsDeletingArtifact(false);
+    }
   };
 
   return (
@@ -527,7 +541,8 @@ export default function ProjectDetailPage() {
                                     cursor: "pointer",
                                     transition: "all 0.18s ease",
                                     boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                                    "&:hover": { transform: "translateY(-2px)", boxShadow: "0 6px 20px rgba(0,0,0,0.10)" },
+                                    "& .delete-btn": { opacity: 0 },
+                                    "&:hover": { transform: "translateY(-2px)", boxShadow: "0 6px 20px rgba(0,0,0,0.10)", "& .delete-btn": { opacity: 1 } },
                                   }}
                                 >
                                   {/* Card thumbnail area */}
@@ -543,6 +558,30 @@ export default function ProjectDetailPage() {
                                     <Box component="span" sx={{ position: "absolute", top: 8, right: 8, borderRadius: 9999, bgcolor: sc.bg, color: sc.color, px: 1, py: 0.25, fontSize: "10px", fontWeight: 700 }}>
                                       {sc.label}
                                     </Box>
+                                    {canManage && (
+                                      <Box
+                                        className="delete-btn"
+                                        component="button"
+                                        aria-label={`Delete ${artifact.name}`}
+                                        onClick={(e) => { e.stopPropagation(); setArtifactToDelete(artifact); }}
+                                        sx={{
+                                          position: "absolute", top: 6, left: 6,
+                                          width: 24, height: 24, borderRadius: "50%",
+                                          border: "none", bgcolor: "rgba(255,255,255,0.92)", color: "#5F6368",
+                                          display: "flex", alignItems: "center", justifyContent: "center",
+                                          cursor: "pointer", p: 0, transition: "opacity 0.15s ease, color 0.15s ease, background 0.15s ease",
+                                          boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
+                                          "&:hover": { color: "#D0103A", bgcolor: "#FFFFFF" },
+                                        }}
+                                      >
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                          <polyline points="3 6 5 6 21 6"/>
+                                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                          <path d="M10 11v6M14 11v6"/>
+                                          <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+                                        </svg>
+                                      </Box>
+                                    )}
                                   </Box>
                                   {/* Card info area */}
                                   <Box sx={{ bgcolor: "#FFFFFF", px: 1.5, py: 1.25 }}>
@@ -607,7 +646,8 @@ export default function ProjectDetailPage() {
                                     cursor: "pointer",
                                     borderBottom: idx < items.length - 1 ? "1px solid #F5F5F5" : "none",
                                     transition: "background 0.15s ease",
-                                    "&:hover": { bgcolor: "#FAFAFA" },
+                                    "& .delete-btn": { opacity: 0 },
+                                    "&:hover": { bgcolor: "#FAFAFA", "& .delete-btn": { opacity: 1 } },
                                   }}
                                 >
                                   <Box sx={{ width: 36, height: 36, borderRadius: "9px", bgcolor: meta.pastel, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -625,6 +665,29 @@ export default function ProjectDetailPage() {
                                     {sc.label}
                                   </Box>
                                   <Typography sx={{ fontSize: "11px", color: "#BDBDBD", flexShrink: 0, minWidth: 24 }}>v{artifact.version}</Typography>
+                                  {canManage && (
+                                    <Box
+                                      className="delete-btn"
+                                      component="button"
+                                      aria-label={`Delete ${artifact.name}`}
+                                      onClick={(e) => { e.stopPropagation(); setArtifactToDelete(artifact); }}
+                                      sx={{
+                                        width: 28, height: 28, borderRadius: "50%",
+                                        border: "none", bgcolor: "transparent", color: "#9E9E9E",
+                                        display: "flex", alignItems: "center", justifyContent: "center",
+                                        cursor: "pointer", p: 0, flexShrink: 0,
+                                        transition: "opacity 0.15s ease, color 0.15s ease, background 0.15s ease",
+                                        "&:hover": { color: "#D0103A", bgcolor: "#FFF1F4" },
+                                      }}
+                                    >
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="3 6 5 6 21 6"/>
+                                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                        <path d="M10 11v6M14 11v6"/>
+                                        <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+                                      </svg>
+                                    </Box>
+                                  )}
                                   <Box sx={{ color: "#D0D0D0", flexShrink: 0, display: "flex" }}>
                                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                                       <path d="M6 4l4 4-4 4"/>
@@ -799,6 +862,48 @@ export default function ProjectDetailPage() {
             sx={{ fontWeight: 600 }}
           >
             {isActing ? "Deleting…" : "Delete project"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Artifact delete confirmation dialog ── */}
+      <Dialog open={artifactToDelete !== null} onClose={() => !isDeletingArtifact && setArtifactToDelete(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ pb: 1.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 0.5 }}>
+            <Box sx={{ width: 40, height: 40, borderRadius: "12px", bgcolor: "#FFF0F3", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D0103A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+              </svg>
+            </Box>
+            <Typography sx={{ fontSize: "17px", fontWeight: 700, color: "#1A1A1A" }}>
+              Delete artifact?
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: "0 !important" }}>
+          <Typography sx={{ fontSize: "13px", color: "#5F6368", lineHeight: 1.6 }}>
+            &ldquo;{artifactToDelete?.name}&rdquo; will be removed from this project. This action can&rsquo;t be undone from the UI.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={() => setArtifactToDelete(null)}
+            disabled={isDeletingArtifact}
+            sx={{ borderColor: "#E8EAED", color: "#3C4043", fontWeight: 500, "&:hover": { bgcolor: "#F1F3F4" } }}
+          >
+            Cancel
+          </Button>
+          <Button
+            fullWidth
+            variant="contained"
+            color="primary"
+            onClick={handleDeleteArtifact}
+            disabled={isDeletingArtifact}
+            sx={{ fontWeight: 600 }}
+          >
+            {isDeletingArtifact ? "Deleting…" : "Delete"}
           </Button>
         </DialogActions>
       </Dialog>

@@ -377,6 +377,21 @@ class GenerateVariantsResponse(BaseModel):
     partial_failure: bool
 
 
+class GenerateVariantsJobResponse(BaseModel):
+    """Returned immediately (202) when a generation job is dispatched to the worker."""
+    job_id: str
+    status: Literal["QUEUED"]
+
+
+class VariantJobStatusResponse(BaseModel):
+    """Polling response for GET /generate-variants/{job_id}/status."""
+    job_id: str
+    status: Literal["QUEUED", "RUNNING", "READY", "FAILED"]
+    variants: list[Variant]
+    partial_failure: bool
+    error: str | None = None
+
+
 class RetryVariantRequest(BaseModel):
     """POST /api/ai/poster/generate-variants/retry"""
     artifact_id: uuid.UUID

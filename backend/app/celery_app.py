@@ -19,7 +19,10 @@ celery_app = Celery(
     "craft",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=["app.services.video_generation_worker"],
+    include=[
+        "app.services.video_generation_worker",
+        "app.services.poster_generation_worker",
+    ],
 )
 
 celery_app.conf.update(
@@ -32,9 +35,10 @@ celery_app.conf.update(
     task_acks_late=True,           # don't ack until the task finishes (crash-safe)
     worker_prefetch_multiplier=1,  # one task per worker slot at a time
 
-    # Routing — video tasks go to a dedicated queue
+    # Routing — video tasks go to a dedicated queue; poster tasks go to "poster"
     task_routes={
         "video.generate": {"queue": "video"},
+        "poster.generate": {"queue": "poster"},
     },
 
     # Timezone

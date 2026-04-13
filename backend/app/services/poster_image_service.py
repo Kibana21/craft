@@ -35,8 +35,8 @@ logger = logging.getLogger(__name__)
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
-VARIANT_TIMEOUT_SECONDS = 60
-MAX_RETRIES = 2
+VARIANT_TIMEOUT_SECONDS = 45
+MAX_RETRIES = 0
 BACKOFF_DELAYS = (2.0, 5.0, 10.0)   # seconds; longer waits help with 429 quota recovery
 DAILY_VARIANT_CAP = 100
 REFERENCE_IMAGE_MAX_EDGE = 1536      # px; downscale before inlining in Gemini request
@@ -326,7 +326,114 @@ async def _upload_and_assemble(
     return sorted(variants, key=lambda v: v["slot"])
 
 
-# ── Public API ─────────────────────────────────────────────────────────────────
+# ── Job dispatch + status (worker-based generation) ───────────────────────────
+
+JOB_KEY_PREFIX = "poster:gen:job:"
+JOB_TTL_SECONDS = 3600
+
+
+async def dispatch_generate_variants_job(
+    db: AsyncSession,
+    artifact_id: uuid.UUID,
+    merged_prompt: str,
+    subject_type: str,
+    reference_image_ids: list[uuid.UUID],
+    count: int,
+    format_name: str,
+) -> str:
+    """Dispatch a poster generation job to the Celery worker.
+
+    1. Verify artifact exists.
+    2. Enforce one-active-job per artifact (write job_id to artifact.content).
+    3. Check per-project daily quota (Redis).
+    4. Write QUEUED state to Redis.
+    5. Send task to Celery.
+    Returns the new job_id string.
+    """
+    import json
+    import redis.asyncio as aioredis
+
+    # ── 1. Fetch artifact ─────────────────────────────────────────────────────
+    result = await db.execute(
+        select(Artifact)
+        .where(Artifact.id == artifact_id, Artifact.deleted_at.is_(None))
+        .with_for_update()
+    )
+    artifact = result.scalar_one_or_none()
+    if artifact is None:
+        raise ValueError("Artifact not found")
+
+    project_id = artifact.project_id
+
+    # ── 2. One-active-job enforcement ─────────────────────────────────────────
+    job_id = str(uuid.uuid4())
+    content = dict(artifact.content or {})
+    generation = dict(content.get("generation", {}))
+    generation["last_generation_job_id"] = job_id
+    content["generation"] = generation
+    artifact.content = content
+    await db.flush()
+    await db.commit()
+
+    # ── 3. Per-project daily quota ────────────────────────────────────────────
+    try:
+        await _check_and_increment_variant_quota(project_id, count)
+    except ValueError:
+        raise
+
+    # ── 4. Write QUEUED state to Redis ────────────────────────────────────────
+    try:
+        r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        await r.setex(
+            f"{JOB_KEY_PREFIX}{job_id}",
+            JOB_TTL_SECONDS,
+            json.dumps({"status": "QUEUED", "variants": [], "partial_failure": False, "error": None}),
+        )
+        await r.aclose()
+    except Exception as exc:
+        logger.warning("Failed to write QUEUED state to Redis: %s (continuing)", exc)
+
+    # ── 5. Dispatch Celery task ───────────────────────────────────────────────
+    from app.services.poster_generation_worker import generate_poster_task
+
+    generate_poster_task.apply_async(
+        kwargs={
+            "job_id": job_id,
+            "artifact_id": str(artifact_id),
+            "merged_prompt": merged_prompt,
+            "subject_type": subject_type,
+            "reference_image_ids": [str(rid) for rid in reference_image_ids],
+            "count": count,
+            "format_name": format_name,
+        },
+        queue="poster",
+    )
+
+    return job_id
+
+
+async def get_variant_job_status(job_id: str) -> dict:
+    """Read the current generation job status from Redis.
+
+    Returns dict with keys: status, variants, partial_failure, error.
+    If the key is not found (expired or never created) returns FAILED.
+    """
+    import json
+    import redis.asyncio as aioredis
+
+    try:
+        r = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+        raw = await r.get(f"{JOB_KEY_PREFIX}{job_id}")
+        await r.aclose()
+        if raw is None:
+            return {"status": "FAILED", "variants": [], "partial_failure": True, "error": "Job not found or expired"}
+        return json.loads(raw)
+    except Exception as exc:
+        logger.warning("Failed to read job status from Redis: %s", exc)
+        return {"status": "FAILED", "variants": [], "partial_failure": True, "error": str(exc)}
+
+
+# ── Public API (synchronous fallback, kept for retry endpoint) ─────────────────
 
 
 async def generate_variants(

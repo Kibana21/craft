@@ -1,15 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
 import Skeleton from "@mui/material/Skeleton";
+import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { useVariantGeneration } from "../_hooks/use-variant-generation";
 import { usePosterWizard } from "../layout";
@@ -27,14 +24,9 @@ function MetaPill({ label }: { label: string }) {
   return (
     <Box
       sx={{
-        px: 1.5,
-        py: 0.4,
-        borderRadius: "9999px",
-        bgcolor: "#F7F7F7",
-        border: "1px solid #E8EAED",
-        fontSize: "11px",
-        fontWeight: 500,
-        color: "#5F6368",
+        px: 1.5, py: 0.4, borderRadius: "9999px",
+        bgcolor: "#F7F7F7", border: "1px solid #E8EAED",
+        fontSize: "11px", fontWeight: 500, color: "#5F6368",
       }}
     >
       {label}
@@ -42,45 +34,39 @@ function MetaPill({ label }: { label: string }) {
   );
 }
 
-// ── Variant thumbnail tile ─────────────────────────────────────────────────────
+// ── Thumbnail strip tile ───────────────────────────────────────────────────────
 
-function VariantTile({
+function StripTile({
   variant,
   isSelected,
   isLoading,
-  slot,
+  index,
   onSelect,
   onRetry,
 }: {
   variant: GeneratedVariant | null;
   isSelected: boolean;
   isLoading: boolean;
-  slot: number;
+  index: number;
   onSelect?: () => void;
   onRetry?: () => void;
 }) {
+  const THUMB_W = 72;
+
   if (isLoading || !variant) {
     return (
-      <Box sx={{ position: "relative" }}>
+      <Box sx={{ position: "relative", width: THUMB_W, flexShrink: 0 }}>
         <Skeleton
           variant="rectangular"
-          sx={{ aspectRatio: "4/5", borderRadius: "10px", width: "100%" }}
+          sx={{ width: THUMB_W, aspectRatio: "4/5", borderRadius: "8px" }}
           animation="wave"
         />
-        <Typography
-          sx={{
-            position: "absolute",
-            bottom: 6,
-            left: "50%",
-            transform: "translateX(-50%)",
-            fontSize: "10px",
-            color: "#9E9E9E",
-            bgcolor: "rgba(255,255,255,0.85)",
-            px: 1,
-            borderRadius: "4px",
-          }}
-        >
-          Generating {slot + 1}…
+        <Typography sx={{
+          position: "absolute", bottom: 4, left: "50%", transform: "translateX(-50%)",
+          fontSize: "9px", color: "#9E9E9E", bgcolor: "rgba(255,255,255,0.9)",
+          px: 0.75, borderRadius: "3px", whiteSpace: "nowrap",
+        }}>
+          Generating…
         </Typography>
       </Box>
     );
@@ -88,44 +74,25 @@ function VariantTile({
 
   if (variant.status === "FAILED") {
     return (
-      <Box
-        sx={{
-          aspectRatio: "4/5",
-          borderRadius: "10px",
-          bgcolor: "#FFF1F4",
-          border: "1.5px solid #F5C6D0",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 1,
-          p: 1,
-        }}
-      >
-        <Typography sx={{ fontSize: "11px", color: "#D0103A", fontWeight: 600 }}>
-          Failed
-        </Typography>
-        {onRetry && variant.retry_token && (
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={onRetry}
-            sx={{
-              borderRadius: 9999,
-              textTransform: "none",
-              borderColor: "#D0103A",
-              color: "#D0103A",
-              fontSize: "11px",
-              py: 0.25,
-              px: 1.5,
-              minHeight: 0,
-              "&:hover": { bgcolor: "#FFF1F4" },
-            }}
-          >
-            Retry
-          </Button>
-        )}
-      </Box>
+      <Tooltip title={onRetry && variant.retry_token ? "Click to retry" : "Generation failed"}>
+        <Box
+          component={onRetry && variant.retry_token ? "button" : "div"}
+          onClick={onRetry && variant.retry_token ? onRetry : undefined}
+          sx={{
+            width: THUMB_W, aspectRatio: "4/5", borderRadius: "8px", flexShrink: 0,
+            bgcolor: "#FFF1F4", border: "1.5px solid #F5C6D0",
+            display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center", gap: 0.5,
+            cursor: onRetry && variant.retry_token ? "pointer" : "default",
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D0103A" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <Typography sx={{ fontSize: "9px", color: "#D0103A", fontWeight: 600 }}>Failed</Typography>
+        </Box>
+      </Tooltip>
     );
   }
 
@@ -134,40 +101,31 @@ function VariantTile({
       component="button"
       onClick={onSelect}
       sx={{
-        display: "block",
-        aspectRatio: "4/5",
-        borderRadius: "10px",
-        overflow: "hidden",
-        border: "2.5px solid",
+        width: THUMB_W, aspectRatio: "4/5", borderRadius: "8px", flexShrink: 0,
+        overflow: "hidden", border: "2px solid",
         borderColor: isSelected ? "#D0103A" : "#E8EAED",
-        cursor: "pointer",
-        transition: "border-color 0.15s",
-        bgcolor: "#F7F7F7",
-        p: 0,
-        "&:hover": { borderColor: "#D0103A" },
+        cursor: "pointer", transition: "border-color 0.15s",
+        bgcolor: "#F7F7F7", p: 0, position: "relative",
+        "&:hover": { borderColor: isSelected ? "#D0103A" : "#ABABAB" },
       }}
     >
       {variant.image_url ? (
         <Box
           component="img"
           src={variant.image_url}
-          alt={`Variant ${slot + 1}`}
+          alt={`Variant ${index + 1}`}
           sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
         />
       ) : (
-        <Box
-          sx={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Typography sx={{ fontSize: "10px", color: "#9E9E9E" }}>
-            Variant {slot + 1}
-          </Typography>
+        <Box sx={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Typography sx={{ fontSize: "9px", color: "#9E9E9E" }}>{index + 1}</Typography>
         </Box>
+      )}
+      {isSelected && (
+        <Box sx={{
+          position: "absolute", bottom: 4, left: "50%", transform: "translateX(-50%)",
+          width: 6, height: 6, borderRadius: "50%", bgcolor: "#D0103A",
+        }} />
       )}
     </Box>
   );
@@ -180,40 +138,67 @@ export default function PosterGeneratePage() {
   const router = useRouter();
   const { composition, subject, artifactId, setSubject, generation } = usePosterWizard();
 
-  // Variant grid selection — tracked by variant id after initial generation
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
-
-  const [showRegenConfirm, setShowRegenConfirm] = useState(false);
   const [isExporting, setIsExporting] = useState<string | null>(null);
   const [isUpscaling, setIsUpscaling] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
-
-  // Inpainting state
   const [isInpaintMode, setIsInpaintMode] = useState(false);
   const [isInpainting, setIsInpainting] = useState(false);
   const [pendingInpaintTurn, setPendingInpaintTurn] = useState<PendingInpaintTurn | null>(null);
 
   const hasAutoDispatched = useRef(false);
 
-  const { status, variants, generate, retrySlot, updateVariantImage, addVariant, error } =
+  // Variants persisted on the artifact use the PosterVariant shape (image_url,
+  // generated_at, status, selected, …). The generation hook works in the
+  // API-response shape (GeneratedVariant: id, slot, status, image_url,
+  // error_code, retry_token). Map once on mount so re-opening an existing
+  // poster immediately shows its saved variants in the canvas and strip.
+  const seededVariants: GeneratedVariant[] = useMemo(
+    () =>
+      (generation.variants ?? [])
+        .filter((v) => v.status === "READY" || v.status === "FAILED")
+        .map((v, idx) => ({
+          id: v.id,
+          slot: idx,
+          status: v.status as "READY" | "FAILED",
+          image_url: v.image_url,
+          error_code: null,
+          // Retry tokens aren't persisted — they're Redis-scoped and expire with
+          // the job. Existing variants can't be retried; only regenerated.
+          retry_token: null,
+        })),
+    // Intentionally only depend on artifactId: we seed on first mount for this
+    // artifact and hand ownership of `variants` to the hook thereafter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [artifactId],
+  );
+
+  const { status, variants, generate, appendOne, retrySlot, updateVariantImage, addVariant, error, isLoading, isAppending } =
     useVariantGeneration({
       artifactId,
+      initialVariants: seededVariants,
       onVariantsReady: (ready) => {
         setSubject({ locked: true });
-        if (ready.length > 0) setSelectedVariantId(ready[0].id);
+        // Auto-select the first ready variant if nothing is selected yet
+        if (ready.length > 0 && !selectedVariantId) setSelectedVariantId(ready[0].id);
       },
     });
 
-  const isLoading = status === "loading";
+  // If we seeded variants for an existing poster, auto-select the first ready
+  // one so the canvas renders it instead of the "Your poster will appear here"
+  // placeholder.
+  useEffect(() => {
+    if (selectedVariantId) return;
+    const firstReady = seededVariants.find((v) => v.status === "READY");
+    if (firstReady) setSelectedVariantId(firstReady.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [artifactId]);
 
-  // ── Auto-dispatch on mount ────────────────────────────────────────────────────
-  // Skip auto-generation if the artifact already has saved variants (loaded from
-  // an existing poster). The user can trigger regeneration manually if needed.
-
+  // Auto-generate the first image on mount (count=1 — no batch, no waste)
   useEffect(() => {
     if (hasAutoDispatched.current) return;
     if (!artifactId || !composition.merged_prompt || !subject.type) return;
-    if (generation.variants.length > 0) return;  // existing poster — don't clobber saved variants
+    if (generation.variants.length > 0) return; // existing poster — don't overwrite
     hasAutoDispatched.current = true;
 
     generate({
@@ -225,19 +210,16 @@ export default function PosterGeneratePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [artifactId, generation.variants.length]);
 
-  // ── Regen all ─────────────────────────────────────────────────────────────────
+  // ── Generate one more ─────────────────────────────────────────────────────────
 
-  const handleRegenAll = async () => {
-    setShowRegenConfirm(false);
-    setSelectedVariantId(null);
-    setIsInpaintMode(false);
-    const result = await generate({
+  const handleGenerateAnother = () => {
+    if (!composition.merged_prompt || !subject.type) return;
+    appendOne({
       mergedPrompt: composition.merged_prompt,
       subjectType: subject.type as SubjectType,
       format: (composition.format as CompositionFormat) || "PORTRAIT",
       referenceImageIds: subject.product_asset.reference_image_ids,
     });
-    void result;
   };
 
   // ── Retry single slot ─────────────────────────────────────────────────────────
@@ -269,7 +251,7 @@ export default function PosterGeneratePage() {
     }
   };
 
-  // ── 2× Upscale ───────────────────────────────────────────────────────────────
+  // ── Upscale ───────────────────────────────────────────────────────────────────
 
   const handleUpscale = async () => {
     if (!artifactId || !selectedVariant) return;
@@ -287,20 +269,13 @@ export default function PosterGeneratePage() {
 
   // ── Inpaint ───────────────────────────────────────────────────────────────────
 
-  const handleInpaintSubmit = async (
-    description: string,
-    maskFile: File,
-    _coveragePct: number,
-  ) => {
+  const handleInpaintSubmit = async (description: string, maskFile: File, _coveragePct: number) => {
     if (!artifactId || !selectedVariant) return;
     setIsInpainting(true);
     try {
       const result = await inpaintRegion(
-        artifactId,
-        selectedVariant.id,
-        description,
-        composition.merged_prompt,
-        maskFile,
+        artifactId, selectedVariant.id, description,
+        composition.merged_prompt, maskFile,
       );
       setPendingInpaintTurn({
         turn_id: result.turn_id,
@@ -316,8 +291,6 @@ export default function PosterGeneratePage() {
     }
   };
 
-  // ── Save as variant ───────────────────────────────────────────────────────────
-
   const handleSaveAsVariant = (newVariant: GeneratedVariant) => {
     addVariant(newVariant);
     setSelectedVariantId(newVariant.id);
@@ -327,17 +300,12 @@ export default function PosterGeneratePage() {
 
   const selectedVariant = variants.find((v) => v.id === selectedVariantId) ?? variants[0] ?? null;
   const hasAnyReady = variants.some((v) => v.status === "READY");
-
-  // Grid: show at least 4 placeholder slots initially, grow with variants
-  const gridSlotCount = Math.max(4, variants.length);
+  const isBusy = isLoading || isAppending;
 
   const subjectLabel =
-    subject.type === "HUMAN_MODEL"
-      ? "Human model"
-      : subject.type === "PRODUCT_ASSET"
-        ? "Product / asset"
-        : subject.type === "SCENE_ABSTRACT"
-          ? "Scene / abstract"
+    subject.type === "HUMAN_MODEL" ? "Human model"
+      : subject.type === "PRODUCT_ASSET" ? "Product / asset"
+        : subject.type === "SCENE_ABSTRACT" ? "Scene / abstract"
           : "—";
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -351,62 +319,29 @@ export default function PosterGeneratePage() {
         </Typography>
         <Typography sx={{ mt: 0.5, fontSize: "14px", color: "#5F6368" }}>
           {isLoading
-            ? "Generating four poster variants — this takes about 30 seconds…"
-            : "Select a variant to preview. Use the chat panel to refine."}
+            ? "Generating your poster — this takes about 10 seconds…"
+            : isAppending
+              ? "Generating another variant…"
+              : "Select a variant to preview. Use the chat panel to refine or generate more."}
         </Typography>
       </Box>
 
-      {/* Metadata pills */}
+      {/* Meta pills */}
       <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 3 }}>
         <MetaPill label={subjectLabel} />
         {composition.format && <MetaPill label={composition.format} />}
-        {composition.layout_template && (
-          <MetaPill label={composition.layout_template.replace(/_/g, " ")} />
-        )}
-        {composition.visual_style && (
-          <MetaPill label={composition.visual_style.replace(/_/g, " ")} />
-        )}
-        {isInpaintMode && (
-          <MetaPill label="Edit region mode" />
-        )}
+        {composition.layout_template && <MetaPill label={composition.layout_template.replace(/_/g, " ")} />}
+        {composition.visual_style && <MetaPill label={composition.visual_style.replace(/_/g, " ")} />}
+        {isInpaintMode && <MetaPill label="Edit region mode" />}
       </Box>
 
       {/* Two-column layout */}
       <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
-        {/* ── Left column ─────────────────────────────────────────────────────── */}
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          {/* Variant grid */}
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: `repeat(${Math.min(gridSlotCount, 4)}, 1fr)`,
-              gap: 1.5,
-              mb: 3,
-            }}
-          >
-            {Array.from({ length: gridSlotCount }).map((_, idx) => {
-              const variant = variants[idx] ?? null;
-              const isSelected = selectedVariant?.id === variant?.id;
-              return (
-                <VariantTile
-                  key={variant?.id ?? `placeholder-${idx}`}
-                  slot={idx}
-                  variant={variant}
-                  isSelected={isSelected}
-                  isLoading={isLoading || (!variant && status !== "error" && status !== "success")}
-                  onSelect={variant ? () => {
-                    setSelectedVariantId(variant.id);
-                    setIsInpaintMode(false);
-                  } : undefined}
-                  onRetry={
-                    variant?.status === "FAILED" ? () => handleRetrySlot(variant) : undefined
-                  }
-                />
-              );
-            })}
-          </Box>
 
-          {/* Main preview / inpaint overlay */}
+        {/* ── Left column ───────────────────────────────────────────────────── */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+
+          {/* Large preview / inpaint overlay */}
           {isInpaintMode && selectedVariant?.image_url ? (
             <Box sx={{ mb: 2 }}>
               <InpaintOverlay
@@ -419,22 +354,17 @@ export default function PosterGeneratePage() {
           ) : (
             <Box
               sx={{
-                aspectRatio: "4/5",
-                borderRadius: "12px",
-                overflow: "hidden",
-                border: "1px solid #E8EAED",
-                bgcolor: "#F7F7F7",
+                aspectRatio: "4/5", borderRadius: "12px", overflow: "hidden",
+                border: "1px solid #E8EAED", bgcolor: "#F7F7F7",
+                display: "flex", alignItems: "center", justifyContent: "center",
                 mb: 2,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
               }}
             >
               {isLoading ? (
                 <Box sx={{ textAlign: "center" }}>
                   <CircularProgress sx={{ color: "#D0103A", mb: 1 }} />
                   <Typography sx={{ fontSize: "13px", color: "#5F6368" }}>
-                    Generating variants…
+                    Generating…
                   </Typography>
                 </Box>
               ) : selectedVariant?.image_url ? (
@@ -445,30 +375,107 @@ export default function PosterGeneratePage() {
                   sx={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
                 />
               ) : selectedVariant?.status === "FAILED" ? (
-                <Typography sx={{ fontSize: "13px", color: "#D0103A" }}>
-                  Generation failed for this variant.
-                </Typography>
+                <Box sx={{ textAlign: "center" }}>
+                  <Typography sx={{ fontSize: "14px", color: "#D0103A", mb: 1 }}>
+                    Generation failed
+                  </Typography>
+                  <Button
+                    size="small" variant="outlined"
+                    onClick={() => selectedVariant.retry_token ? handleRetrySlot(selectedVariant) : handleGenerateAnother()}
+                    sx={{ borderRadius: 9999, textTransform: "none", borderColor: "#D0103A", color: "#D0103A", fontSize: "12px", "&:hover": { bgcolor: "#FFF1F4" } }}
+                  >
+                    Try again
+                  </Button>
+                </Box>
               ) : (
-                <Typography sx={{ fontSize: "13px", color: "#9E9E9E" }}>
-                  {status === "error" ? "Generation failed." : "Select a variant above to preview"}
-                </Typography>
+                <Box sx={{ textAlign: "center" }}>
+                  <Typography sx={{ fontSize: "14px", color: "#9E9E9E", mb: 1.5 }}>
+                    {status === "error" ? "Generation failed. Try generating again." : "Your poster will appear here"}
+                  </Typography>
+                  {status !== "loading" && (
+                    <Button
+                      variant="contained" disableElevation onClick={handleGenerateAnother}
+                      disabled={isBusy}
+                      sx={{ borderRadius: 2, textTransform: "none", bgcolor: "#D0103A", color: "white", fontWeight: 600, "&:hover": { bgcolor: "#A00D2E" } }}
+                    >
+                      Generate
+                    </Button>
+                  )}
+                </Box>
               )}
             </Box>
           )}
 
+          {/* Thumbnail strip */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2, flexWrap: "nowrap", overflowX: "auto", pb: 0.5 }}>
+            {/* Existing / in-progress thumbnails */}
+            {variants.map((variant, idx) => (
+              <StripTile
+                key={variant.id}
+                index={idx}
+                variant={variant}
+                isSelected={selectedVariant?.id === variant.id}
+                isLoading={false}
+                onSelect={() => { setSelectedVariantId(variant.id); setIsInpaintMode(false); }}
+                onRetry={variant.status === "FAILED" ? () => handleRetrySlot(variant) : undefined}
+              />
+            ))}
+
+            {/* Loading placeholder while appending */}
+            {isAppending && (
+              <StripTile
+                key="appending"
+                index={variants.length}
+                variant={null}
+                isSelected={false}
+                isLoading={true}
+              />
+            )}
+
+            {/* "Generate another" button */}
+            <Tooltip title={isBusy ? "Wait for current generation to finish" : "Generate one more variant"}>
+              <Box
+                component="button"
+                onClick={!isBusy ? handleGenerateAnother : undefined}
+                sx={{
+                  width: 72, aspectRatio: "4/5", flexShrink: 0,
+                  borderRadius: "8px", border: "1.5px dashed",
+                  borderColor: isBusy ? "#E8EAED" : "#D0103A",
+                  bgcolor: isBusy ? "#FAFAFA" : "#FFF1F4",
+                  display: "flex", flexDirection: "column", alignItems: "center",
+                  justifyContent: "center", gap: 0.5,
+                  cursor: isBusy ? "default" : "pointer",
+                  transition: "all 0.15s",
+                  "&:hover": isBusy ? {} : { bgcolor: "#FFE4EA" },
+                }}
+              >
+                {isAppending ? (
+                  <CircularProgress size={14} sx={{ color: "#D0103A" }} />
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke={isBusy ? "#BDBDBD" : "#D0103A"} strokeWidth="2.2" strokeLinecap="round">
+                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    <Typography sx={{ fontSize: "9px", fontWeight: 600, color: isBusy ? "#BDBDBD" : "#D0103A" }}>
+                      Generate
+                    </Typography>
+                  </>
+                )}
+              </Box>
+            </Tooltip>
+          </Box>
+
           {/* Action toolbar */}
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
-            {/* Edit region */}
             <Button
               size="small"
               variant={isInpaintMode ? "contained" : "outlined"}
-              disabled={!selectedVariant?.image_url || isLoading}
+              disabled={!selectedVariant?.image_url || isBusy}
               onClick={() => setIsInpaintMode((v) => !v)}
               disableElevation
               sx={{
-                borderRadius: 9999,
-                textTransform: "none",
-                fontSize: "12px",
+                borderRadius: 9999, textTransform: "none", fontSize: "12px",
                 ...(isInpaintMode
                   ? { bgcolor: "#D0103A", color: "white", "&:hover": { bgcolor: "#A00D2E" } }
                   : { borderColor: "#E8EAED", color: "#1F1F1F", "&:hover": { borderColor: "#ABABAB" } }),
@@ -477,114 +484,27 @@ export default function PosterGeneratePage() {
               {isInpaintMode ? "Cancel edit" : "Edit region"}
             </Button>
 
-            {/* Export PNG */}
-            <Button
-              size="small"
-              variant="outlined"
-              disabled={!hasAnyReady || !!isExporting}
-              onClick={() => handleExport("png")}
-              startIcon={
-                isExporting === "png" ? (
-                  <CircularProgress size={12} sx={{ color: "#D0103A" }} />
-                ) : undefined
-              }
-              sx={{
-                borderRadius: 9999,
-                textTransform: "none",
-                borderColor: "#E8EAED",
-                color: "#1F1F1F",
-                fontSize: "12px",
-                "&:hover": { borderColor: "#ABABAB" },
-              }}
-            >
-              Export PNG
-            </Button>
+            {(["png", "jpg", "pdf"] as const).map((fmt) => (
+              <Button
+                key={fmt}
+                size="small" variant="outlined"
+                disabled={!hasAnyReady || !!isExporting}
+                onClick={() => handleExport(fmt)}
+                startIcon={isExporting === fmt ? <CircularProgress size={12} sx={{ color: "#D0103A" }} /> : undefined}
+                sx={{ borderRadius: 9999, textTransform: "none", borderColor: "#E8EAED", color: "#1F1F1F", fontSize: "12px", "&:hover": { borderColor: "#ABABAB" } }}
+              >
+                Export {fmt.toUpperCase()}
+              </Button>
+            ))}
 
-            {/* Export JPG */}
             <Button
-              size="small"
-              variant="outlined"
-              disabled={!hasAnyReady || !!isExporting}
-              onClick={() => handleExport("jpg")}
-              startIcon={
-                isExporting === "jpg" ? (
-                  <CircularProgress size={12} sx={{ color: "#D0103A" }} />
-                ) : undefined
-              }
-              sx={{
-                borderRadius: 9999,
-                textTransform: "none",
-                borderColor: "#E8EAED",
-                color: "#1F1F1F",
-                fontSize: "12px",
-                "&:hover": { borderColor: "#ABABAB" },
-              }}
-            >
-              Export JPG
-            </Button>
-
-            {/* Export PDF (print-ready) */}
-            <Button
-              size="small"
-              variant="outlined"
-              disabled={!hasAnyReady || !!isExporting}
-              onClick={() => handleExport("pdf")}
-              startIcon={
-                isExporting === "pdf" ? (
-                  <CircularProgress size={12} sx={{ color: "#D0103A" }} />
-                ) : undefined
-              }
-              sx={{
-                borderRadius: 9999,
-                textTransform: "none",
-                borderColor: "#E8EAED",
-                color: "#1F1F1F",
-                fontSize: "12px",
-                "&:hover": { borderColor: "#ABABAB" },
-              }}
-            >
-              Export PDF
-            </Button>
-
-            {/* 2× Upscale */}
-            <Button
-              size="small"
-              variant="outlined"
-              disabled={!selectedVariant?.image_url || isUpscaling || isLoading}
+              size="small" variant="outlined"
+              disabled={!selectedVariant?.image_url || isUpscaling || isBusy}
               onClick={handleUpscale}
-              startIcon={
-                isUpscaling ? (
-                  <CircularProgress size={12} sx={{ color: "#D0103A" }} />
-                ) : undefined
-              }
-              sx={{
-                borderRadius: 9999,
-                textTransform: "none",
-                borderColor: "#E8EAED",
-                color: "#1F1F1F",
-                fontSize: "12px",
-                "&:hover": { borderColor: "#ABABAB" },
-              }}
+              startIcon={isUpscaling ? <CircularProgress size={12} sx={{ color: "#D0103A" }} /> : undefined}
+              sx={{ borderRadius: 9999, textTransform: "none", borderColor: "#E8EAED", color: "#1F1F1F", fontSize: "12px", "&:hover": { borderColor: "#ABABAB" } }}
             >
               {isUpscaling ? "Upscaling…" : "2× Upscale"}
-            </Button>
-
-            {/* Regen all */}
-            <Button
-              size="small"
-              variant="outlined"
-              disabled={isLoading}
-              onClick={() => setShowRegenConfirm(true)}
-              sx={{
-                borderRadius: 9999,
-                textTransform: "none",
-                borderColor: "#E8EAED",
-                color: "#5F6368",
-                fontSize: "12px",
-                "&:hover": { borderColor: "#ABABAB" },
-              }}
-            >
-              Regen all
             </Button>
           </Box>
 
@@ -595,19 +515,13 @@ export default function PosterGeneratePage() {
           )}
         </Box>
 
-        {/* ── Right column — chat panel ────────────────────────────────────────── */}
+        {/* ── Right column — chat panel ────────────────────────────────────── */}
         <Box
           sx={{
-            width: 320,
-            flexShrink: 0,
-            borderRadius: "12px",
-            border: "1px solid #E8EAED",
-            bgcolor: "#FAFAFA",
-            display: "flex",
-            flexDirection: "column",
-            // Match approximate height of left column
-            minHeight: 560,
-            overflow: "hidden",
+            width: 320, flexShrink: 0, borderRadius: "12px",
+            border: "1px solid #E8EAED", bgcolor: "#FAFAFA",
+            display: "flex", flexDirection: "column",
+            minHeight: 560, overflow: "hidden",
           }}
         >
           <ChatPanel
@@ -623,52 +537,16 @@ export default function PosterGeneratePage() {
         </Box>
       </Box>
 
-      {/* Regen-all confirm dialog */}
-      <Dialog
-        open={showRegenConfirm}
-        onClose={() => setShowRegenConfirm(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle sx={{ fontSize: "16px", fontWeight: 700, color: "#1F1F1F" }}>
-          Regenerate all variants?
-        </DialogTitle>
-        <DialogContent>
-          <Typography sx={{ fontSize: "14px", color: "#5F6368" }}>
-            All four variants will be regenerated using the current composition prompt. Any chat
-            refinements on the selected variant will be lost.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button
-            onClick={() => setShowRegenConfirm(false)}
-            variant="outlined"
-            sx={{
-              borderRadius: 9999,
-              textTransform: "none",
-              borderColor: "#E8EAED",
-              color: "#5F6368",
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleRegenAll}
-            variant="contained"
-            disableElevation
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              bgcolor: "#D0103A",
-              color: "white",
-              fontWeight: 600,
-              "&:hover": { bgcolor: "#A00D2E" },
-            }}
-          >
-            Regenerate
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Back to project */}
+      <Box sx={{ mt: 4, display: "flex", justifyContent: "flex-start" }}>
+        <Button
+          variant="outlined"
+          onClick={() => router.push(`/projects/${projectId}`)}
+          sx={{ borderRadius: 9999, textTransform: "none", borderColor: "#E8EAED", color: "#5F6368", "&:hover": { borderColor: "#ABABAB" } }}
+        >
+          ← Back to project
+        </Button>
+      </Box>
     </Box>
   );
 }

@@ -37,14 +37,28 @@ from app.api.poster_ai import router as poster_ai_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    import asyncio
+    import logging as _logging
+    _log = _logging.getLogger(__name__)
+
+    # Startup: warm up Vertex AI client before the event loop starts handling requests.
+    # _get_vertex_client() reads a service-account key file synchronously. Running it now
+    # (before connections arrive) avoids blocking the async event loop on the first AI call,
+    # which would cause ECONNRESET on ALL concurrent requests during that blocking period.
+    try:
+        from app.services.ai_service import _get_vertex_client
+        await asyncio.to_thread(_get_vertex_client)
+        _log.info("Vertex AI client initialized at startup")
+    except Exception as exc:
+        _log.warning("Vertex AI client not available (AI features will be limited): %s", exc)
+
     # Startup: mark any orphaned QUEUED/RENDERING videos as FAILED
     from app.core.database import async_session
     from app.services.video_generation_service import mark_orphans_failed
     async with async_session() as db:
         count = await mark_orphans_failed(db)
         if count:
-            import logging
-            logging.getLogger(__name__).warning(
+            _log.warning(
                 "Startup sweep: marked %d orphaned video generation job(s) as FAILED", count
             )
     yield

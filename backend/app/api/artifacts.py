@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -256,6 +256,19 @@ async def update_artifact(
         _validate_poster_content(data.content)
 
     update_data = data.model_dump(exclude_unset=True)
+
+    # Poster content is sectioned (brief/subject/copy/composition/generation). Wizard steps
+    # send the full content object each time, so a plain replace would wipe later-section data
+    # if that section still holds in-memory defaults from a step the user hasn't visited yet.
+    # Shallow-merge at the top level so unsent/empty sections can't clobber persisted ones.
+    if (
+        artifact.type == ArtifactType.POSTER
+        and "content" in update_data
+        and isinstance(update_data["content"], dict)
+    ):
+        existing = artifact.content if isinstance(artifact.content, dict) else {}
+        update_data["content"] = {**existing, **update_data["content"]}
+
     for key, value in update_data.items():
         setattr(artifact, key, value)
 
@@ -284,7 +297,7 @@ async def delete_artifact(
     if current_user.role != UserRole.BRAND_ADMIN and artifact.creator_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
 
-    artifact.deleted_at = datetime.now(datetime.UTC).isoformat()
+    artifact.deleted_at = datetime.now(timezone.utc)
     await db.flush()
 
 

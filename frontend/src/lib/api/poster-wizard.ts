@@ -66,6 +66,22 @@ export interface GeneratedVariant {
   retry_token: string | null;
 }
 
+/** Returned immediately (202) when a generation job is dispatched. */
+export interface GenerateVariantsJobResponse {
+  job_id: string;
+  status: "QUEUED";
+}
+
+/** Polling response — poll until status is READY or FAILED. */
+export interface VariantJobStatusResponse {
+  job_id: string;
+  status: "QUEUED" | "RUNNING" | "READY" | "FAILED";
+  variants: GeneratedVariant[];
+  partial_failure: boolean;
+  error: string | null;
+}
+
+/** @deprecated kept for the retry endpoint only */
 export interface GenerateVariantsResponse {
   job_id: string;
   variants: GeneratedVariant[];
@@ -202,8 +218,14 @@ export async function generateVariants(params: {
   reference_image_ids?: string[];
   count?: number;
   format: CompositionFormat;
-}): Promise<GenerateVariantsResponse> {
-  return apiClient.post<GenerateVariantsResponse>("/api/ai/poster/generate-variants", params);
+}): Promise<GenerateVariantsJobResponse> {
+  return apiClient.post<GenerateVariantsJobResponse>("/api/ai/poster/generate-variants", params);
+}
+
+export async function getVariantJobStatus(jobId: string): Promise<VariantJobStatusResponse> {
+  return apiClient.get<VariantJobStatusResponse>(
+    `/api/ai/poster/generate-variants/${jobId}/status`,
+  );
 }
 
 export async function retryVariant(params: {

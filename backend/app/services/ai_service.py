@@ -80,9 +80,10 @@ class _VertexGeminiModel:
         response_mime_type: str | None = None,
         response_schema: dict | None = None,
     ):
+        import asyncio
         from google import genai
 
-        client = _get_vertex_client()
+        client = await asyncio.to_thread(_get_vertex_client)
         config_kwargs: dict = {"temperature": temperature}
         if response_mime_type:
             config_kwargs["response_mime_type"] = response_mime_type
@@ -131,9 +132,12 @@ async def generate_image_gemini(
     - GeminiImageError(error_code="AI_UPSTREAM_ERROR") — no image part in response
     - RuntimeError — model not configured (propagated from _get_vertex_client)
     """
+    import asyncio as _asyncio
     from google.genai import types
 
-    client = _get_vertex_client()
+    # _get_vertex_client reads a key file on first call — run in a thread so it
+    # cannot block the async event loop (subsequent calls return the cached client instantly).
+    client = await _asyncio.to_thread(_get_vertex_client)
 
     # Build multipart contents: prompt first, then optional input images
     parts: list = [prompt]
@@ -141,9 +145,13 @@ async def generate_image_gemini(
         for raw in input_images:
             parts.append(types.Part.from_bytes(data=raw, mime_type=mime_type))
 
+    config = types.GenerateContentConfig(
+        response_modalities=["IMAGE", "TEXT"],
+    )
     response = await client.aio.models.generate_content(
-        model="gemini-3.1-flash-image-preview",
+        model="gemini-2.5-flash-image",
         contents=parts,
+        config=config,
     )
 
     # Check for safety/policy rejection via finish_reason

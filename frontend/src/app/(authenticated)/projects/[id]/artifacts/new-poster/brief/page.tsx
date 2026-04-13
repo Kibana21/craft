@@ -120,7 +120,11 @@ export default function PosterBriefPage() {
     setIsSaving(true);
     setError(null);
     try {
-      await updateArtifact(artifactId, { content: getContentPayload() });
+      const trimmedTitle = brief.title.trim();
+      await updateArtifact(artifactId, {
+        content: getContentPayload(),
+        ...(trimmedTitle && { name: trimmedTitle }),
+      });
       router.push(`/projects/${projectId}/artifacts/new-poster/subject`);
     } catch (err: unknown) {
       const apiErr = err as { detail?: unknown; status?: number };

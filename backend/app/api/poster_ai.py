@@ -35,6 +35,7 @@ from app.schemas.poster import (
     CopyValues,
     GenerateBriefRequest,
     GenerateBriefResponse,
+    GenerateVariantsJobResponse,
     GenerateVariantsRequest,
     GenerateVariantsResponse,
     InpaintResponse,
@@ -49,6 +50,7 @@ from app.schemas.poster import (
     UpscaleVariantRequest,
     UpscaleVariantResponse,
     Variant,
+    VariantJobStatusResponse,
 )
 from app.services.poster_ai_service import (
     build_composition_prompt,
@@ -61,7 +63,8 @@ from app.services.poster_ai_service import (
     generate_scene_description,
     tone_rewrite,
 )
-from app.services.poster_image_service import generate_variants as svc_generate_variants
+from app.services.poster_image_service import dispatch_generate_variants_job
+from app.services.poster_image_service import get_variant_job_status
 from app.services.poster_image_service import retry_single_variant
 
 router = APIRouter(prefix="/api/ai/poster", tags=["poster-ai"])
@@ -325,18 +328,21 @@ async def generate_composition_prompt(
 
 @router.post(
     "/generate-variants",
-    response_model=GenerateVariantsResponse,
-    summary="Generate 4 poster image variants (Phase C)",
+    response_model=GenerateVariantsJobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Dispatch a poster image generation job (Phase C)",
 )
 async def generate_variants(
     data: GenerateVariantsRequest,
     _current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> GenerateVariantsResponse:
-    """Fire up to 4 parallel gemini-2.5-flash-image calls with seed-phrase diversity."""
+) -> GenerateVariantsJobResponse:
+    """Dispatch generation to a Celery worker and return immediately with a job_id.
+
+    Poll GET /generate-variants/{job_id}/status for QUEUED → RUNNING → READY/FAILED.
+    """
     logger = logging.getLogger(__name__)
 
-    # Verify caller has access to the artifact
     try:
         await require_artifact_access(
             artifact_id=data.artifact_id,
@@ -347,7 +353,7 @@ async def generate_variants(
         raise
 
     try:
-        result = await svc_generate_variants(
+        job_id = await dispatch_generate_variants_job(
             db=db,
             artifact_id=data.artifact_id,
             merged_prompt=data.merged_prompt,
@@ -368,10 +374,34 @@ async def generate_variants(
             detail={"detail": msg, "error_code": "NOT_FOUND"},
         ) from exc
     except Exception as exc:
-        logger.exception("generate-variants failed: %s", exc)
+        logger.exception("generate-variants dispatch failed: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"detail": "Image generation failed.", "error_code": "AI_UPSTREAM_ERROR"},
+            detail={"detail": "Failed to dispatch generation job.", "error_code": "DISPATCH_ERROR"},
+        ) from exc
+
+    return GenerateVariantsJobResponse(job_id=job_id, status="QUEUED")
+
+
+@router.get(
+    "/generate-variants/{job_id}/status",
+    response_model=VariantJobStatusResponse,
+    summary="Poll the status of a generation job (Phase C)",
+)
+async def get_generate_variants_status(
+    job_id: str,
+    _current_user: User = Depends(get_current_user),
+) -> VariantJobStatusResponse:
+    """Read job status from Redis. Poll every 2 s until status is READY or FAILED."""
+    logger = logging.getLogger(__name__)
+
+    try:
+        job = await get_variant_job_status(job_id)
+    except Exception as exc:
+        logger.exception("get-variant-job-status failed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"detail": "Could not read job status.", "error_code": "STATUS_READ_ERROR"},
         ) from exc
 
     variants = [
@@ -383,12 +413,16 @@ async def generate_variants(
             error_code=v.get("error_code"),
             retry_token=v.get("retry_token"),
         )
-        for v in result["variants"]
+        for v in job.get("variants", [])
+        if v.get("status") in ("READY", "FAILED")
     ]
-    return GenerateVariantsResponse(
-        job_id=result["job_id"],
+
+    return VariantJobStatusResponse(
+        job_id=job_id,
+        status=job["status"],
         variants=variants,
-        partial_failure=result["partial_failure"],
+        partial_failure=job.get("partial_failure", False),
+        error=job.get("error"),
     )
 
 

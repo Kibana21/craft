@@ -8,7 +8,7 @@ dev:
 
 # Backend
 backend:
-	cd backend && source .venv/bin/activate && uvicorn app.main:app --reload --port 8000
+	cd backend && source .venv/bin/activate && uvicorn app.main:app --reload --port 8000 --timeout-keep-alive 75
 
 # Frontend
 frontend:
@@ -18,9 +18,9 @@ frontend:
 redis:
 	docker-compose up -d redis
 
-# Celery video worker (separate terminal)
+# Celery worker — handles video, poster image generation, and default tasks (separate terminal)
 worker:
-	cd backend && source .venv/bin/activate && celery -A app.celery_app worker --loglevel=info --concurrency=2 -Q video,celery
+	cd backend && source .venv/bin/activate && celery -A app.celery_app worker --loglevel=info --concurrency=4 -Q video,poster,celery
 
 # Flower task monitor — http://localhost:5555
 flower:

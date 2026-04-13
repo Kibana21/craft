@@ -37,7 +37,10 @@
       "Bash(curl -s http://localhost:8000/api/projects/57f29737-1c9c-4643-aba7-fce6ce844609 -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1M2E5NDM5Ny0wNGUzLTQ1ZTUtOWZlNy02YzQ5OTlmM2I3ZGQiLCJyb2xlIjoiYnJhbmRfYWRtaW4iLCJ0eXBlIjoiYWNjZXNzIiwiaWF0IjoxNzc2MDM4NjUyLCJleHAiOjE3NzYwNDIyNTIsImp0aSI6ImNkMWM4YjNkLTJlZDQtNDg1Yi1hMTE3LTA2M2RjN2JjMDgzNiJ9.M8D8KA3TKXdNtb5Oe5I5IN1QRLpMPCZV3hALiY9CGzk')",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(type\\(d\\).__name__, str\\(d\\)[:300]\\)\")",
       "Bash(npx next:*)",
-      "Bash(time curl:*)"
+      "Bash(time curl:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(curl -s -o /dev/null -w \"backend health: %{http_code} \\(%{time_total}s\\)\\\\n\" http://localhost:8000/api/health)",
+      "Bash(ls:*)"
     ]
   }
 }

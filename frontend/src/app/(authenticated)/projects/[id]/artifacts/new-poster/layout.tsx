@@ -86,6 +86,41 @@ const SEGMENT_TO_STEP: Record<string, number> = {
   generate: 4,
 };
 
+// Parallel array — index-aligned with WIZARD_STEPS. Used to map a step index
+// back to the URL segment when the user clicks a step in the progress bar.
+const STEP_INDEX_TO_SEGMENT = ["brief", "subject", "copy", "compose", "generate"];
+
+// Returns the deepest wizard segment that has populated data. Used to land the
+// user on the last step they worked on when they re-open an existing poster.
+function resolveDeepestSegment(content: Record<string, unknown>): string {
+  const generation = content.generation as PosterGenerationState | undefined;
+  if (generation?.variants && generation.variants.length > 0) return "generate";
+
+  const composition = content.composition as PosterCompositionContent | undefined;
+  if (
+    composition &&
+    (composition.merged_prompt ||
+      composition.format ||
+      composition.layout_template ||
+      composition.visual_style)
+  ) {
+    return "compose";
+  }
+
+  const copy = content.copy as PosterCopyContent | undefined;
+  if (
+    copy &&
+    (copy.headline || copy.subheadline || copy.body || copy.cta_text || copy.brand_tagline)
+  ) {
+    return "copy";
+  }
+
+  const subject = content.subject as PosterSubjectContent | undefined;
+  if (subject?.type) return "subject";
+
+  return "brief";
+}
+
 // ── Layout ────────────────────────────────────────────────────────────────────
 
 export default function PosterWizardLayout({ children }: { children: React.ReactNode }) {
@@ -148,6 +183,18 @@ export default function PosterWizardLayout({ children }: { children: React.React
           if (c.copy) setCopyState((prev) => ({ ...prev, ...(c.copy as Partial<PosterCopyContent>) }));
           if (c.composition) setCompositionState((prev) => ({ ...prev, ...(c.composition as Partial<PosterCompositionContent>) }));
           if (c.generation) setGenerationState((prev) => ({ ...prev, ...(c.generation as Partial<PosterGenerationState>) }));
+
+          // If the user entered via the default /brief route, jump to the
+          // deepest step that has data so they don't have to click through.
+          const currentSegment = pathname.split("/").pop() ?? "";
+          if (currentSegment === "brief") {
+            const target = resolveDeepestSegment(c);
+            if (target !== "brief") {
+              router.replace(
+                `/projects/${projectId}/artifacts/new-poster/${target}?load=${loadArtifactId}`,
+              );
+            }
+          }
         } else {
           // Creating a new poster artifact
           const [project, artifact] = await Promise.all([
@@ -233,11 +280,23 @@ export default function PosterWizardLayout({ children }: { children: React.React
             {projectName || "Project"}
           </ButtonBase>
           <Typography sx={{ fontSize: "14px", color: "#717171" }}>/</Typography>
-          <Typography sx={{ fontSize: "14px", color: "#222222" }}>{artifactName || "Poster"}</Typography>
+          <Typography sx={{ fontSize: "14px", color: "#222222" }}>
+            {brief.title?.trim() || artifactName || "Poster"}
+          </Typography>
         </Box>
 
         {/* Step indicator */}
-        <WizardProgress steps={WIZARD_STEPS} currentStep={currentStep} />
+        <WizardProgress
+          steps={WIZARD_STEPS}
+          currentStep={currentStep}
+          onStepClick={(idx) => {
+            const target = STEP_INDEX_TO_SEGMENT[idx];
+            if (!target || !artifactId) return;
+            router.push(
+              `/projects/${projectId}/artifacts/new-poster/${target}?load=${artifactId}`,
+            );
+          }}
+        />
 
         {/* Step content */}
         {children}
