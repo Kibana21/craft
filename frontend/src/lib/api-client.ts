@@ -1,4 +1,7 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Use the Next.js proxy (/api/* → http://localhost:8000/api/*) so all requests
+// are same-origin — eliminates all CORS issues in development.
+// Set NEXT_PUBLIC_API_URL to an explicit base (e.g. https://api.example.com) in production.
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 interface ApiError {
   detail: string;

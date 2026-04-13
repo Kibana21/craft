@@ -318,6 +318,280 @@ Keep it concise and natural. Do not change the meaning — refine the wording.
 Return ONLY the improved content. No explanation, no preamble."""
 
 
+# ── Poster Wizard prompt builder ───────────────────────────────────────────────
+
+
+class PosterPromptBuilder:
+    """All prompt templates for the Poster Wizard AI endpoints (doc 03).
+
+    Every method returns a (system_prompt, user_prompt) tuple so callers can
+    use Gemini's chat / system-instruction API when available. For now the
+    implementation concatenates them into a single string for the text API.
+
+    Temperature guidance (doc 03):
+      - 0.3  → deterministic structured outputs (copy-draft-all, brief, etc.)
+      - 0.5  → tone-rewrite (creative latitude)
+    """
+
+    # Shared compliance footer appended to every copy-generating prompt.
+    COMPLIANCE_FOOTER = (
+        "\n\nHard prohibitions (apply to every output):\n"
+        '  - No "guaranteed", "guarantee", "no risk", "best in market", '
+        '"the only", "number one".\n'
+        "  - No specific financial returns or payout figures not present in input.\n"
+        "  - British English.\n"
+    )
+
+    # Structured-output JSON schema for copy-draft-all and tone-rewrite.
+    COPY_JSON_SCHEMA = {
+        "type": "object",
+        "properties": {
+            "headline":    {"type": "string"},
+            "subheadline": {"type": "string"},
+            "body":        {"type": "string"},
+            "cta_text":    {"type": "string"},
+        },
+        "required": ["headline", "subheadline", "body", "cta_text"],
+    }
+
+    # ── 1. Brief synthesis ────────────────────────────────────────────────────
+
+    @staticmethod
+    def brief_synthesis(
+        campaign_objective: str,
+        target_audience: str,
+        tone: str,
+        call_to_action: str,
+        existing_brief: str | None = None,
+    ) -> str:
+        existing_block = (
+            f"\n  Existing brief to revise: {existing_brief}" if existing_brief else ""
+        )
+        return (
+            "System: You are an AIA Singapore marketing content strategist. "
+            "Produce compliant, on-brand poster briefs for the CRAFT platform.\n\n"
+            "Input context:\n"
+            f"  Campaign objective: {campaign_objective}\n"
+            f"  Target audience: {target_audience}\n"
+            f"  Tone: {tone}\n"
+            f"  Call to action: {call_to_action}"
+            f"{existing_block}\n\n"
+            "Task:\n"
+            "Write a 60–120 word narrative poster brief that:\n"
+            "  - States the poster's purpose in one sentence.\n"
+            "  - Describes who it speaks to and what they care about.\n"
+            "  - Sets the visual and emotional direction (no specific copy).\n"
+            "  - Ends with the desired action outcome.\n\n"
+            "Constraints:\n"
+            '  - No MAS-flagged language (no "guaranteed", "no risk", "best in market", etc.).\n'
+            "  - No specific product figures or returns unless stated in input.\n"
+            "  - British English (AIA Singapore convention).\n\n"
+            "Return only the paragraph. No preface, no bullet list."
+        )
+
+    # ── 2. Appearance paragraph (Human Model) ─────────────────────────────────
+
+    @staticmethod
+    def appearance_paragraph(
+        appearance_keywords: str,
+        expression_mood: str,
+        posture_framing: str,
+        brief_context: str | None = None,
+    ) -> str:
+        context_block = (
+            f"\n  Brief context: {brief_context}" if brief_context else ""
+        )
+        return (
+            "System: Generate detailed, photorealistic image-generation descriptions "
+            "of people for AIA Singapore marketing posters. Descriptions feed directly "
+            "into an image-generation model; precision matters.\n\n"
+            "Input:\n"
+            f"  Appearance keywords: {appearance_keywords}\n"
+            f"  Expression / mood: {expression_mood}\n"
+            f"  Posture / framing: {posture_framing}"
+            f"{context_block}\n\n"
+            "Task:\n"
+            "Produce a 40–80 word paragraph that an image-generation model can render "
+            "faithfully. Include: apparent age range, ethnicity (if specified), hair, "
+            "wardrobe, posture, expression, lighting direction if implied by mood. "
+            "Do NOT invent names or narratives.\n\n"
+            "Constraints:\n"
+            "  - Respect the keywords exactly; do not contradict them.\n"
+            "  - Neutral, professional tone; no marketing language.\n"
+            "  - No brand names other than AIA if present in input.\n\n"
+            "Return only the paragraph."
+        )
+
+    # ── 3. Scene description (Scene / Abstract) ───────────────────────────────
+
+    @staticmethod
+    def scene_description(
+        visual_style: str,
+        seed_hint: str | None = None,
+        brief_context: str | None = None,
+    ) -> str:
+        seed_block = (
+            f"\n  Seed hint from user: {seed_hint}" if seed_hint else ""
+        )
+        context_block = (
+            f"\n  Brief context: {brief_context}" if brief_context else ""
+        )
+        return (
+            "System: Generate evocative scene descriptions for AI image generation "
+            "targeting AIA Singapore marketing posters.\n\n"
+            "Input:\n"
+            f"  Visual style: {visual_style}"
+            f"{seed_block}"
+            f"{context_block}\n\n"
+            "Task:\n"
+            "Write a 40–90 word description of a non-human, non-product scene that "
+            "conveys mood aligned with the visual style and brief. Include: location "
+            "or setting, time of day, light quality, colour direction, atmosphere.\n\n"
+            "Constraints:\n"
+            "  - No people, no recognisable branded products.\n"
+            "  - British English.\n\n"
+            "Return only the description."
+        )
+
+    # ── 4. Copy draft all ─────────────────────────────────────────────────────
+
+    @staticmethod
+    def copy_draft_all(
+        brief: str,
+        tone: str,
+        campaign_objective: str,
+        audience: str | None = None,
+    ) -> str:
+        audience_block = f"\n  Audience: {audience}" if audience else ""
+        return (
+            "System: Generate insurance-compliant poster copy for AIA Singapore. "
+            "Output strict JSON.\n\n"
+            "Input:\n"
+            f"  Brief: {brief}\n"
+            f"  Tone: {tone}\n"
+            f"  Campaign objective: {campaign_objective}"
+            f"{audience_block}\n\n"
+            "Task:\n"
+            "Produce a single JSON object with fields:\n"
+            '  "headline": 5–8 words, strongest verb, no absolute claims\n'
+            '  "subheadline": 10–15 words, supports the headline with context\n'
+            '  "body": 20–35 words, 1–2 sentences that amplify the headline\n'
+            '  "cta_text": 3–6 words, button-style imperative\n\n'
+            "Compliance rules (hard):\n"
+            '  - No "guaranteed", "guarantee", "no risk", "best in market", "the only", '
+            '"number one", "you will receive", "definitely".\n'
+            "  - Disclaimers are never placed in these fields.\n\n"
+            "Tone handling:\n"
+            "  - PROFESSIONAL → measured, confident\n"
+            "  - INSPIRATIONAL → aspirational, future-facing\n"
+            "  - ENERGETIC → short sentences, action verbs\n"
+            "  - EMPATHETIC → \"you\"-centric, first-person warmth\n"
+            "  - URGENCY_DRIVEN → time-framed but truthful\n\n"
+            "Output: JSON only. No preamble."
+        )
+
+    # ── 5. Copy draft field (single-field regenerate) ─────────────────────────
+
+    @staticmethod
+    def copy_draft_field(
+        field: str,
+        brief: str,
+        tone: str,
+        current_values: dict[str, str],
+    ) -> str:
+        sibling_context = "\n".join(
+            f"  {k}: {v}" for k, v in current_values.items() if k != field and v
+        )
+        field_guides = {
+            "headline":    "5–8 words, strongest verb, no absolute claims",
+            "subheadline": "10–15 words, supports the headline with context",
+            "body":        "20–35 words, 1–2 sentences that amplify the headline",
+            "cta_text":    "3–6 words, button-style imperative",
+        }
+        guide = field_guides.get(field, "concise, compliant marketing copy")
+
+        return (
+            "System: Generate insurance-compliant poster copy for AIA Singapore. "
+            "Output strict JSON.\n\n"
+            f"Regenerate only the {field!r} field ({guide}).\n\n"
+            f"Brief: {brief}\n"
+            f"Tone: {tone}\n\n"
+            "Other fields already written (keep coherent — do not repeat verbatim):\n"
+            f"{sibling_context}\n\n"
+            "Compliance rules (hard):\n"
+            '  - No "guaranteed", "guarantee", "no risk", "best in market", "the only", '
+            '"number one", "you will receive", "definitely".\n\n'
+            f"Return ONLY the text for the {field!r} field. No labels, no quotes."
+        )
+
+    # ── 6. Tone rewrite ───────────────────────────────────────────────────────
+
+    @staticmethod
+    def tone_rewrite(
+        headline: str,
+        subheadline: str,
+        body: str,
+        cta_text: str,
+        rewrite_tone: str,
+    ) -> str:
+        return (
+            "System: Rewrite AIA insurance poster copy to a new tone. "
+            "Preserve structure (field count, approximate length). "
+            "Output strict JSON matching input field set.\n\n"
+            "Input (current):\n"
+            f"  Headline: {headline}\n"
+            f"  Subheadline: {subheadline}\n"
+            f"  Body: {body}\n"
+            f"  CTA text: {cta_text}\n\n"
+            f"Rewrite tone: {rewrite_tone}\n"
+            "  - SHARPER → shorter sentences, stronger verbs, more direct.\n"
+            "  - WARMER → \"you\"-centric, first-person, empathetic, softer.\n"
+            "  - MORE_URGENT → deadline framing, loss-aversion, stronger CTA. "
+            "Keep truthful — no false urgency.\n"
+            "  - SHORTER → minimum viable expression. Cut filler, keep the idea.\n\n"
+            'Keep all compliance constraints: no "guaranteed", "no risk", '
+            '"best in market", "the only", "number one".\n\n'
+            'Output JSON: { "headline": "…", "subheadline": "…", "body": "…", "cta_text": "…" }'
+        )
+
+    # ── 7. Style sentence (LLM sub-slot for composition prompt) ───────────────
+
+    @staticmethod
+    def style_sentence(
+        visual_style: str,
+        palette_descriptor: str,
+        tone: str,
+    ) -> str:
+        return (
+            "System: Produce a single sentence (<= 30 words) that captures the "
+            "overall visual character of an AIA Singapore poster given style + "
+            "palette + tone.\n\n"
+            "Input:\n"
+            f"  Visual style: {visual_style}\n"
+            f"  Palette description: {palette_descriptor}\n"
+            f"  Tone: {tone}\n\n"
+            "Output: one sentence only. "
+            'Example shape: "A {style-adjective}, {palette-adjective} composition '
+            'that feels {tone-adjective}."'
+        )
+
+    # ── 8. Structural-change classifier (LLM fallback) ────────────────────────
+
+    @staticmethod
+    def structural_change_classifier(user_message: str) -> str:
+        return (
+            "Classify the intent of this chat message about an AI-generated poster.\n\n"
+            f'Message: "{user_message}"\n\n'
+            "Possible intents:\n"
+            "  - VISUAL_ADJUSTMENT (colour, lighting, scale, position, mood) → not structural\n"
+            "  - COPY_CHANGE (wording, length, headline, CTA text)           → STEP_3_COPY\n"
+            "  - LAYOUT_CHANGE (arrangement, template, composition structure)→ STEP_4_COMPOSITION\n"
+            "  - SUBJECT_CHANGE (person, product, scene identity)            → STEP_2_SUBJECT\n"
+            "  - FORMAT_CHANGE (dimensions, aspect ratio)           → STEP_4_COMPOSITION\n\n"
+            'Output JSON: { "intent": "...", "confidence": 0.0 }'
+        )
+
+
 def build_scene_merged_prompt(scene: object, presenter: object | None, brand_kit: object | None) -> str:
     """
     Build the merged Veo prompt for a single scene.

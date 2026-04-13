@@ -27,6 +27,7 @@ boto3==1.36.4
 # Image processing
 Pillow==11.1.0
 CairoSVG==2.7.1
+reportlab==4.2.5
 
 # Video processing
 ffmpeg-python==0.2.0

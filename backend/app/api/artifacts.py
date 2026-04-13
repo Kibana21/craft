@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -8,38 +8,59 @@ from sqlalchemy.orm import selectinload
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
-from app.models.user import User
+from app.models.artifact import Artifact
+from app.models.enums import ArtifactStatus, ArtifactType, UserRole
 from app.models.project import Project
 from app.models.project_member import ProjectMember
-from app.models.artifact import Artifact
-from app.models.enums import ArtifactType, ArtifactStatus, UserRole
+from app.models.user import User
 from app.schemas.artifact import (
-    ArtifactListResponse,
-    ArtifactResponse,
     ArtifactDetailResponse,
+    ArtifactListResponse,
     CreateArtifactRequest,
     UpdateArtifactRequest,
 )
+from app.schemas.poster import PosterContent, SaveAsVariantRequest
 from app.services.artifact_service import list_project_artifacts
 
 router = APIRouter(tags=["artifacts"])
 
 
-def _award_points_bg(user_id: uuid.UUID, action: object) -> None:
-    """Fire-and-forget gamification points from a BackgroundTask."""
-    import asyncio
+def _validate_poster_content(content: dict) -> None:
+    """Validate artifact content against the PosterContent schema.
+
+    Raises HTTPException 422 if the content does not match the expected shape.
+    Called at the API boundary whenever a POSTER artifact's content is written.
+    """
+    from pydantic import ValidationError
+    try:
+        PosterContent.model_validate(content)
+    except ValidationError as exc:
+        raise HTTPException(  # noqa: B904
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "error_code": "POSTER_CONTENT_INVALID",
+                "message": "Poster content does not match the expected schema.",
+                "errors": exc.errors(include_url=False),
+            },
+        )
+
+
+async def _award_points_bg(user_id: uuid.UUID, action: object) -> None:
+    """Fire-and-forget gamification points from a BackgroundTask.
+
+    Async so FastAPI awaits it in the main event loop — avoids the
+    'Future attached to a different loop' asyncpg error that occurs
+    when asyncio.run() is called from a thread-pool background task.
+    """
     from app.core.database import async_session
     from app.services.gamification_service import award_points
 
-    async def _run() -> None:
-        async with async_session() as db:
-            try:
-                await award_points(db, user_id, action)  # type: ignore[arg-type]
-                await db.commit()
-            except Exception:
-                pass
-
-    asyncio.run(_run())
+    async with async_session() as db:
+        try:
+            await award_points(db, user_id, action)  # type: ignore[arg-type]
+            await db.commit()
+        except Exception:
+            pass
 
 
 async def _check_project_access(
@@ -124,6 +145,10 @@ async def create_artifact(
 ) -> dict:
     await _check_project_access(db, current_user, project_id)
 
+    # Validate poster content at the API boundary
+    if data.type == ArtifactType.POSTER and data.content:
+        _validate_poster_content(data.content)
+
     artifact = Artifact(
         project_id=project_id,
         creator_id=current_user.id,
@@ -156,7 +181,6 @@ async def create_artifact(
     background_tasks.add_task(run_compliance_scoring, artifact.id)
 
     # Award gamification points
-    from app.services.gamification_service import award_points
     from app.models.gamification import PointsAction
     background_tasks.add_task(_award_points_bg, current_user.id, PointsAction.CREATE_ARTIFACT)
 
@@ -189,8 +213,9 @@ async def get_artifact_detail(
     video_session_id = vs_result.scalar_one_or_none()
 
     if video_session_id is None and artifact.type in (ArtifactType.VIDEO, ArtifactType.REEL):
-        from app.services.video_session_service import create_for_artifact
         from sqlalchemy.exc import IntegrityError
+
+        from app.services.video_session_service import create_for_artifact
         try:
             video_session = await create_for_artifact(db, artifact.id)
             await db.commit()
@@ -226,6 +251,10 @@ async def update_artifact(
     if current_user.role != UserRole.BRAND_ADMIN and artifact.creator_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
 
+    # Validate poster content at the API boundary
+    if artifact.type == ArtifactType.POSTER and data.content is not None:
+        _validate_poster_content(data.content)
+
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(artifact, key, value)
@@ -255,5 +284,28 @@ async def delete_artifact(
     if current_user.role != UserRole.BRAND_ADMIN and artifact.creator_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
 
-    artifact.deleted_at = datetime.now(timezone.utc).isoformat()
+    artifact.deleted_at = datetime.now(datetime.UTC).isoformat()
     await db.flush()
+
+
+@router.post(
+    "/api/artifacts/{artifact_id}/save-as-variant",
+    summary="Snapshot current selected variant (Phase D)",
+)
+async def save_as_variant(
+    artifact_id: uuid.UUID,
+    data: SaveAsVariantRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Snapshot the selected variant into a new variant entry with parent_variant_id lineage.
+
+    Phase D — not yet implemented.
+    """
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail={
+            "detail": "save-as-variant is coming in Phase D.",
+            "error_code": "PHASE_NOT_IMPLEMENTED",
+        },
+    )

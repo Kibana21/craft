@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from app.core.config import settings
 from app.services.prompt_builder import (
@@ -16,28 +17,29 @@ from app.services.prompt_builder import (
     build_brief_field_improve_prompt,
 )
 
+# ── Cached Vertex AI client ────────────────────────────────────────────────────
+# Credentials and genai.Client are created once per process and reused.
+# Creating them on every call (the old approach) executes synchronous blocking
+# I/O (file read + possible token refresh) inside the async event loop, which
+# blocks uvicorn from accepting/responding to other requests and causes
+# ECONNRESET on concurrent requests.
 
-class _VertexGeminiModel:
-    """Thin wrapper so callers can use await model.generate_content(prompt)."""
-
-    def __init__(self, client, model_name: str):
-        self._client = client
-        self._model_name = model_name
-
-    async def generate_content(self, prompt: str):
-        return await self._client.aio.models.generate_content(
-            model=self._model_name,
-            contents=prompt,
-        )
+_vertex_client = None  # genai.Client singleton
 
 
-def _gemini_model(model_name: str = "gemini-2.5-flash") -> _VertexGeminiModel:
-    """Return a Gemini model backed by Vertex AI using the service account key file.
+def _get_vertex_client():
+    """Return the cached Vertex AI genai.Client, creating it on first call.
 
-    Uses the same credentials as veo_client.py (GOOGLE_VEO_KEY_FILE + cloud-platform scope).
-    Raises RuntimeError if the key file is missing or misconfigured.
+    Reads the service-account key file synchronously — safe to do once at
+    startup or on the first AI request (before the event loop is saturated).
+    Subsequent calls return the already-constructed client with no I/O.
+
+    Raises RuntimeError if GOOGLE_VEO_KEY_FILE is missing or misconfigured.
     """
-    from pathlib import Path
+    global _vertex_client
+    if _vertex_client is not None:
+        return _vertex_client
+
     from google.oauth2 import service_account
     from google import genai
 
@@ -56,13 +58,115 @@ def _gemini_model(model_name: str = "gemini-2.5-flash") -> _VertexGeminiModel:
         str(key_path),
         scopes=["https://www.googleapis.com/auth/cloud-platform"],
     )
-    client = genai.Client(
+    _vertex_client = genai.Client(
         vertexai=True,
         project=settings.VEO_PROJECT_ID,
         location=settings.VEO_LOCATION,
         credentials=credentials,
     )
-    return _VertexGeminiModel(client, model_name)
+    return _vertex_client
+
+
+class _VertexGeminiModel:
+    """Thin wrapper so callers can use await model.generate_content(prompt)."""
+
+    def __init__(self, model_name: str):
+        self._model_name = model_name
+
+    async def generate_content(
+        self,
+        prompt: str,
+        temperature: float = 1.0,
+        response_mime_type: str | None = None,
+        response_schema: dict | None = None,
+    ):
+        from google import genai
+
+        client = _get_vertex_client()
+        config_kwargs: dict = {"temperature": temperature}
+        if response_mime_type:
+            config_kwargs["response_mime_type"] = response_mime_type
+        if response_schema:
+            config_kwargs["response_schema"] = response_schema
+
+        config = genai.types.GenerateContentConfig(**config_kwargs)
+        return await client.aio.models.generate_content(
+            model=self._model_name,
+            contents=prompt,
+            config=config,
+        )
+
+
+def _gemini_model(model_name: str = "gemini-2.5-flash") -> _VertexGeminiModel:
+    """Return a Gemini model wrapper backed by the cached Vertex AI client.
+
+    Raises RuntimeError (propagated from _get_vertex_client) if not configured.
+    """
+    return _VertexGeminiModel(model_name)
+
+
+# ── Gemini image model ─────────────────────────────────────────────────────────
+
+
+class GeminiImageError(Exception):
+    """Raised when the Gemini image model fails or returns no image part."""
+
+    def __init__(self, message: str, error_code: str = "AI_UPSTREAM_ERROR"):
+        super().__init__(message)
+        self.error_code = error_code
+
+
+async def generate_image_gemini(
+    prompt: str,
+    input_images: list[bytes] | None = None,
+    mime_type: str = "image/png",
+) -> bytes:
+    """Low-level Gemini image generation call.
+
+    Uses the cached Vertex AI client (_get_vertex_client) to avoid blocking
+    synchronous credential loading on every call.
+
+    Errors:
+    - GeminiImageError(error_code="AI_CONTENT_POLICY") — safety/policy rejection
+    - GeminiImageError(error_code="AI_UPSTREAM_ERROR") — no image part in response
+    - RuntimeError — model not configured (propagated from _get_vertex_client)
+    """
+    from google.genai import types
+
+    client = _get_vertex_client()
+
+    # Build multipart contents: prompt first, then optional input images
+    parts: list = [prompt]
+    if input_images:
+        for raw in input_images:
+            parts.append(types.Part.from_bytes(data=raw, mime_type=mime_type))
+
+    response = await client.aio.models.generate_content(
+        model="gemini-2.5-flash-image",
+        contents=parts,
+    )
+
+    # Check for safety/policy rejection via finish_reason
+    candidates = getattr(response, "candidates", [])
+    if candidates:
+        finish_reason = getattr(candidates[0], "finish_reason", None)
+        finish_str = str(finish_reason) if finish_reason else ""
+        if any(s in finish_str.upper() for s in ("SAFETY", "PROHIBITED", "OTHER")):
+            raise GeminiImageError(
+                f"Image generation blocked by safety filters: {finish_str}",
+                error_code="AI_CONTENT_POLICY",
+            )
+        # Extract inline image from the first candidate's parts
+        for part in candidates[0].content.parts:
+            inline = getattr(part, "inline_data", None)
+            if inline is not None:
+                return inline.data
+
+    raise GeminiImageError(
+        "Gemini returned no image part in the response. "
+        "The model may have produced a text-only response.",
+        error_code="AI_UPSTREAM_ERROR",
+    )
 
 
 # Fallback taglines when Gemini is not configured

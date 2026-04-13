@@ -1,13 +1,18 @@
 import uuid
 
+import redis.asyncio as redis
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
 from app.core.rbac import require_brand_admin
+from app.core.redis import get_redis
 from app.models.user import User
 from app.schemas.compliance import (
+    CheckFieldRequest,
+    CheckFieldResponse,
+    ComplianceFlagResponse,
     CreateRuleRequest,
     UpdateRuleRequest,
     ComplianceRuleResponse,
@@ -24,19 +29,25 @@ from app.services.compliance_service import (
     delete_document,
 )
 from app.services.compliance_scorer import score_artifact
+from app.services.field_compliance_service import (
+    check_field,
+    invalidate_field_compliance_cache,
+)
 
 router = APIRouter(prefix="/api/compliance", tags=["compliance"])
 
 
-# --- Rules ---
+# ── Rules ─────────────────────────────────────────────────────────────────────
 
 @router.post("/rules", response_model=ComplianceRuleResponse, status_code=201)
 async def create_compliance_rule(
     data: CreateRuleRequest,
     current_user: User = Depends(require_brand_admin),
     db: AsyncSession = Depends(get_db),
+    redis_client: redis.Redis = Depends(get_redis),
 ) -> ComplianceRuleResponse:
     rule = await create_rule(db, current_user.id, data)
+    await invalidate_field_compliance_cache(redis_client)
     return ComplianceRuleResponse.model_validate(rule)
 
 
@@ -56,12 +67,14 @@ async def update_compliance_rule(
     data: UpdateRuleRequest,
     _current_user: User = Depends(require_brand_admin),
     db: AsyncSession = Depends(get_db),
+    redis_client: redis.Redis = Depends(get_redis),
 ) -> ComplianceRuleResponse:
     rule = await update_rule(db, rule_id, data)
+    await invalidate_field_compliance_cache(redis_client)
     return ComplianceRuleResponse.model_validate(rule)
 
 
-# --- Documents ---
+# ── Documents ─────────────────────────────────────────────────────────────────
 
 @router.post("/documents", response_model=ComplianceDocumentResponse, status_code=201)
 async def upload_compliance_document(
@@ -91,7 +104,7 @@ async def delete_compliance_document(
     await delete_document(db, doc_id)
 
 
-# --- Scoring ---
+# ── Whole-artifact scoring ─────────────────────────────────────────────────────
 
 @router.post("/score/{artifact_id}", response_model=ComplianceScoreResponse)
 async def trigger_compliance_score(
@@ -109,6 +122,45 @@ async def get_compliance_score(
     _current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ComplianceScoreResponse:
-    # Re-score to get latest
     result = await score_artifact(db, artifact_id)
     return ComplianceScoreResponse(**result)
+
+
+# ── Per-field inline compliance (Phase E) ─────────────────────────────────────
+
+@router.post("/check-field", response_model=CheckFieldResponse)
+async def check_field_compliance(
+    data: CheckFieldRequest,
+    _current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    redis_client: redis.Redis = Depends(get_redis),
+) -> CheckFieldResponse:
+    """Inline per-field compliance check for Step 3 copy fields.
+
+    Returns flags in < 150 ms for cache hits, < 1.2 s for LLM-layer misses.
+    Never blocks Continue — flags are advisory only.
+    Rate limit: 60/min/user (enforced via middleware).
+    """
+    result = await check_field(
+        db=db,
+        redis_client=redis_client,
+        field=data.field,
+        text=data.text,
+        tone=data.tone_context,
+        content_hash=data.content_hash,
+    )
+
+    return CheckFieldResponse(
+        flags=[
+            ComplianceFlagResponse(
+                pattern_type=f["pattern_type"],
+                matched_phrase=f["matched_phrase"],
+                severity=f["severity"],
+                mas_basis=f["mas_basis"],
+                suggestion=f.get("suggestion"),
+                rule_id=uuid.UUID(f["rule_id"]) if f.get("rule_id") else None,
+            )
+            for f in result["flags"]
+        ],
+        cached=result["cached"],
+    )

@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -65,3 +66,32 @@ class ComplianceScoreResponse(BaseModel):
     score: float
     breakdown: dict
     suggestions: list[str]
+
+
+# ── Per-field inline compliance (Phase E) ────────────────────────────────────
+
+class CheckFieldRequest(BaseModel):
+    field: Literal["headline", "subheadline", "body", "cta_text"]
+    text: str = Field(min_length=1, max_length=2000)
+    tone_context: str = Field(default="PROFESSIONAL")
+    content_hash: str | None = None   # client-computed hash for client-side dedup
+
+
+class ComplianceFlagResponse(BaseModel):
+    pattern_type: Literal[
+        "ABSOLUTE_CLAIM",
+        "UNQUALIFIED_SUPERLATIVE",
+        "MISLEADING_CERTAINTY",
+        "MISSING_PRODUCT_QUALIFIER",
+        "CUSTOM_RULE",
+    ]
+    matched_phrase: str
+    severity: Literal["ERROR", "WARNING"]
+    mas_basis: str
+    suggestion: str | None = None
+    rule_id: uuid.UUID | None = None
+
+
+class CheckFieldResponse(BaseModel):
+    flags: list[ComplianceFlagResponse]
+    cached: bool

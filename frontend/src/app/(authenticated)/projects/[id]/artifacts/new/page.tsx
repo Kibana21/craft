@@ -7,7 +7,6 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import ButtonBase from "@mui/material/ButtonBase";
 import CircularProgress from "@mui/material/CircularProgress";
-import { PosterCreator } from "@/components/artifacts/create/poster-creator";
 import { WhatsAppCreator } from "@/components/artifacts/create/whatsapp-creator";
 import { createArtifact } from "@/lib/api/artifacts";
 import { fetchProjectDetail, type ProjectDetail } from "@/lib/api/projects";
@@ -122,7 +121,11 @@ export default function NewArtifactPage() {
               <ButtonBase
                 key={type.key}
                 disabled={type.key === "reel" && isCreatingVideo}
-                onClick={() => type.key === "reel" ? handleSelectReel() : setSelectedType(type.key)}
+                onClick={() => {
+                  if (type.key === "reel") return handleSelectReel();
+                  if (type.key === "poster") return router.push(`/projects/${projectId}/artifacts/new-poster/brief`);
+                  setSelectedType(type.key);
+                }}
                 sx={{
                   display: "flex",
                   flexDirection: "column",
@@ -211,14 +214,6 @@ export default function NewArtifactPage() {
               Create {ARTIFACT_TYPES.find((t) => t.key === selectedType)?.label?.toLowerCase()}
             </Typography>
 
-            {selectedType === "poster" && (
-              <PosterCreator
-                product={project?.product || ""}
-                audience={project?.target_audience || ""}
-                onSave={handleSave}
-                isSaving={isSaving}
-              />
-            )}
             {selectedType === "whatsapp_card" && (
               <WhatsAppCreator
                 product={project?.product || ""}

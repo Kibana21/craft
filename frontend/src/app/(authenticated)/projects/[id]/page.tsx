@@ -107,7 +107,7 @@ export default function ProjectDetailPage() {
     if (!id) return;
     Promise.all([
       fetchProjectDetail(id),
-      fetchSuggestions(id),
+      fetchSuggestions(id).catch(() => []),
       fetchProjectArtifacts(id).catch(() => ({ items: [], total: 0, page: 1, per_page: 20 })),
       fetchMembers(id).catch(() => []),
     ])

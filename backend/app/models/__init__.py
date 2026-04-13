@@ -38,6 +38,7 @@ from app.models.script_version import ScriptVersion
 from app.models.video_session import VideoSession
 from app.models.scene import Scene
 from app.models.generated_video import GeneratedVideo
+from app.models.poster import PosterChatTurn, PosterReferenceImage
 
 __all__ = [
     "Base",
@@ -78,4 +79,6 @@ __all__ = [
     "VideoSession",
     "Scene",
     "GeneratedVideo",
+    "PosterChatTurn",
+    "PosterReferenceImage",
 ]

@@ -1,4 +1,4 @@
-export type ExportFormat = "png" | "jpg" | "mp4";
+export type ExportFormat = "png" | "jpg" | "mp4" | "pdf";
 export type ExportAspectRatio = "1:1" | "4:5" | "9:16" | "800x800";
 export type ExportStatus = "processing" | "ready" | "failed";
 

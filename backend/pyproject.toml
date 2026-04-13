@@ -32,7 +32,10 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "S", "B", "A", "C4", "SIM"]
-ignore = ["S101"]  # Allow assert in tests
+ignore = [
+    "S101",  # Allow assert in tests
+    "B008",  # Depends/File/Form/Query in FastAPI argument defaults is standard FastAPI pattern
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

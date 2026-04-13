@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 
-ExportFormat = Literal["png", "jpg", "mp4"]
+ExportFormat = Literal["png", "jpg", "mp4", "pdf"]
 ExportAspectRatio = Literal["1:1", "4:5", "9:16", "800x800"]
 ExportStatus = Literal["processing", "ready", "failed"]
 

@@ -31,6 +31,8 @@ from app.api.presenters import router as presenters_router
 from app.api.video_sessions import router as video_sessions_router
 from app.api.scenes import router as scenes_router
 from app.api.generated_videos import router as generated_videos_router
+from app.api.poster import router as poster_router
+from app.api.poster_ai import router as poster_ai_router
 
 
 @asynccontextmanager
@@ -55,10 +57,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — whitelist frontend origin only
+# CORS — whitelist frontend origin.
+# Also allow 127.0.0.1 variant so browsers that resolve localhost to IPv6 or
+# navigate via the numeric address don't get blocked in development.
+_allowed_origins = [settings.FRONTEND_URL]
+_frontend_base = settings.FRONTEND_URL.replace("localhost", "127.0.0.1")
+if _frontend_base not in _allowed_origins:
+    _allowed_origins.append(_frontend_base)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -87,6 +96,8 @@ app.include_router(presenters_router)
 app.include_router(video_sessions_router)
 app.include_router(scenes_router)
 app.include_router(generated_videos_router)
+app.include_router(poster_router)
+app.include_router(poster_ai_router)
 
 # Serve uploaded files in development
 uploads_path = Path(__file__).parent.parent / "uploads"

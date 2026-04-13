@@ -74,9 +74,14 @@ async def download_export(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Export file not found")
 
     filename = file_path.name
-    media_type = "video/mp4" if filename.endswith(".mp4") else (
-        "image/jpeg" if filename.endswith(".jpg") else "image/png"
-    )
+    if filename.endswith(".mp4"):
+        media_type = "video/mp4"
+    elif filename.endswith(".jpg"):
+        media_type = "image/jpeg"
+    elif filename.endswith(".pdf"):
+        media_type = "application/pdf"
+    else:
+        media_type = "image/png"
 
     return FileResponse(
         path=str(file_path),

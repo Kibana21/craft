@@ -27,7 +27,17 @@
       "Bash(grep -v \"^$\")",
       "Bash(ls /Users/kartik/Documents/Work/Projects/craft/craft/backend/*.json)",
       "WebFetch(domain:ai.google.dev)",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(curl -s -X POST http://localhost:8000/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"sarah.lim@aia.com.sg\",\"password\":\"craft2026\"}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('OK - user:', d.get\\('user',{}\\).get\\('email'\\), 'role:', d.get\\('user',{}\\).get\\('role'\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('Total:', d.get\\('total',0\\), 'Items:', len\\(d.get\\('items',[]\\)\\)\\)\")",
+      "Bash(curl -s http://localhost:8000/api/projects -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1M2E5NDM5Ny0wNGUzLTQ1ZTUtOWZlNy02YzQ5OTlmM2I3ZGQiLCJyb2xlIjoiYnJhbmRfYWRtaW4iLCJ0eXBlIjoiYWNjZXNzIiwiaWF0IjoxNzc2MDM4NjUyLCJleHAiOjE3NzYwNDIyNTIsImp0aSI6ImNkMWM4YjNkLTJlZDQtNDg1Yi1hMTE3LTA2M2RjN2JjMDgzNiJ9.M8D8KA3TKXdNtb5Oe5I5IN1QRLpMPCZV3hALiY9CGzk')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('result:', str\\(d\\)[:200]\\)\")",
+      "Bash(curl -s http://localhost:8000/api/projects/57f29737-1c9c-4643-aba7-fce6ce844609 -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1M2E5NDM5Ny0wNGUzLTQ1ZTUtOWZlNy02YzQ5OTlmM2I3ZGQiLCJyb2xlIjoiYnJhbmRfYWRtaW4iLCJ0eXBlIjoiYWNjZXNzIiwiaWF0IjoxNzc2MDM4NjUyLCJleHAiOjE3NzYwNDIyNTIsImp0aSI6ImNkMWM4YjNkLTJlZDQtNDg1Yi1hMTE3LTA2M2RjN2JjMDgzNiJ9.M8D8KA3TKXdNtb5Oe5I5IN1QRLpMPCZV3hALiY9CGzk')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(type\\(d\\).__name__, str\\(d\\)[:300]\\)\")",
+      "Bash(npx next:*)",
+      "Bash(time curl:*)"
     ]
   }
 }

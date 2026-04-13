@@ -123,6 +123,14 @@ async def run_export(export_id: uuid.UUID) -> None:
                         None, lambda: render_reel(artifact, brand_kit)
                     )
                     ext = "mp4"
+                elif fmt == "pdf":
+                    # Print-ready PDF (CMYK, 300 DPI, 3 mm bleed)
+                    from app.services.print_pdf_service import render_poster_for_print
+                    _ar = aspect_ratio
+                    rendered_bytes = await loop.run_in_executor(
+                        None, lambda: render_poster_for_print(artifact, brand_kit, _ar)
+                    )
+                    ext = "pdf"
                 elif artifact.type == ArtifactType.WHATSAPP_CARD:
                     rendered_bytes = await loop.run_in_executor(
                         None, lambda: render_whatsapp_card(artifact, brand_kit)
