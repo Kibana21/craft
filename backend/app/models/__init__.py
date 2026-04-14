@@ -39,6 +39,8 @@ from app.models.video_session import VideoSession
 from app.models.scene import Scene
 from app.models.generated_video import GeneratedVideo
 from app.models.poster import PosterChatTurn, PosterReferenceImage
+from app.models.studio import StudioImage, StudioWorkflowRun
+from app.models.enums import StudioImageType, StudioIntent, WorkflowStatus
 
 __all__ = [
     "Base",
@@ -81,4 +83,9 @@ __all__ = [
     "GeneratedVideo",
     "PosterChatTurn",
     "PosterReferenceImage",
+    "StudioImage",
+    "StudioWorkflowRun",
+    "StudioImageType",
+    "StudioIntent",
+    "WorkflowStatus",
 ]

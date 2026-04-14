@@ -54,6 +54,21 @@ export function AgentNav() {
 
           <Button
             component={Link}
+            href="/my-studio"
+            variant="text"
+            size="small"
+            sx={{
+              fontSize: "14px",
+              color: "#5F6368",
+              px: 1.5,
+              "&:hover": { color: "#1F1F1F", bgcolor: "#F1F3F4" },
+            }}
+          >
+            My Studio
+          </Button>
+
+          <Button
+            component={Link}
             href="/leaderboard"
             variant="text"
             size="small"

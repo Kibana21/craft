@@ -20,7 +20,7 @@ redis:
 
 # Celery worker — handles video, poster image generation, and default tasks (separate terminal)
 worker:
-	cd backend && source .venv/bin/activate && celery -A app.celery_app worker --loglevel=info --concurrency=4 -Q video,poster,celery
+	cd backend && source .venv/bin/activate && celery -A app.celery_app worker --loglevel=info --concurrency=4 -Q video,poster,studio,celery
 
 # Flower task monitor — http://localhost:5555
 flower:

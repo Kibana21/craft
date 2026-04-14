@@ -17,6 +17,9 @@ POINTS_MAP = {
     PointsAction.REMIX: 15,
     PointsAction.STREAK_BONUS: 50,
     PointsAction.VIDEO_GENERATED: 50,
+    PointsAction.MY_STUDIO_UPLOAD: 5,
+    PointsAction.MY_STUDIO_ENHANCE: 10,
+    PointsAction.MY_STUDIO_BATCH: 25,
 }
 
 LEADERBOARD_KEY = "leaderboard:global"

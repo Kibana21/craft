@@ -15,6 +15,9 @@ class PointsAction(str, enum.Enum):
     REMIX = "remix"
     STREAK_BONUS = "streak_bonus"
     VIDEO_GENERATED = "video_generated"
+    MY_STUDIO_UPLOAD = "my_studio_upload"
+    MY_STUDIO_ENHANCE = "my_studio_enhance"
+    MY_STUDIO_BATCH = "my_studio_batch"
 
 
 class UserPoints(Base):

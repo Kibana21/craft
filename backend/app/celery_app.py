@@ -22,6 +22,7 @@ celery_app = Celery(
     include=[
         "app.services.video_generation_worker",
         "app.services.poster_generation_worker",
+        "app.services.studio_generation_worker",
     ],
 )
 
@@ -35,10 +36,11 @@ celery_app.conf.update(
     task_acks_late=True,           # don't ack until the task finishes (crash-safe)
     worker_prefetch_multiplier=1,  # one task per worker slot at a time
 
-    # Routing — video tasks go to a dedicated queue; poster tasks go to "poster"
+    # Routing — one dedicated queue per feature so they scale independently.
     task_routes={
         "video.generate": {"queue": "video"},
         "poster.generate": {"queue": "poster"},
+        "studio.generate_run": {"queue": "studio"},
     },
 
     # Timezone

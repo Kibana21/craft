@@ -79,9 +79,17 @@ class _VertexGeminiModel:
         temperature: float = 1.0,
         response_mime_type: str | None = None,
         response_schema: dict | None = None,
+        input_images: list[bytes] | None = None,
+        image_mime_type: str = "image/jpeg",
     ):
+        """Text generation call. `input_images` (optional) lets the caller mix
+        image bytes into the content parts for vision-based prompts (e.g.
+        "describe the subject in this photo"). Images go AFTER the text so the
+        prompt provides context.
+        """
         import asyncio
         from google import genai
+        from google.genai import types
 
         client = await asyncio.to_thread(_get_vertex_client)
         config_kwargs: dict = {"temperature": temperature}
@@ -91,9 +99,21 @@ class _VertexGeminiModel:
             config_kwargs["response_schema"] = response_schema
 
         config = genai.types.GenerateContentConfig(**config_kwargs)
+
+        # Build the contents list. Text-only (no images) preserves the prior
+        # string-only calling convention exactly so existing callers are
+        # unaffected.
+        if input_images:
+            parts: list = [prompt]
+            for raw in input_images:
+                parts.append(types.Part.from_bytes(data=raw, mime_type=image_mime_type))
+            contents = parts
+        else:
+            contents = prompt
+
         return await client.aio.models.generate_content(
             model=self._model_name,
-            contents=prompt,
+            contents=contents,
             config=config,
         )
 

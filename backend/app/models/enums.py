@@ -131,3 +131,28 @@ class VideoSessionStep(str, enum.Enum):
     SCRIPT = "script"
     STORYBOARD = "storyboard"
     GENERATION = "generation"
+
+
+# --- My Studio enums (Phase A+) ---
+
+class StudioImageType(str, enum.Enum):
+    PHOTO = "PHOTO"                   # user-uploaded, unprocessed
+    AI_GENERATED = "AI_GENERATED"     # Text→Image output
+    ENHANCED = "ENHANCED"             # Image→Image output
+    POSTER_EXPORT = "POSTER_EXPORT"   # registered from Poster Wizard export
+
+
+class StudioIntent(str, enum.Enum):
+    MAKE_PROFESSIONAL = "MAKE_PROFESSIONAL"
+    CHANGE_BACKGROUND = "CHANGE_BACKGROUND"
+    ENHANCE_QUALITY = "ENHANCE_QUALITY"
+    VARIATION = "VARIATION"
+    CUSTOM = "CUSTOM"
+
+
+class WorkflowStatus(str, enum.Enum):
+    QUEUED = "QUEUED"
+    RUNNING = "RUNNING"
+    DONE = "DONE"
+    FAILED = "FAILED"
+    PARTIAL = "PARTIAL"

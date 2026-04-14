@@ -13,6 +13,7 @@ import Box from "@mui/material/Box";
 const NAV_LINKS = [
   { href: "/home", label: "Home" },
   { href: "/brand-library", label: "Library" },
+  { href: "/my-studio", label: "My Studio" },
   { href: "/brand-kit", label: "Brand Kit" },
   { href: "/compliance/rules", label: "Rules" },
   { href: "/compliance/documents", label: "Documents" },

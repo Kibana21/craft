@@ -33,6 +33,7 @@ from app.api.scenes import router as scenes_router
 from app.api.generated_videos import router as generated_videos_router
 from app.api.poster import router as poster_router
 from app.api.poster_ai import router as poster_ai_router
+from app.api.studio import router as studio_router
 
 
 @asynccontextmanager
@@ -61,6 +62,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             _log.warning(
                 "Startup sweep: marked %d orphaned video generation job(s) as FAILED", count
             )
+
+    # Startup: same cleanup for My Studio workflow runs.
+    from app.services.studio_generation_service import (
+        mark_orphans_failed as studio_mark_orphans_failed,
+    )
+    try:
+        flipped = await studio_mark_orphans_failed(async_session)
+        if flipped:
+            _log.warning(
+                "Startup sweep: marked %d orphaned studio run(s) as FAILED", flipped
+            )
+    except Exception as exc:  # noqa: BLE001 — boot must not fail on sweep errors
+        _log.warning("studio orphan sweep skipped: %s", exc)
+
     yield
     # Shutdown
     await engine.dispose()
@@ -112,6 +127,7 @@ app.include_router(scenes_router)
 app.include_router(generated_videos_router)
 app.include_router(poster_router)
 app.include_router(poster_ai_router)
+app.include_router(studio_router)
 
 # Serve uploaded files in development
 uploads_path = Path(__file__).parent.parent / "uploads"
