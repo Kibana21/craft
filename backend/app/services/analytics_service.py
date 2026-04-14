@@ -26,13 +26,20 @@ CACHE_TTL = 300  # 5 minutes
 
 
 async def _get_redis():
+    """Fail-open: returns None if Redis is down so analytics queries fall back
+    to direct DB hits. Logs a warning so the degradation isn't silent."""
     try:
         import redis.asyncio as aioredis
         from app.core.config import settings
         client = aioredis.from_url(settings.REDIS_URL, decode_responses=True, socket_connect_timeout=2)
         await client.ping()
         return client
-    except Exception:
+    except Exception as exc:  # noqa: BLE001 — fail-open with visible log
+        import logging
+        logging.getLogger(__name__).warning(
+            "analytics Redis cache unreachable (queries will hit DB directly): %s",
+            exc, exc_info=False,
+        )
         return None
 
 

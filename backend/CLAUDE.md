@@ -8,19 +8,20 @@ FastAPI async backend for the CRAFT platform. Python 3.12+, SQLAlchemy 2.0 (asyn
 
 ```bash
 # Dev server (from repo root)
-make backend              # uvicorn app.main:app --reload --port 8000 --timeout-keep-alive 75
+make backend              # uvicorn --reload (DEV; saves restart in-flight requests)
+make backend-demo         # uvicorn WITHOUT --reload — use for live demos
 
 # Database
 make migrate              # alembic upgrade head
 make migrate-new MSG="…"  # create new migration
 make seed                 # python -m scripts.seed  (test users + compliance rules)
 
-# Background worker (video generation)
-make worker               # celery -A app.celery_app worker --queues=video -l info
+# Background worker (video / poster / studio generation)
+make worker               # celery -A app.celery_app worker --queues=video,poster,studio,celery
 make flower               # Flower monitor at http://localhost:5555
 
 # Quality
-make test-backend         # pytest
+make test-backend         # pytest (smoke tests in tests/test_smoke.py — health, unauth-guard, login validation)
 make lint                 # ruff + mypy
 ```
 
@@ -31,13 +32,15 @@ make lint                 # ruff + mypy
 ```
 backend/
 ├── app/
-│   ├── main.py                  # FastAPI app, lifespan, CORS, router mounting
-│   ├── celery_app.py            # Celery broker config (Redis; video + poster queues)
+│   ├── main.py                  # FastAPI app, lifespan, CORS, RequestId middleware, slowapi handler, router mounting
+│   ├── celery_app.py            # Celery broker config (Redis; video + poster + studio queues)
 │   ├── core/
-│   │   ├── config.py            # Pydantic Settings (all env vars)
+│   │   ├── config.py            # Pydantic Settings (all env vars; see backend/.env.example)
 │   │   ├── database.py          # Async engine, session factory, get_db()
 │   │   ├── auth.py              # JWT create/decode, get_current_user()
-│   │   └── rbac.py              # require_role(), require_brand_admin, etc.
+│   │   ├── rbac.py              # require_role(), require_brand_admin, require_artifact_access
+│   │   ├── rate_limit.py        # slowapi Limiter; per-user keying (JWT sub) → IP fallback
+│   │   └── request_id.py        # X-Request-ID middleware + ContextVar log filter
 │   ├── models/
 │   │   ├── base.py              # Base, BaseModel (id + timestamps)
 │   │   ├── enums.py             # All enums (single source of truth)
@@ -66,9 +69,13 @@ backend/
 - **JSONB columns** (`artifacts.content`, `projects.brief`, `brand_kit.fonts`, `notifications.data`): validate at the API boundary with Pydantic; never trust raw dict reads.
 - **Enums stored as strings** (`str, enum.Enum`). Matches DB column type.
 - **`model_config = {"from_attributes": True}`** on every Pydantic response schema.
-- **Background tasks**: FastAPI `BackgroundTasks` for lightweight work (compliance scoring, gamification points). Celery for heavy/long-running work (video generation).
-- **Error responses**: `HTTPException(status_code=..., detail="human-readable")`. For machine-parseable errors add `{"detail": "...", "error_code": "MACHINE_READABLE"}`.
-- **Rate limits**: Tightest on cost-heavy AI endpoints (10–15/min/user).
+- **Background tasks**: FastAPI `BackgroundTasks` for lightweight work (compliance scoring, gamification points). Celery for heavy/long-running work (video generation, poster generation, studio generation). Queues: `video`, `poster`, `studio`.
+- **Error responses**: `HTTPException(status_code=..., detail="human-readable")`. For machine-parseable errors add `{"detail": "...", "error_code": "MACHINE_READABLE"}`. The frontend maps `error_code` to friendly copy — pick values from the existing set before inventing new ones (e.g. `TURN_LIMIT_REACHED`, `STUDIO_QUOTA_EXCEEDED`, `AI_CONTENT_POLICY`, `AI_UPSTREAM_ERROR`).
+- **Rate limits**: Tightest on cost-heavy AI endpoints (10–15/min/user). Not yet wired everywhere — tracked in `.claude/plans/reliability-hardening.md` Tier 2.
+- **Never swallow exceptions silently.** Bare `except Exception: pass` is banned (caused a silent gamification failure + silent compliance-scoring failure). Always `logger.warning("...", exc_info=True)` so the failure is at least visible in logs. For Celery tasks, re-raise after logging so the task is marked FAILED in Flower — don't return successfully from a failed run.
+- **Fail-open on Redis** is allowed (quota checks, leaderboard) so an ops outage doesn't block users, but **always log a warning** when falling open — otherwise you have no idea the quota is unenforced.
+- **Ownership checks on every endpoint that returns or mutates user-scoped data.** Reuse `app/core/rbac.py:require_artifact_access` instead of rewriting the three-way BRAND_ADMIN/creator/member check.
+- **Row locking for concurrent writes**: `select(...).with_for_update()` around any endpoint that reads-then-writes the same row (save-as-variant, poster refine, studio workflow step-save). Prevents lost updates when two tabs hit the same resource.
 
 ---
 
@@ -119,6 +126,41 @@ Password hashing: bcrypt via passlib (12 rounds).
 | `require_role(*roles)` | Factory — pass any combination |
 
 Roles (from `UserRole` enum): `BRAND_ADMIN`, `DISTRICT_LEADER`, `AGENCY_LEADER`, `FSC`
+
+---
+
+## Rate limiting (`app/core/rate_limit.py`)
+
+slowapi-backed per-user / per-IP rate limiter. Wired into `main.py` lifespan; storage = Redis when reachable, in-memory fallback (logged warning).
+
+```python
+from app.core.rate_limit import limiter
+from fastapi import Request
+
+@router.post("/api/ai/poster/refine-chat")
+@limiter.limit("10/minute")
+async def refine_chat(
+    request: Request,  # required by slowapi to read the rate-limit key
+    body: RefineChatRequest,
+    ...
+):
+    ...
+```
+
+Key function (`user_rate_limit_key`): decodes the JWT subject from the `Authorization: Bearer …` header → `user:<sub>`. Falls back to `ip:<remote>` for unauth routes (login). Means an office NAT doesn't get a shared budget across legitimate users.
+
+Defaults applied:
+- Cost-heavy AI endpoints — `10/minute/user`: `/api/ai/poster/generate-variants`, `/api/ai/poster/refine-chat`, `/api/studio/workflows/generate`.
+- Auth — `10/minute/IP` for `/api/auth/login` (brute-force throttle), `30/minute/IP` for `/api/auth/refresh` (looser because the frontend 401-interceptor can fan out parallel refreshes when a tab wakes from sleep).
+- 429 responses use `error_code = "RATE_LIMITED"`.
+
+---
+
+## Request-ID correlation (`app/core/request_id.py`)
+
+Every request gets an `X-Request-ID` (UUID4 if not inbound). Bound to a `ContextVar` so log records emitted during the request carry it via the `RequestIdLogFilter` attached at startup. Frontend stores the response header and embeds it in error banners — users can quote the ID during incident triage.
+
+To include it in your formatter: `"%(asctime)s %(levelname)s [%(request_id)s] %(name)s: %(message)s"`.
 
 ---
 
@@ -266,9 +308,11 @@ All routers mounted at `/api/`. Default auth: `Depends(get_current_user)`.
 ### `auth` — `/api/auth`
 | Method + Path | Auth | Notes |
 |---|---|---|
-| POST /login | none | LoginRequest → TokenResponse |
-| POST /refresh | none | RefreshRequest → TokenResponse |
+| POST /login | none | LoginRequest → TokenResponse. **Rate-limited 10/min/IP** (brute-force throttle). |
+| POST /refresh | none | RefreshRequest → TokenResponse. Rotates the refresh token (issues a new one). **Rate-limited 30/min/IP** (looser to accommodate the frontend 401-interceptor's parallel refreshes). |
 | GET /me | any | → UserResponse |
+
+Login + refresh handlers take a `request: Request` arg (required by slowapi to read the rate-limit key) plus a `body: LoginRequest` / `body: RefreshRequest` for the JSON body. Don't use the name `request` for the body — it collides with `Request`.
 
 ### `projects` — `/api/projects`
 | Method + Path | Notes |
@@ -491,7 +535,7 @@ Points: CREATE_ARTIFACT=10, EXPORT=20, REMIX=15, STREAK_BONUS=50, VIDEO_GENERATE
 | `poster_image_service.py` | Phase C orchestrator: 4-variant parallel Gemini calls via `asyncio.gather`, seed-phrase diversity, exponential backoff, retry tokens (HMAC), daily project quota (Redis), reference image downscaling. Plus `inpaint_variant()` (mask validation, red overlay, Gemini image-edit, PIL composite, upload) and `upscale_variant()`. |
 | `poster_generation_worker.py` | Celery task `poster.generate` on the `poster` queue — runs the parallel generation, writes variants back to `artifact.content.generation.variants[]`, mirrors status to Redis for polling. |
 | `poster_refine_service.py` | **Phase D.** `refine_chat_turn()` — full chat-refinement flow: lock artifact → `enforce_turn_limit()` → structural-change pre-check → prompt stacking (original + accepted change history + user message) → Gemini image call → `_summarise_change()` for ≤5-word pill → PosterChatTurn row + JSONB variant update + mirror `turn_count_on_selected`. Also exports `count_turns()` + `enforce_turn_limit()` used by the inpaint endpoint. |
-| `poster_sweep_service.py` | TTL sweeps — 24h on reference images, 30d on chat turns. Call periodically (cron / manual). |
+| `poster_sweep_service.py` | TTL + orphan sweeps — 24h on reference images, 30d on chat turns, orphan-variant chat-turn cleanup, ExportLog stuck-in-`processing` > 24h → `failed`. Reference-image + stuck-export sweeps run on FastAPI lifespan startup; admin endpoints in `api/poster.py` for manual triggers. |
 | `print_pdf_service.py` | Phase E CMYK/300DPI poster export (partial). |
 | `upscale_service.py` | Phase E upscaling helpers (partial). |
 
@@ -575,12 +619,14 @@ make migrate
 Every new endpoint must:
 
 1. Add `Depends(get_current_user)` or the appropriate RBAC dependency.
-2. Verify ownership before returning artifact/project data (`BRAND_ADMIN` bypass allowed).
-3. Validate all inputs via Pydantic — no raw `dict` or `str` from request bodies.
+2. Verify ownership before returning artifact/project data. For artifacts specifically use `require_artifact_access()` from `app/core/rbac.py` (handles BRAND_ADMIN + creator + project-member in one). **My Studio is personal** — no BRAND_ADMIN bypass; only the owner can see their images.
+3. Validate all inputs via Pydantic — no raw `dict` or `str` from request bodies. JSONB columns should be parsed against a Pydantic model at the boundary (see `schemas/poster.py:PosterContent`, `schemas/studio.py:validate_style_inputs`).
 4. Never log PII (email, name, token) or secrets.
 5. Apply rate limit on any endpoint that calls an AI service or performs heavy computation.
 6. Use parameterised SQLAlchemy queries — never format user input into SQL strings.
 7. Soft-delete (`deleted_at`) rather than hard-delete user-facing rows.
+8. **Rollback on exception** for any endpoint that does multiple writes. If the dispatch of a Celery job fails after mutating the artifact's JSONB, `await db.rollback()` so there's no partial-write state.
+9. **Log + re-raise** on Celery task failure so Flower shows FAILED, not COMPLETED. Also persist a user-visible `error_message` on the run row.
 
 ---
 

@@ -1,32 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { useAuth } from "@/components/providers/auth-provider";
+import { ErrorBanner } from "@/components/common/error-banner";
 import { LeaderboardTable } from "@/components/gamification/leaderboard-table";
 import { PointsProgress } from "@/components/gamification/points-progress";
 import { StreakDisplay } from "@/components/gamification/streak-display";
 import { fetchLeaderboard } from "@/lib/api/gamification";
 import { fetchMyGamification } from "@/lib/api/gamification";
-import type { LeaderboardResponse } from "@/types/gamification";
-import type { GamificationStats } from "@/types/gamification";
+import { queryKeys } from "@/lib/query-keys";
 
 export default function LeaderboardPage() {
   const { user } = useAuth();
-  const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
-  const [stats, setStats] = useState<GamificationStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    Promise.all([fetchLeaderboard(), fetchMyGamification()])
-      .then(([lb, s]) => {
-        setLeaderboard(lb);
-        setStats(s);
-      })
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
-  }, []);
+  // Two parallel queries — each retries / errors independently. If `me` fails
+  // but the leaderboard succeeds, the user still sees the leaderboard.
+  const [leaderboardQuery, statsQuery] = useQueries({
+    queries: [
+      { queryKey: queryKeys.leaderboard(), queryFn: fetchLeaderboard },
+      { queryKey: queryKeys.myGamification(), queryFn: fetchMyGamification },
+    ],
+  });
+  const leaderboard = leaderboardQuery.data ?? null;
+  const stats = statsQuery.data ?? null;
+  const isLoading = leaderboardQuery.isPending && statsQuery.isPending;
+  const isAnyRefetchError =
+    (leaderboardQuery.isError && leaderboardQuery.data !== undefined) ||
+    (statsQuery.isError && statsQuery.data !== undefined);
 
   return (
     <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 4 }}>
@@ -95,6 +97,18 @@ export default function LeaderboardPage() {
             currentLevel={stats.current_level}
           />
         </Box>
+      )}
+
+      {isAnyRefetchError && (
+        <ErrorBanner
+          message="Couldn't refresh the leaderboard."
+          isStale
+          isRetrying={leaderboardQuery.isFetching || statsQuery.isFetching}
+          onRetry={() => {
+            leaderboardQuery.refetch();
+            statsQuery.refetch();
+          }}
+        />
       )}
 
       {/* Leaderboard table */}

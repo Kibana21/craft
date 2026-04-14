@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/providers/auth-provider";
+import { ErrorBanner } from "@/components/common/error-banner";
 import { ProjectCard, NewProjectCard } from "@/components/cards/project-card";
 import { fetchProjects } from "@/lib/api/projects";
+import { queryKeys } from "@/lib/query-keys";
 import { isCreatorRole } from "@/lib/auth";
 import type { Project } from "@/types/project";
 import Box from "@mui/material/Box";
@@ -44,21 +47,19 @@ const GRID = {
 export function TeamProjectsTab() {
   const { user } = useAuth();
   const router = useRouter();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<"active" | "archived">("active");
   const [sort, setSort] = useState<Sort>("recent");
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const isCreator = user ? isCreatorRole(user.role) : false;
 
-  useEffect(() => {
-    setIsLoading(true);
-    fetchProjects("team", statusFilter)
-      .then((res) => setProjects(res.items))
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
-  }, [statusFilter]);
+  const projectsQuery = useQuery({
+    queryKey: queryKeys.projects("team", statusFilter),
+    queryFn: () => fetchProjects("team", statusFilter),
+  });
+  const projects: Project[] = projectsQuery.data?.items ?? [];
+  const isLoading = projectsQuery.isPending;
+  const isRefetchError = projectsQuery.isError && projectsQuery.data !== undefined;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -157,6 +158,15 @@ export function TeamProjectsTab() {
           )}
         </Box>
       </Box>
+
+      {isRefetchError && (
+        <ErrorBanner
+          message="Couldn't refresh team projects."
+          isStale={true}
+          isRetrying={projectsQuery.isFetching}
+          onRetry={() => projectsQuery.refetch()}
+        />
+      )}
 
       {/* Loading */}
       {isLoading && (

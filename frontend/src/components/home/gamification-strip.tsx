@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { fetchMyGamification } from "@/lib/api/gamification";
-import type { GamificationStats } from "@/types/gamification";
+import { queryKeys } from "@/lib/query-keys";
 
 export function GamificationStrip() {
-  const [stats, setStats] = useState<GamificationStats | null>(null);
-
-  useEffect(() => {
-    fetchMyGamification()
-      .then(setStats)
-      .catch(() => {});
-  }, []);
+  const { data: stats } = useQuery({
+    queryKey: queryKeys.myGamification(),
+    queryFn: fetchMyGamification,
+    // Soft failure path: the strip just shows 0s if the fetch hasn't
+    // succeeded yet. No ErrorBanner — this is background info, not the
+    // user's primary content.
+  });
 
   const streak = stats?.current_streak ?? 0;
   const points = stats?.total_points ?? 0;

@@ -26,14 +26,24 @@ LEADERBOARD_KEY = "leaderboard:global"
 
 
 async def _get_redis():
-    """Return an async Redis client (None if Redis unavailable)."""
+    """Return an async Redis client (None if Redis unavailable).
+
+    Fail-open by design — gamification doesn't block requests when Redis is
+    down. But ALWAYS log so ops can tell when leaderboard / points sync are
+    silently degraded (was a missed signal in prior incidents).
+    """
     try:
         import redis.asyncio as aioredis
         from app.core.config import settings
         client = aioredis.from_url(settings.REDIS_URL, decode_responses=True, socket_connect_timeout=2)
         await client.ping()
         return client
-    except Exception:
+    except Exception as exc:  # noqa: BLE001 — fail-open with visible log
+        import logging
+        logging.getLogger(__name__).warning(
+            "gamification Redis unreachable (leaderboard sync degraded): %s",
+            exc, exc_info=False,
+        )
         return None
 
 

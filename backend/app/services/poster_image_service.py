@@ -754,13 +754,22 @@ async def inpaint_variant(
 
     # ── Create PosterChatTurn row ──────────────────────────────────────────────
     from app.models.poster import PosterChatTurn
-    from app.services.poster_refine_service import count_turns
+    from app.services.poster_refine_service import TURN_LIMIT, count_turns
 
     turn_id = uuid.uuid4()
     variant_uuid = uuid.UUID(variant_id)
     # Authoritative turn index: count rows in poster_chat_turns, excluding
     # REDIRECT turns which don't consume the 6-turn budget (doc 07).
+    # This count runs INSIDE the artifact lock acquired at the top of this
+    # function — the race the endpoint-level pre-check has (caller A and B
+    # both pass at count=5) is closed here: A holds the lock while B blocks,
+    # so when B's count_turns runs, A's commit has landed and B sees count=6
+    # and bails before inserting a 7th turn.
     current_turn_index = await count_turns(db, artifact_id, variant_uuid)
+    if current_turn_index >= TURN_LIMIT:
+        raise ValueError(
+            "Turn limit reached during concurrent inpaint — save as variant first."
+        )
 
     chat_turn = PosterChatTurn(
         id=turn_id,

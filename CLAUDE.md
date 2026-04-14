@@ -8,7 +8,7 @@ CRAFT is an AI-powered content creation platform for AIA Singapore. Two audience
 
 ## Tech Stack
 
-- **Frontend:** Next.js 16 (App Router) + React 19 + TypeScript + MUI v9 + Recharts
+- **Frontend:** Next.js 16 (App Router) + React 19 + TypeScript + MUI v9 + Recharts + TanStack Query v5 (server state)
 - **Backend:** FastAPI 0.115 (Python 3.12+) + SQLAlchemy 2.0 (async) + Alembic + Pydantic v2
 - **Database:** PostgreSQL with pgvector extension
 - **Auth:** Hardcoded login with JWT (HS256). Access token in `sessionStorage`; refresh token in `localStorage`. See `frontend/src/lib/auth.ts`.
@@ -68,12 +68,13 @@ craft/
 
 ```bash
 # Dev
-make backend                # uvicorn app.main:app --reload --port 8000
+make backend                # uvicorn --reload (DEV — don't use during a live demo, file saves restart the server)
+make backend-demo           # uvicorn WITHOUT --reload — stable for demos
 make frontend               # cd frontend && npm run dev
-docker-compose up -d        # Start Redis
+docker-compose up -d        # Start Redis + Postgres
 
-# Video worker (required for video generation)
-make worker                 # celery -A app.celery_app worker --queues=video -l info
+# Workers (one process listens on all queues — video, poster, studio)
+make worker                 # celery -A app.celery_app worker --queues=video,poster,studio,celery
 make flower                 # Celery Flower at http://localhost:5555
 
 # Database
@@ -81,12 +82,17 @@ make migrate                # alembic upgrade head
 make migrate-new MSG="..."  # Create new migration
 make seed                   # python -m scripts.seed (test users + data)
 
+# Demo hygiene
+make clean-uploads          # rm -rf backend/uploads/poster-variants/* studio/*
+
 # Quality
 make test                   # pytest + frontend typecheck
 make test-backend           # pytest only
 make test-frontend          # cd frontend && npm run typecheck
 make lint                   # ruff + mypy + eslint
 ```
+
+**Demo day**: read `docs/PRE_DEMO_CHECKLIST.md` first. The big rule: use `make backend-demo`, not `make backend`, and don't save `.py` files during the presentation. CI runs on every PR via `.github/workflows/ci.yml` (frontend tsc + build, backend import smoke + pytest).
 
 ## Key Conventions
 
@@ -105,9 +111,12 @@ make lint                   # ruff + mypy + eslint
 - All pages/components use `"use client"`. No server components, no RSC data-fetching.
 - MUI `sx` prop only — no Tailwind utility classes, no CSS modules for new code.
 - No form library — use `useState` per field.
-- No Redux / Zustand — React Context for global state (`AuthProvider`, `VideoWizardContext`).
+- No Redux / Zustand — React Context for global state (`AuthProvider`, `VideoWizardContext`, `PosterWizardContext`, `StudioWorkflowContext`). **Server state lives in TanStack Query** — use `useQuery` / `useMutation` for anything that comes from or goes to the backend; don't re-wrap in `useState` + `useEffect`.
+- **Never silently swallow fetch errors.** `useQuery`'s `isError` + `data` pair drives a stale-while-revalidate `<ErrorBanner />`. The `.catch(() => [])` pattern is banned in new code — it caused a production demo to show empty lists on transient backend blips.
 - Path alias `@/` maps to `src/`.
-- Access token stored in `sessionStorage`; refresh token in `localStorage`.
+- Both tokens in `localStorage` so a second tab opened during an active session inherits the login. `auth-provider.tsx` listens to `storage` events so logout in one tab propagates to all tabs.
+- **JWT auto-refresh**: `api-client.ts` intercepts 401s, hits `/api/auth/refresh` once, replays the original request. Single-flight de-duplication so parallel 401s share one refresh round-trip. Only redirect to `/login` if refresh itself fails.
+- **Root error boundary** wraps the app in `app/layout.tsx` — uncaught render errors show a "Try again / Reload" UI, never a white screen.
 
 ## Design Tokens (frontend)
 
@@ -152,7 +161,7 @@ Cards: `border: "1px solid #E8EAED"`, `borderRadius: "16px"`, white background.
 
 ## API Surface
 
-22 routers, 100+ endpoints, all under `/api/`:
+22 routers, ~120 endpoints, all under `/api/`. Cost-heavy AI endpoints + auth are rate-limited via slowapi (per-user keying via JWT subject; per-IP fallback for unauth routes). Every response includes `X-Request-ID` for log correlation.
 
 | Router | Key Endpoints |
 |---|---|

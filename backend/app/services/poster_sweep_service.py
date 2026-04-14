@@ -1,6 +1,6 @@
-"""Retention sweep jobs for the Poster Wizard.
+"""Retention sweep jobs for the Poster Wizard + cross-feature orphan sweeps.
 
-Two sweeps per doc 01 §Retention Sweeps:
+Sweeps:
 
   sweep_expired_reference_images(db)
       Hourly. Deletes PosterReferenceImage rows where expires_at < now()
@@ -9,17 +9,30 @@ Two sweeps per doc 01 §Retention Sweeps:
   sweep_old_chat_turns(db)
       Daily. Soft-deletes PosterChatTurn rows older than 30 days.
 
-Both functions return the count of rows affected and are designed to be called
-from the admin API endpoints in api/poster.py (triggered by an external cron).
-They are idempotent — safe to call multiple times.
+  sweep_orphan_chat_turns(db)
+      Daily. Soft-deletes PosterChatTurn rows whose variant_id no longer
+      appears in artifact.content.generation.variants[] — handles users
+      manually deleting variants from JSONB without cascading to turns
+      (the variant_id column is a JSONB reference, not a real FK).
+
+  sweep_stuck_exports(db)
+      Hourly. Flips ExportLog rows stuck in 'processing' for > 24h to
+      'failed'. Catches the case where the BackgroundTask crashed mid-render
+      and never updated the row.
+
+All functions return the count of rows affected and are designed to be called
+from the admin API endpoints in api/poster.py (triggered by an external cron)
+or from the FastAPI lifespan startup hook for orphan-recovery on boot.
+Idempotent — safe to call multiple times.
 """
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.export_log import ExportLog
 from app.models.poster import PosterChatTurn, PosterReferenceImage
 
 logger = logging.getLogger(__name__)
@@ -92,6 +105,76 @@ async def sweep_old_chat_turns(db: AsyncSession) -> int:
 
     if affected:
         logger.info("poster_sweep: soft-deleted %d old chat turn(s)", affected)
+    return affected
+
+
+async def sweep_orphan_chat_turns(db: AsyncSession) -> int:
+    """Soft-delete PosterChatTurn rows whose variant_id is no longer present in
+    the parent artifact's generation.variants[] JSONB array.
+
+    Why this exists: `PosterChatTurn.variant_id` is documented as a "JSONB
+    reference, not FK" — so when a user (or admin) prunes variants from the
+    JSONB, the associated turns become orphans that distort turn-count
+    queries. This sweep keeps `count_turns()` honest.
+
+    Returns the number of rows soft-deleted. Idempotent.
+    """
+    from app.models.artifact import Artifact
+
+    # Pull all undeleted turns + their parent artifact in one query — small
+    # tables for now, fine to materialise. Optimise later if it grows.
+    stmt = (
+        select(PosterChatTurn, Artifact.content)
+        .join(Artifact, Artifact.id == PosterChatTurn.artifact_id)
+        .where(PosterChatTurn.deleted_at.is_(None))
+    )
+    rows = (await db.execute(stmt)).all()
+
+    now = datetime.now(timezone.utc)
+    orphan_ids: list = []
+    for turn, content in rows:
+        variants = ((content or {}).get("generation") or {}).get("variants") or []
+        live_ids = {v.get("id") for v in variants if isinstance(v, dict)}
+        if str(turn.variant_id) not in live_ids:
+            orphan_ids.append(turn.id)
+
+    if not orphan_ids:
+        return 0
+
+    await db.execute(
+        update(PosterChatTurn)
+        .where(PosterChatTurn.id.in_(orphan_ids))
+        .values(deleted_at=now)
+    )
+    logger.info("poster_sweep: soft-deleted %d orphan chat turn(s)", len(orphan_ids))
+    return len(orphan_ids)
+
+
+async def sweep_stuck_exports(db: AsyncSession, *, age_hours: int = 24) -> int:
+    """Flip ExportLog rows stuck in 'processing' > age_hours to 'failed'.
+
+    BackgroundTasks.add_task can swallow exceptions silently, leaving the row
+    stuck 'processing' forever. The user polls and sees no progress. This
+    sweep gives them a definitive failure they can retry.
+
+    Returns the number of rows updated.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=age_hours)
+    result = await db.execute(
+        update(ExportLog)
+        .where(
+            ExportLog.status == "processing",
+            ExportLog.updated_at < cutoff,
+        )
+        .values(status="failed")
+        .returning(ExportLog.id)
+    )
+    affected = len(result.all())
+    if affected:
+        logger.warning(
+            "poster_sweep: marked %d stuck export(s) (>%dh in 'processing') as 'failed'",
+            affected, age_hours,
+        )
     return affected
 
 

@@ -146,6 +146,11 @@ async def _run_generation(
     except Exception as exc:
         logger.exception("Poster generation job %s failed: %s", job_id, exc)
         await _set_status("FAILED", {"partial_failure": True, "error": str(exc)})
+        # Re-raise so Celery marks the task FAILED in Flower instead of
+        # COMPLETED. Without this, ops can't distinguish "task ran fine, all
+        # variants happened to fail" from "task crashed mid-execution."
+        # The Redis status key is already updated for the polling client.
+        raise
     finally:
         await r.aclose()
         await engine.dispose()

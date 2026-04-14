@@ -58,7 +58,8 @@ frontend/src/
 ├── components/
 │   ├── nav/                        # CreatorNav, AgentNav
 │   ├── home/                       # CreatorHome, AgentHome, tab components
-│   ├── providers/                  # AuthProvider, MuiThemeProvider
+│   ├── providers/                  # AuthProvider, MuiThemeProvider, QueryProvider (TanStack)
+│   ├── common/                     # ErrorBanner (stale-while-revalidate), ErrorBoundary (root crash guard)
 │   ├── projects/wizard/            # WizardProgress (shared)
 │   ├── artifacts/create/           # WhatsAppCreator, older inline creators
 │   ├── video/                      # All video wizard components
@@ -69,10 +70,13 @@ frontend/src/
 │   ├── compliance/                 # ScoreBreakdown
 │   └── cards/                      # ProjectCard, etc.
 ├── hooks/
-│   └── useVideoPolling.ts          # 5s polling while video renders
+│   ├── useVideoPolling.ts          # 5s polling while video renders
+│   └── useStudioRunPolling.ts      # 2s polling for studio workflow runs (pauses on tab hide)
 ├── lib/
 │   ├── api-client.ts               # HTTP client class (singleton)
 │   ├── auth.ts                     # Token storage + JWT decode utilities
+│   ├── query-client.ts             # TanStack Query — makeQueryClient() with retry/backoff defaults
+│   ├── query-keys.ts               # Typed query-key factory (projects, studio, brand-library, …)
 │   ├── theme.ts                    # MUI theme (all design tokens)
 │   └── api/                        # One module per backend domain
 └── types/                          # TypeScript interfaces (one file per domain)
@@ -82,10 +86,11 @@ frontend/src/
 
 ## Key Conventions
 
-- **`"use client"` on every page and component.** All data-fetching is client-side via `useEffect`. No server components, no RSC data-fetching patterns.
+- **`"use client"` on every page and component.** No server components, no RSC data-fetching patterns.
+- **Server state lives in TanStack Query (`@tanstack/react-query@5`).** Any fetch that hits the backend goes through `useQuery` / `useMutation` — never `useEffect` + `useState` + `.catch(() => [])`. That pattern caused a production demo to render "empty projects" on transient backend blips and is banned for new code. See §Server state & errors below.
 - **MUI `sx` prop only.** No Tailwind utility classes for new code. No CSS modules. Tailwind is present but unused for component styling.
 - **No form library.** Use `useState` per field. Validate in `handleSubmit` / Continue guard.
-- **No Redux / Zustand.** Global state via React Context (`AuthProvider`, `VideoWizardContext`). Local UI state via `useState`.
+- **No Redux / Zustand.** Local UI state (form fields, selection sets, modal open/close, wizard steps) via `useState`. Cross-tree state via React Context (`AuthProvider`, `VideoWizardContext`, `PosterWizardContext`, `StudioWorkflowContext`). Everything server-side → TanStack Query cache.
 - **Every page route** under `(authenticated)/` gets the auth guard automatically from the group layout.
 - **Path alias `@/`** maps to `src/`. Use `@/lib/...`, `@/types/...`, etc. everywhere.
 - **API base URL**: in dev, set `NEXT_PUBLIC_API_URL=http://localhost:8000` in `frontend/.env.local` so the browser calls the backend directly. The Next.js `rewrites()` proxy still exists in `next.config.ts` as a fallback, but going direct avoids a Node undici ↔ uvicorn HTTP keep-alive race that produced random `socket hang up / ECONNRESET` errors. CORS for `localhost:3000` is allow-listed in the backend (`backend/app/main.py`).
@@ -121,20 +126,24 @@ frontend/src/
 
 | Function | Notes |
 |---|---|
-| `getAccessToken()` | Reads from `sessionStorage` |
+| `getAccessToken()` | Reads from `localStorage`. Auto-promotes any leftover `sessionStorage` token (legacy migration). |
 | `getRefreshToken()` | Reads from `localStorage` |
-| `setTokens(access, refresh)` | Writes both stores |
-| `clearTokens()` | Clears both stores |
+| `setTokens(access, refresh)` | Writes both to `localStorage` |
+| `clearTokens()` | Clears both stores (incl. legacy sessionStorage entries) |
 | `isAuthenticated()` | Checks for access token presence |
 | `getUserFromToken()` | Decodes JWT payload, returns user or `null` if expired |
 | `isCreatorRole(role)` | `true` for `brand_admin`, `district_leader`, `agency_leader` |
 | `isAgentRole(role)` | `true` for `fsc` |
+| `TOKEN_STORAGE_KEYS` | Stable export of the two storage key names — used by the auth-provider's cross-tab `storage` listener. |
+
+**Both tokens live in `localStorage`** so opening the app in a second tab inherits the active session. Previous design (access token in sessionStorage) broke multi-tab demos. The XSS exposure is the same as the old sessionStorage layout.
 
 **AuthProvider** (`src/components/providers/auth-provider.tsx`):
-- On mount: reads token → fetches `/api/auth/me` → sets user in context
-- `login(email, password)` → POST `/api/auth/login` → stores tokens → redirects `/home`
-- `logout()` → clears tokens → redirects `/login`
-- 401 from any API call → `ApiClient` auto-redirects to `/login`
+- On mount: reads token → calls `fetchMeWithRetry()` (retries `/api/auth/me` up to 3× with exponential backoff; only 401 clears tokens) → sets user in context.
+- `login(email, password)` → POST `/api/auth/login` → stores tokens → redirects `/home`.
+- `logout()` → clears tokens → **`queryClient.clear()`** (wipes cached server state so user B doesn't briefly see user A's projects/artifacts) → redirects `/login`.
+- **Cross-tab sync**: listens to `window.storage` events on `TOKEN_STORAGE_KEYS.access`. Tab A's logout removes the key → tab B sees the event → mirrors the logout. Tab A's login sets the key → tab B refetches `/me` so its UI updates without a manual refresh.
+- 401 from any API call goes through the **ApiClient's auto-refresh interceptor** (see HTTP Client below). Only when the refresh itself fails does the user get redirected to `/login`. Network blips no longer log users out.
 
 **Nav selection**: `(authenticated)/layout.tsx` checks `isCreatorRole(user.role)` → renders `CreatorNav` or `AgentNav`.
 
@@ -159,7 +168,144 @@ const uploaded = await apiClient.upload<ResponseType>("/api/path", formData);
 - Injects `Authorization: Bearer <token>` automatically.
 - `204 No Content` responses return `undefined`.
 - Non-2xx throws `{ detail: string, status: number }`.
-- 401 → immediate redirect to `/login`.
+- **401 auto-refresh**: on a 401, ApiClient calls `POST /api/auth/refresh` once, replays the original request with the new access token, and only redirects to `/login` if the refresh itself fails. Single-flight de-dup via a module-level `refreshInflight` promise — multiple parallel 401s share one refresh round-trip instead of stampeding the endpoint. Same logic in the upload helper.
+- Every successful response includes an `X-Request-ID` header — useful for incident triage.
+
+These raw calls are wrapped by TanStack Query hooks at call sites; don't call them directly from components except for one-shot mutations invoked outside a React lifecycle.
+
+---
+
+## Server state & errors (TanStack Query)
+
+**Why**: the old pattern (`useEffect` + `useState` + `.catch(() => [])`) converted every transient backend error into a silent empty state. In a live demo, projects/artifacts appeared to vanish whenever uvicorn `--reload` restarted mid-request or a network blip hit. TanStack Query fixes this structurally — failed refetches keep showing the last-good data, retry on an exponential curve, and let the UI surface a retry banner instead of blank content.
+
+### Setup
+
+```
+src/lib/query-client.ts       # makeQueryClient() — shared defaults
+src/lib/query-keys.ts         # typed key factory; add new keys here, don't hard-code
+src/components/providers/query-provider.tsx  # QueryClientProvider wrapper, lazy-init per mount
+src/components/common/error-banner.tsx       # amber stale-while-revalidate banner
+```
+
+Wired into `app/layout.tsx` as `<QueryProvider><AuthProvider>…` — available app-wide.
+
+### Default options (in `makeQueryClient`)
+
+| Option | Value | Why |
+|---|---|---|
+| `staleTime` | 30 s | Re-open triggers refetch; shorter than default because CRAFT data changes fast (AI gen, teammate edits) |
+| `gcTime` | 5 min | Returning to a page renders instantly from cache, then refetches in background |
+| `retry` | Skip 4xx, retry 5xx/network ×2 | 4xx is a client bug (don't burn quota); 5xx/network is usually transient |
+| `retryDelay` | Exponential, capped at 8 s | 1s → 2s → 4s → 8s |
+| `refetchOnWindowFocus` | `true` | Coming back to a tab shows fresh data without manual refresh |
+| `refetchOnReconnect` | `true` | VPN hiccup recovers automatically |
+| Mutations `retry` | 1 | One retry covers a cold-start backend blip; more confuses users |
+
+### Standard list-query pattern
+
+```tsx
+"use client";
+import { useQuery } from "@tanstack/react-query";
+import { ErrorBanner } from "@/components/common/error-banner";
+import { fetchProjectArtifacts } from "@/lib/api/artifacts";
+import { queryKeys } from "@/lib/query-keys";
+
+export default function SomePage() {
+  const query = useQuery({
+    queryKey: queryKeys.projectArtifacts(projectId),
+    queryFn: () => fetchProjectArtifacts(projectId),
+  });
+
+  const items = query.data?.items ?? [];
+  const isInitialLoad = query.isPending;
+  const isRefetchError = query.isError && query.data !== undefined;
+
+  return (
+    <>
+      {isRefetchError && (
+        <ErrorBanner
+          message="Couldn't refresh — showing the last snapshot."
+          isStale
+          isRetrying={query.isFetching}
+          onRetry={() => query.refetch()}
+        />
+      )}
+      {isInitialLoad ? <Skeletons /> : items.length === 0 ? <Empty /> : <List items={items} />}
+    </>
+  );
+}
+```
+
+Key rules:
+- `isPending` = true first-ever fetch, no cached data — show the skeleton.
+- `isError && data !== undefined` = refetch failed but we have previous data — show `<ErrorBanner />` above, keep rendering the old list below.
+- `isError && !data` = first fetch failed — render an error state (not an empty list). Decide per-page: retry button, redirect, etc.
+- Never render empty-state UI just because `data` is the initial `[]` — check `isPending` first.
+
+### Standard mutation pattern
+
+```tsx
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { deleteArtifact } from "@/lib/api/artifacts";
+import { queryKeys } from "@/lib/query-keys";
+
+const queryClient = useQueryClient();
+
+const deleteMutation = useMutation({
+  mutationFn: (artifactId: string) => deleteArtifact(artifactId),
+  onSuccess: () => {
+    // Tell the list to refetch — TanStack will find the matching queryKey and refetch just that.
+    queryClient.invalidateQueries({ queryKey: queryKeys.projectArtifacts(projectId) });
+  },
+});
+
+// In the UI
+<Button
+  disabled={deleteMutation.isPending}
+  onClick={() => deleteMutation.mutate(artifact.id)}
+>
+  {deleteMutation.isPending ? "Deleting…" : "Delete"}
+</Button>
+```
+
+- `invalidateQueries` prefix-matches, so `["project", id]` invalidates every nested key (`projectDetail`, `projectArtifacts`, `projectMembers`, `projectSuggestions`). Use `invalidationGroups.projectTree(id)` from `query-keys.ts` for that.
+- `mutation.isPending` replaces manual `isDeleting`/`isSaving` state.
+- Don't manually call `setItems(prev => prev.filter(...))` after a delete — invalidate and let the refetch replace the list. This keeps UI ↔ server in sync and works across tabs.
+
+### Query-key factory (`src/lib/query-keys.ts`)
+
+Always use the factory instead of hard-coding `["projects", ...]` arrays at call sites. Centralises:
+- Type-safety (factory signatures document what a key takes).
+- Invalidation correctness (mutations can reference the same helpers).
+- Dev-tools readability.
+
+Add new keys here, never inline. Example:
+```ts
+export const queryKeys = {
+  projects: (type?: string, status?: string) => ["projects", { type, status }] as const,
+  projectArtifacts: (projectId: string) => ["project", projectId, "artifacts"] as const,
+  studioImages: (filters?: Record<string, unknown>) => ["studio", "images", filters ?? {}] as const,
+  // ...
+};
+```
+
+### Parallel queries on one page
+
+Use `useQueries` (not multiple `useQuery`) when a page needs several independent loads — each retries/caches independently, so one failure doesn't blank the others. `projects/[id]/page.tsx` uses this for `projectDetail` + `suggestions` + `artifacts` + `members`.
+
+### Polling
+
+Don't build ad-hoc `setInterval` loops for server state. Use `useQuery({ ..., refetchInterval: 2000 })` and disable it when the run is terminal. Existing custom polling hooks (`useVideoPolling`, `useStudioRunPolling`, `use-variant-generation`) predate the migration and are tracked for conversion in `.claude/plans/reliability-hardening.md` Tier 1.
+
+### Auth provider interaction
+
+- `auth-provider.tsx:fetchMeWithRetry` retries `/auth/me` up to 3× with exponential backoff — a network blip no longer logs the user out. Only an explicit 401 clears tokens.
+- `logout()` calls `queryClient.clear()` to wipe cached server state so user B on the same browser never sees user A's projects/artifacts briefly.
+
+### What NOT to migrate
+
+Wizard flows (video, poster, studio workflow step pages) are **sequential state machines** where TanStack Query adds little value and nontrivial risk. They stay on `useState` / context. Only list / detail / mutation surfaces benefit.
 
 ---
 
@@ -460,14 +606,73 @@ const { artifact, videoSession, refreshSession } = useVideoWizard();
 Provides artifact + session to all steps. Call `refreshSession()` after mutating the session.
 
 ### `useVideoPolling` — `src/hooks/useVideoPolling.ts`
-Polls `listGeneratedVideos(sessionId)` every 5s while `any_active` is true. Pauses when the tab is hidden. Returns `{ videos, isPolling }`.
+Polls `listGeneratedVideos(sessionId)` every 5s while `any_active` is true. Pauses when the tab is hidden. Returns `{ videos, setVideos, anyActive, isLoading, error, refresh }`. The `error` field is the latest poll error message (cleared on the next successful tick) — callers should render it in an `<ErrorBanner />` when the user is waiting on an active job. (Pre-TanStack hook; full conversion to `useQuery({ refetchInterval })` is tracked in reliability plan Tier 1.)
+
+### `useStudioRunPolling` — `src/hooks/useStudioRunPolling.ts`
+Polls `getRunStatus(runId)` every 2 s while status is QUEUED/RUNNING, stops on DONE/FAILED/PARTIAL, pauses on tab hide. Returns `{ status, error, isActive, stop }`.
+
+### `<ErrorBoundary />` — `src/components/common/error-boundary.tsx`
+Hand-rolled minimal class component (no extra dep). Wraps children in `app/layout.tsx` between the `MuiThemeProvider` and the `QueryProvider`. Catches uncaught render-time throws and renders a friendly "Try again / Reload page" fallback instead of a blank screen.
+
+- "Try again" bumps an internal `key`, re-mounting the wrapped tree (clears the bad state).
+- "Reload page" forces a hard reload (clears the bundle).
+- Dev builds also render the error message + stack inline for fast triage; production hides it.
+- Future: hook `componentDidCatch` into Sentry once installed (Tier 3 of the reliability plan).
+
+### `<ErrorBanner />` — `src/components/common/error-banner.tsx`
+```tsx
+<ErrorBanner
+  message="Couldn't refresh — showing the last snapshot."
+  isStale
+  isRetrying={query.isFetching}
+  onRetry={() => query.refetch()}
+  compact   // optional — tighter variant for small cards
+/>
+```
+Amber stale-while-revalidate banner. Use whenever a `useQuery` surface has cached data AND the latest refetch errored. Non-blocking; does not hide the underlying list.
+
+### `QueryProvider` — `src/components/providers/query-provider.tsx`
+Wraps `AuthProvider` at the root; lazy-inits one `QueryClient` per mount (prevents cross-user cache bleed in SSR-shared servers). Do not create additional `QueryClient`s elsewhere.
 
 ---
 
 ## Standard Page Patterns
 
-### Data-fetching page
+### Data-fetching page — CURRENT (TanStack Query)
 ```tsx
+"use client";
+import { useQuery } from "@tanstack/react-query";
+import { ErrorBanner } from "@/components/common/error-banner";
+import { fetchSomething } from "@/lib/api/…";
+import { queryKeys } from "@/lib/query-keys";
+
+export default function SomePage() {
+  const { id } = useParams<{ id: string }>();
+  const query = useQuery({
+    queryKey: queryKeys.something(id),
+    queryFn: () => fetchSomething(id),
+  });
+
+  if (query.isPending) return <CircularProgress />;
+  if (query.isError && !query.data) return null; // or a dedicated error page
+
+  return (
+    <Box>
+      {query.isError && query.data && (
+        <ErrorBanner
+          isStale isRetrying={query.isFetching}
+          onRetry={() => query.refetch()}
+        />
+      )}
+      {/* render query.data */}
+    </Box>
+  );
+}
+```
+
+### Legacy data-fetching pattern (PRE-MIGRATION — DO NOT USE FOR NEW CODE)
+```tsx
+// ❌ Old pattern. Silently empties on transient failure. Migrate to useQuery.
 "use client";
 export default function SomePage() {
   const { id } = useParams<{ id: string }>();

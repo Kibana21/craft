@@ -194,6 +194,11 @@ async def refine_chat_turn(
     variant = dict(variants[idx])
 
     # ── 2. Enforce the 6-turn hard cap (undo turns are free) ──────────────────
+    # Race-safe: the artifact row is locked above with `with_for_update()`,
+    # which serializes concurrent refine_chat_turn calls for the SAME artifact.
+    # `count_turns` runs against `poster_chat_turns` inside the same transaction,
+    # so a second concurrent caller blocks until our commit, then reads the
+    # updated count. Two tabs cannot both pass the 6-turn cap.
     if not is_undo:
         current_turn_index = await enforce_turn_limit(db, artifact_id, variant_id)
     else:

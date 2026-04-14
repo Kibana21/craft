@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/providers/auth-provider";
+import { ErrorBanner } from "@/components/common/error-banner";
 import { ProjectPurposeBadge } from "@/components/projects/project-purpose-badge";
 import { fetchProjectDetail, setProjectStatus, deleteProject, type ProjectDetail } from "@/lib/api/projects";
 import { fetchSuggestions } from "@/lib/api/suggestions";
 import { fetchProjectArtifacts, deleteArtifact } from "@/lib/api/artifacts";
 import { fetchMembers, type ProjectMember } from "@/lib/api/members";
+import { invalidationGroups, queryKeys } from "@/lib/query-keys";
 import type { ArtifactSuggestion } from "@/types/suggestion";
 import type { Artifact } from "@/types/artifact";
 import { isCreatorRole } from "@/lib/auth";
@@ -101,39 +104,103 @@ export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [project, setProject]         = useState<ProjectDetail | null>(null);
-  const [suggestions, setSuggestions] = useState<ArtifactSuggestion[]>([]);
-  const [artifacts, setArtifacts]     = useState<Artifact[]>([]);
-  const [members, setMembers]         = useState<ProjectMember[]>([]);
-  const [isLoading, setIsLoading]     = useState(true);
   const [activeTab, setActiveTab]     = useState<TabId>("brief");
   const [view, setView]               = useState<"grid" | "list">("grid");
   const [sort, setSort]               = useState<"recent" | "name" | "oldest">("recent");
   const [collapsed, setCollapsed]     = useState<Record<string, boolean>>({});
   const [showDelete, setShowDelete]   = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
-  const [isActing, setIsActing]       = useState(false);
   const [artifactToDelete, setArtifactToDelete] = useState<Artifact | null>(null);
-  const [isDeletingArtifact, setIsDeletingArtifact] = useState(false);
 
-  useEffect(() => {
-    if (!id) return;
-    Promise.all([
-      fetchProjectDetail(id),
-      fetchSuggestions(id).catch(() => []),
-      fetchProjectArtifacts(id).catch(() => ({ items: [], total: 0, page: 1, per_page: 20 })),
-      fetchMembers(id).catch(() => []),
-    ])
-      .then(([proj, sugs, arts, mems]) => {
-        setProject(proj);
-        setSuggestions(sugs);
-        setArtifacts(arts.items);
-        setMembers(mems);
-      })
-      .catch(() => router.push("/home"))
-      .finally(() => setIsLoading(false));
-  }, [id, router]);
+  // Four parallel queries. Each caches, retries, and errors independently —
+  // so the "artifacts disappeared" symptom is structurally impossible: even
+  // if the artifacts fetch errors, the detail / members / suggestions queries
+  // keep their cached data and the artifacts list shows its previous snapshot
+  // with an ErrorBanner on top.
+  const [projectQuery, suggestionsQuery, artifactsQuery, membersQuery] = useQueries({
+    queries: [
+      {
+        queryKey: queryKeys.projectDetail(id),
+        queryFn: () => fetchProjectDetail(id),
+        enabled: !!id,
+      },
+      {
+        queryKey: queryKeys.projectSuggestions(id),
+        queryFn: () => fetchSuggestions(id),
+        enabled: !!id,
+      },
+      {
+        queryKey: queryKeys.projectArtifacts(id),
+        queryFn: () => fetchProjectArtifacts(id),
+        enabled: !!id,
+      },
+      {
+        queryKey: queryKeys.projectMembers(id),
+        queryFn: () => fetchMembers(id),
+        enabled: !!id,
+      },
+    ],
+  });
+
+  const project: ProjectDetail | null = projectQuery.data ?? null;
+  const suggestions: ArtifactSuggestion[] = suggestionsQuery.data ?? [];
+  const artifacts: Artifact[] = artifactsQuery.data?.items ?? [];
+  const members: ProjectMember[] = membersQuery.data ?? [];
+
+  const isLoading = projectQuery.isPending;
+  // Only treat as a fatal error if the project itself can't load AND we have
+  // no cached project data to show. Missing sub-lists fall through to the
+  // stale-while-revalidate banner below.
+  if (projectQuery.isError && !project) {
+    // Navigate home only on a true 404 / permissions error with no cached
+    // fallback, not on any transient failure.
+    const err = projectQuery.error as { status?: number } | undefined;
+    if (err?.status === 404 || err?.status === 403) {
+      router.push("/home");
+    }
+  }
+
+  const artifactsRefetchError =
+    artifactsQuery.isError && artifactsQuery.data !== undefined;
+  const anySubListRefetchError =
+    artifactsRefetchError ||
+    (suggestionsQuery.isError && suggestionsQuery.data !== undefined) ||
+    (membersQuery.isError && membersQuery.data !== undefined);
+
+  // ── Mutations ───────────────────────────────────────────────────────────────
+
+  const statusMutation = useMutation({
+    mutationFn: (newStatus: "active" | "archived") => setProjectStatus(id, newStatus),
+    onSuccess: (updated, newStatus) => {
+      if (newStatus === "archived") {
+        queryClient.invalidateQueries({ queryKey: invalidationGroups.allProjects });
+        router.push("/home");
+      } else {
+        queryClient.setQueryData(queryKeys.projectDetail(id), updated);
+      }
+    },
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: () => deleteProject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: invalidationGroups.allProjects });
+      router.push("/home");
+    },
+  });
+
+  const deleteArtifactMutation = useMutation({
+    mutationFn: (artifactId: string) => deleteArtifact(artifactId),
+    onSuccess: () => {
+      setArtifactToDelete(null);
+      queryClient.invalidateQueries({ queryKey: queryKeys.projectArtifacts(id) });
+    },
+  });
+
+  const isActing = statusMutation.isPending || deleteProjectMutation.isPending;
+  const isDeletingArtifact = deleteArtifactMutation.isPending;
 
   const sortedArtifacts = useMemo(() => {
     return [...artifacts].sort((a, b) => {
@@ -184,38 +251,39 @@ export default function ProjectDetailPage() {
 
   const tabIndex = TABS.findIndex((t) => t.id === activeTab);
 
-  const handleToggleStatus = async () => {
-    setIsActing(true);
-    try {
-      const newStatus = project.status === "active" ? "archived" : "active";
-      const updated = await setProjectStatus(project.id, newStatus);
-      if (newStatus === "archived") router.push("/home");
-      else { setProject(updated); setIsActing(false); }
-    } catch { setIsActing(false); }
+  const handleToggleStatus = () => {
+    const newStatus = project.status === "active" ? "archived" : "active";
+    statusMutation.mutate(newStatus);
   };
 
-  const handleDelete = async () => {
-    setIsActing(true);
-    try {
-      await deleteProject(project.id);
-      router.push("/home");
-    } catch { setIsActing(false); }
+  const handleDelete = () => {
+    deleteProjectMutation.mutate();
   };
 
-  const handleDeleteArtifact = async () => {
+  const handleDeleteArtifact = () => {
     if (!artifactToDelete) return;
-    setIsDeletingArtifact(true);
-    try {
-      await deleteArtifact(artifactToDelete.id);
-      setArtifacts((prev) => prev.filter((a) => a.id !== artifactToDelete.id));
-      setArtifactToDelete(null);
-    } finally {
-      setIsDeletingArtifact(false);
-    }
+    deleteArtifactMutation.mutate(artifactToDelete.id);
   };
 
   return (
     <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 3 }}>
+
+      {anySubListRefetchError && (
+        <ErrorBanner
+          message={
+            artifactsRefetchError
+              ? "Couldn't refresh artifacts — showing your last snapshot."
+              : "Couldn't refresh some project data — showing your last snapshot."
+          }
+          isStale={true}
+          isRetrying={artifactsQuery.isFetching}
+          onRetry={() => {
+            artifactsQuery.refetch();
+            suggestionsQuery.refetch();
+            membersQuery.refetch();
+          }}
+        />
+      )}
 
       {/* ── Header row 1: back + badges ── */}
       <Box sx={{ mb: 2, display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>

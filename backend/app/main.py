@@ -76,6 +76,26 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as exc:  # noqa: BLE001 — boot must not fail on sweep errors
         _log.warning("studio orphan sweep skipped: %s", exc)
 
+    # Startup: poster reference image TTL + stuck export sweeps. Both wrapped
+    # individually so a failure in one doesn't skip the others.
+    from app.services.poster_sweep_service import (
+        sweep_expired_reference_images,
+        sweep_stuck_exports,
+    )
+    async with async_session() as _sweep_db:
+        for name, fn in (
+            ("expired reference images", sweep_expired_reference_images),
+            ("stuck exports", sweep_stuck_exports),
+        ):
+            try:
+                count = await fn(_sweep_db)
+                await _sweep_db.commit()
+                if count:
+                    _log.warning("Startup sweep: %s — affected %d row(s)", name, count)
+            except Exception as exc:  # noqa: BLE001 — boot must not fail
+                _log.warning("Startup sweep '%s' skipped: %s", name, exc)
+                await _sweep_db.rollback()
+
     yield
     # Shutdown
     await engine.dispose()
@@ -85,6 +105,21 @@ app = FastAPI(
     title=settings.APP_NAME,
     lifespan=lifespan,
 )
+
+# Rate limiting (slowapi). Storage = Redis when reachable, in-memory fallback.
+# Endpoints opt in via @limiter.limit(...). See app/core/rate_limit.py.
+from app.core.rate_limit import limiter, rate_limit_exceeded_handler  # noqa: E402
+from slowapi.errors import RateLimitExceeded  # noqa: E402
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
+# Request-ID correlation: middleware adds X-Request-ID to every response and
+# binds it into a ContextVar so log records inside the request carry it.
+from app.core.request_id import RequestIdMiddleware, install_log_filter  # noqa: E402
+
+app.add_middleware(RequestIdMiddleware)
+install_log_filter()
 
 # CORS — whitelist frontend origin.
 # Also allow 127.0.0.1 variant so browsers that resolve localhost to IPv6 or

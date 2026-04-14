@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { fetchComments, addComment, type Comment } from "@/lib/api/comments";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchComments, addComment } from "@/lib/api/comments";
+import { ErrorBanner } from "@/components/common/error-banner";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
@@ -15,30 +17,39 @@ interface CommentThreadProps {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export function CommentThread({ artifactId, canComment }: CommentThreadProps) {
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [newText, setNewText] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchComments(artifactId)
-      .then(setComments)
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
-  }, [artifactId]);
+  const commentsQuery = useQuery({
+    queryKey: ["comments", artifactId] as const,
+    queryFn: () => fetchComments(artifactId),
+  });
+  const comments = commentsQuery.data ?? [];
+  const isLoading = commentsQuery.isPending;
+  const isRefetchError = commentsQuery.isError && commentsQuery.data !== undefined;
 
-  async function handleSubmit() {
-    if (!newText.trim() || isSubmitting) return;
-    setIsSubmitting(true);
-    try {
-      const comment = await addComment(artifactId, newText.trim());
-      setComments((prev) => [...prev, comment]);
+  const submitMutation = useMutation({
+    mutationFn: (text: string) => addComment(artifactId, text),
+    onSuccess: () => {
       setNewText("");
-    } catch {
-      /* noop */
-    } finally {
-      setIsSubmitting(false);
-    }
+      setSubmitError(null);
+      queryClient.invalidateQueries({ queryKey: ["comments", artifactId] });
+    },
+    onError: (err: unknown) => {
+      const e = err as { detail?: unknown };
+      const detail =
+        typeof e.detail === "string" ? e.detail : "Couldn't post your comment.";
+      setSubmitError(detail);
+    },
+  });
+
+  const isSubmitting = submitMutation.isPending;
+
+  function handleSubmit() {
+    if (!newText.trim() || isSubmitting) return;
+    setSubmitError(null);
+    submitMutation.mutate(newText.trim());
   }
 
   return (
@@ -51,6 +62,19 @@ export function CommentThread({ artifactId, canComment }: CommentThreadProps) {
           </Box>
         )}
       </Typography>
+
+      {isRefetchError && (
+        <ErrorBanner
+          compact
+          message="Couldn't refresh comments."
+          isStale
+          isRetrying={commentsQuery.isFetching}
+          onRetry={() => commentsQuery.refetch()}
+        />
+      )}
+      {submitError && (
+        <ErrorBanner compact message={submitError} isStale={false} onRetry={handleSubmit} isRetrying={isSubmitting} />
+      )}
 
       {isLoading ? (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>

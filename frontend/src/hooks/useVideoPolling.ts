@@ -11,6 +11,8 @@ interface UseVideoPollingResult {
   setVideos: React.Dispatch<React.SetStateAction<GeneratedVideo[]>>;
   anyActive: boolean;
   isLoading: boolean;
+  /** Latest poll error message, or null. Cleared on the next successful tick. */
+  error: string | null;
   refresh: () => Promise<void>;
 }
 
@@ -18,6 +20,7 @@ export function useVideoPolling(sessionId: string | null): UseVideoPollingResult
   const [videos, setVideos] = useState<GeneratedVideo[]>([]);
   const [anyActive, setAnyActive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionIdRef = useRef(sessionId);
   const anyActiveRef = useRef(anyActive);
@@ -30,9 +33,19 @@ export function useVideoPolling(sessionId: string | null): UseVideoPollingResult
       const data: GeneratedVideoListResponse = await listGeneratedVideos(sessionIdRef.current);
       setVideos(data.videos);
       setAnyActive(data.any_active);
+      setError(null); // clear any prior error on success
       return data.any_active;
-    } catch {
-      // On network error, keep polling if we last knew something was active
+    } catch (err: unknown) {
+      // Surface the error so callers can render a banner. Keep polling if we
+      // last knew something was active so transient blips recover automatically.
+      const e = err as { detail?: unknown };
+      const detail =
+        typeof e.detail === "string"
+          ? e.detail
+          : typeof e.detail === "object" && e.detail !== null
+            ? (e.detail as { detail?: string }).detail ?? null
+            : null;
+      setError(detail ?? "Couldn't refresh video status. Retrying…");
       return anyActiveRef.current;
     }
   }, []);
@@ -79,5 +92,5 @@ export function useVideoPolling(sessionId: string | null): UseVideoPollingResult
     };
   }, [sessionId, fetch, scheduleNext]);
 
-  return { videos, setVideos, anyActive, isLoading, refresh };
+  return { videos, setVideos, anyActive, isLoading, error, refresh };
 }

@@ -35,9 +35,13 @@ export default function PresenterStepPage() {
       fetchPresenters(),
     ]).then(([art, presenterList]) => {
       setPresenters(presenterList);
-      // If artifact has a video_session_id, load the session
+      // If artifact has a video_session_id, load the session. Surface the
+      // failure so the user isn't stuck on a half-initialised page wondering
+      // why they can't proceed (Continue requires videoSession).
       if (art.video_session_id) {
-        fetchVideoSession(art.video_session_id).then(setVideoSession).catch(() => {});
+        fetchVideoSession(art.video_session_id)
+          .then(setVideoSession)
+          .catch(() => setError("Couldn't load the video session — try refreshing."));
       }
     }).catch(() => {
       router.push(`/projects/${projectId}`);

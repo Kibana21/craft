@@ -99,7 +99,14 @@ export default function StudioWorkflowNewPage() {
     ctx.setSourceImageIds([sourceId]);
     getImage(sourceId)
       .then((img) => setSourceImage(img))
-      .catch(() => setSourceImage(null))
+      .catch(() => {
+        setSourceImage(null);
+        // Don't silently leave the user on a "no source" wizard — they came
+        // here from the library specifically to enhance THIS image.
+        setDispatchError(
+          "Couldn't load the source image. Go back to My Studio and try again.",
+        );
+      })
       .finally(() => setIsLoadingSource(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

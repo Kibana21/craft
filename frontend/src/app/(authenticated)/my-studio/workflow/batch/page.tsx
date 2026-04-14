@@ -57,7 +57,20 @@ export default function StudioWorkflowBatchPage() {
       return;
     }
     Promise.all(ids.map((id) => getImage(id).catch(() => null)))
-      .then((arr) => setSources(arr.filter((x): x is StudioImageDetail => x !== null)))
+      .then((arr) => {
+        const loaded = arr.filter((x): x is StudioImageDetail => x !== null);
+        setSources(loaded);
+        // Surface partial-load failures so the user knows the batch will run
+        // on a subset (or that it can't run at all because nothing loaded).
+        const missing = ids.length - loaded.length;
+        if (missing > 0) {
+          setError(
+            loaded.length === 0
+              ? "Couldn't load any of the selected images. Try again."
+              : `Couldn't load ${missing} of ${ids.length} selected images — batch will run on the rest.`,
+          );
+        }
+      })
       .finally(() => setIsLoadingSources(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

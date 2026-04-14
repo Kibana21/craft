@@ -17,7 +17,9 @@ from __future__ import annotations
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+
+from app.core.rate_limit import limiter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
@@ -220,7 +222,9 @@ async def prompt_builder(
     response_model=GenerateWorkflowResponse,
     status_code=status.HTTP_202_ACCEPTED,
 )
+@limiter.limit("10/minute")
 async def generate_workflow(
+    request: Request,  # noqa: ARG001 — required by slowapi for rate-limit keying
     data: GenerateWorkflowRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

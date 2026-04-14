@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { fetchScoreBreakdown, type ComplianceScore } from "@/lib/api/compliance";
+import { useQuery } from "@tanstack/react-query";
+import { fetchScoreBreakdown } from "@/lib/api/compliance";
+import { ErrorBanner } from "@/components/common/error-banner";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
@@ -14,18 +15,15 @@ interface ScoreBreakdownProps {
 }
 
 export function ScoreBreakdown({ artifactId, isOpen, onClose }: ScoreBreakdownProps) {
-  const [data, setData] = useState<ComplianceScore | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const query = useQuery({
+    queryKey: ["compliance", "score", artifactId] as const,
+    queryFn: () => fetchScoreBreakdown(artifactId),
+    enabled: isOpen && !!artifactId,
+  });
 
-  useEffect(() => {
-    if (isOpen && artifactId) {
-      setIsLoading(true);
-      fetchScoreBreakdown(artifactId)
-        .then(setData)
-        .catch(() => {})
-        .finally(() => setIsLoading(false));
-    }
-  }, [isOpen, artifactId]);
+  const data = query.data;
+  const isLoading = query.isPending;
+  const isRefetchError = query.isError && query.data !== undefined;
 
   if (!isOpen) return null;
 
@@ -77,6 +75,16 @@ export function ScoreBreakdown({ artifactId, isOpen, onClose }: ScoreBreakdownPr
             ✕
           </IconButton>
         </Box>
+
+        {isRefetchError && (
+          <ErrorBanner
+            compact
+            message="Couldn't refresh the score."
+            isStale
+            isRetrying={query.isFetching}
+            onRetry={() => query.refetch()}
+          />
+        )}
 
         {isLoading ? (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>

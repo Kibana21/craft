@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import ButtonBase from "@mui/material/ButtonBase";
 import TextField from "@mui/material/TextField";
 import { useAuth } from "@/components/providers/auth-provider";
+import { ErrorBanner } from "@/components/common/error-banner";
 import { LibraryItemCard } from "@/components/cards/library-item-card";
 import { fetchLibraryItems, remixLibraryItem } from "@/lib/api/brand-library";
-import type { BrandLibraryItem } from "@/types/brand-library";
+import { queryKeys } from "@/lib/query-keys";
 
 const AIA_PRODUCTS = [
   "All products",
@@ -25,24 +27,21 @@ const AIA_PRODUCTS = [
 export default function BrandLibraryPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [items, setItems] = useState<BrandLibraryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [product, setProduct] = useState("");
   const [isRemixing, setIsRemixing] = useState<string | null>(null);
 
   const isAdmin = user?.role === "brand_admin";
 
-  useEffect(() => {
-    setIsLoading(true);
-    fetchLibraryItems({
-      search: search || undefined,
-      product: product || undefined,
-    })
-      .then((res) => setItems(res.items))
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
-  }, [search, product]);
+  const libraryParams = { search: search || undefined, product: product || undefined };
+  const libraryQuery = useQuery({
+    queryKey: queryKeys.brandLibrary(libraryParams),
+    queryFn: () => fetchLibraryItems(libraryParams),
+  });
+
+  const items = libraryQuery.data?.items ?? [];
+  const isInitialLoad = libraryQuery.isPending;
+  const isRefetchError = libraryQuery.isError && libraryQuery.data !== undefined;
 
   const handleRemix = async (itemId: string) => {
     setIsRemixing(itemId);
@@ -149,8 +148,17 @@ export default function BrandLibraryPage() {
         </Box>
       </Box>
 
+      {isRefetchError && (
+        <ErrorBanner
+          message="Couldn't refresh the library."
+          isStale={true}
+          isRetrying={libraryQuery.isFetching}
+          onRetry={() => libraryQuery.refetch()}
+        />
+      )}
+
       {/* Items */}
-      {isLoading ? (
+      {isInitialLoad ? (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {[1, 2, 3].map((i) => (
             <Box

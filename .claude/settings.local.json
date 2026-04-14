@@ -46,7 +46,8 @@
       "Bash(curl -s -o /dev/null -w \"unauth prompt-builder: %{http_code}\\\\n\" -X POST http://localhost:8000/api/studio/workflows/prompt-builder -H \"Content-Type: application/json\" -d '{\"intent\":\"MAKE_PROFESSIONAL\",\"style_inputs\":{},\"variation_count\":4}')",
       "Bash(curl -s -o /dev/null -w \"unauth generate: %{http_code}\\\\n\" -X POST http://localhost:8000/api/studio/workflows/generate -H \"Content-Type: application/json\" -d '{\"intent\":\"CUSTOM\",\"style_inputs\":{\"description\":\"x\"},\"merged_prompt\":\"x\"}')",
       "Bash(curl -s -o /dev/null -w \"unauth recent: %{http_code}\\\\n\" http://localhost:8000/api/studio/workflows/recent)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(xargs cat:*)"
     ]
   }
 }

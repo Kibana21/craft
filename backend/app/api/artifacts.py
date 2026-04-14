@@ -68,8 +68,15 @@ async def _award_points_bg(user_id: uuid.UUID, action: object) -> None:
         try:
             await award_points(db, user_id, action)  # type: ignore[arg-type]
             await db.commit()
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001 — gamification must never
+            # Don't crash the request that triggered this background task —
+            # but DO log the failure so we know when points stop being awarded.
+            # Previously we swallowed silently and only noticed via user reports.
+            import logging
+            logging.getLogger(__name__).warning(
+                "background points award failed for user=%s action=%s: %s",
+                user_id, action, exc, exc_info=True,
+            )
 
 
 async def _check_project_access(
@@ -306,8 +313,13 @@ async def delete_artifact(
     if current_user.role != UserRole.BRAND_ADMIN and artifact.creator_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
 
-    artifact.deleted_at = datetime.now(timezone.utc)
+    # `artifacts.deleted_at` is VARCHAR in this schema (legacy decision —
+    # other models use TIMESTAMPTZ). Send an ISO-8601 string to match.
+    # Fixing the column type would need a migration; tracked under reliability
+    # plan as a future schema-cleanup item.
+    artifact.deleted_at = datetime.now(timezone.utc).isoformat()
     await db.flush()
+    await db.commit()
 
 
 @router.post(

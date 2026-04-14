@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import (
@@ -8,6 +8,7 @@ from app.core.auth import (
     get_current_user,
 )
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.models.user import User
 from app.schemas.auth import (
     LoginRequest,
@@ -20,12 +21,17 @@ from app.services.auth_service import authenticate_user
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
+# 10/minute on login — keys by IP since the user isn't authenticated yet.
+# Tight enough to slow down brute-force attempts without locking out a
+# legitimate user with shaky network during a demo.
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("10/minute")
 async def login(
-    request: LoginRequest,
+    request: Request,  # noqa: ARG001 — required by slowapi
+    body: LoginRequest,
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
-    user = await authenticate_user(db, request.email, request.password)
+    user = await authenticate_user(db, body.email, body.password)
 
     if user is None:
         raise HTTPException(
@@ -43,12 +49,17 @@ async def login(
     )
 
 
+# 30/minute is intentionally loose — the frontend 401-interceptor may fire
+# back-to-back when a tab wakes from sleep and several queries refetch in
+# parallel. Catches abusive looping without blocking legitimate UX.
 @router.post("/refresh", response_model=TokenResponse)
+@limiter.limit("30/minute")
 async def refresh_token(
-    request: RefreshRequest,
+    request: Request,  # noqa: ARG001 — required by slowapi for keying
+    body: RefreshRequest,
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
-    payload = decode_token(request.refresh_token)
+    payload = decode_token(body.refresh_token)
 
     if payload.get("type") != "refresh":
         raise HTTPException(

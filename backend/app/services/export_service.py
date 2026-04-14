@@ -27,7 +27,21 @@ async def trigger_export(
     fmt: ExportFormat,
     aspect_ratio: ExportAspectRatio | None,
 ) -> ExportLog:
-    """Validate and create an ExportLog with status='processing'. Rendering happens in background."""
+    """Validate and create an ExportLog with status='processing'. Rendering happens in background.
+
+    Ownership / RBAC: enforced via `require_artifact_access`. Without this, any
+    authenticated user could export any artifact by guessing a UUID — fixed
+    here as part of the reliability hardening pass (see
+    `.claude/plans/reliability-hardening.md` Tier 2.2).
+    """
+    from app.core.rbac import require_artifact_access
+
+    # `require_artifact_access` returns the artifact (or raises 404/403).
+    # We re-fetch below only because the existing code path uses it for the
+    # subsequent compliance check; keeping the dual fetch guarantees we still
+    # filter `deleted_at` even if the helper's behaviour changes.
+    await require_artifact_access(artifact_id, user, db)
+
     result = await db.execute(
         select(Artifact).where(Artifact.id == artifact_id, Artifact.deleted_at.is_(None))
     )

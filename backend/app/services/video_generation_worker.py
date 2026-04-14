@@ -108,7 +108,15 @@ async def _mark_failed(
             await notify_video_failed(db, artifact_id, triggering_user_id)
             await db.commit()
         except Exception as exc:
-            log.error("Worker: notify_video_failed raised %s — continuing", exc)
+            # Notification failure is non-fatal (the user-visible
+            # error_message on the video row tells them anyway), but log with
+            # a stack trace so we can debug a notification subsystem outage.
+            log.warning(
+                "notify_video_failed_swallowed",
+                extra={"artifact_id": str(artifact_id), "user_id": str(triggering_user_id)},
+                exc_info=True,
+            )
+            del exc  # silence linter
 
     log.error("Video %s FAILED: %s", video_id, message)
 

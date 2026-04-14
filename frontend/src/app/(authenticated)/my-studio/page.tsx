@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -15,12 +16,14 @@ import Snackbar from "@mui/material/Snackbar";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Typography from "@mui/material/Typography";
+import { ErrorBanner } from "@/components/common/error-banner";
 import {
   deleteImage,
   listImages,
   staticStudioUrl,
   uploadImages,
 } from "@/lib/api/studio";
+import { queryKeys } from "@/lib/query-keys";
 import {
   STUDIO_IMAGE_TYPE_COLOR,
   STUDIO_IMAGE_TYPE_LABEL,
@@ -71,11 +74,9 @@ function TypePill({ type }: { type: StudioImageType }) {
 
 export default function MyStudioPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const [images, setImages] = useState<StudioImage[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<FilterTab>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchDraft, setSearchDraft] = useState("");
@@ -83,43 +84,40 @@ export default function MyStudioPage() {
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [imageToDelete, setImageToDelete] = useState<StudioImage | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isDragOver, setIsDragOver] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const hasSelection = selected.size > 0;
 
-  // ── Fetch ───────────────────────────────────────────────────────────────────
+  // ── Data ────────────────────────────────────────────────────────────────────
+  // TanStack Query keeps the last successful page cached, so a transient
+  // backend blip never flips the UI to "empty library" — the user sees the
+  // previous data with an ErrorBanner while a retry runs in the background.
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const res = await listImages({
-        type: filter === "ALL" ? undefined : filter,
-        q: searchQuery || undefined,
-        page,
-        per_page: PER_PAGE,
-      });
-      setImages(res.items);
-      setTotal(res.total);
-    } catch {
-      setImages([]);
-      setTotal(0);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [filter, searchQuery, page]);
+  const listParams = useMemo(
+    () => ({
+      type: filter === "ALL" ? undefined : (filter as StudioImageType),
+      q: searchQuery || undefined,
+      page,
+      per_page: PER_PAGE,
+    }),
+    [filter, searchQuery, page],
+  );
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  const listQuery = useQuery({
+    queryKey: queryKeys.studioImages(listParams as Record<string, unknown>),
+    queryFn: () => listImages(listParams),
+  });
 
-  // Debounce the search input 300ms before it triggers a fetch.
+  const images = listQuery.data?.items ?? [];
+  const total = listQuery.data?.total ?? 0;
+  const isInitialLoad = listQuery.isPending; // first-ever fetch, no cached data
+  const isRefetchError = listQuery.isError && listQuery.data !== undefined;
+
+  // Debounce the search input 300ms before it triggers a refetch.
   useEffect(() => {
     const id = setTimeout(() => {
       if (searchDraft !== searchQuery) {
@@ -130,36 +128,50 @@ export default function MyStudioPage() {
     return () => clearTimeout(id);
   }, [searchDraft, searchQuery]);
 
-  // ── Upload ──────────────────────────────────────────────────────────────────
+  // ── Mutations ───────────────────────────────────────────────────────────────
 
-  const runUpload = useCallback(
-    async (files: FileList | File[]) => {
-      const arr = Array.from(files).slice(0, MAX_UPLOAD);
-      if (arr.length === 0) return;
-      setIsUploading(true);
+  const uploadMutation = useMutation({
+    mutationFn: (files: File[]) => uploadImages(files),
+    onSuccess: (_data, files) => {
+      setToast(`Uploaded ${files.length} image${files.length > 1 ? "s" : ""}`);
       setUploadError(null);
-      try {
-        await uploadImages(arr);
-        setToast(`Uploaded ${arr.length} image${arr.length > 1 ? "s" : ""}`);
-        // Jump to page 1 so the new uploads are visible immediately.
-        setPage(1);
-        setFilter("ALL");
-        refresh();
-      } catch (err: unknown) {
-        const e = err as { detail?: unknown; status?: number };
-        const detail =
-          typeof e.detail === "object" && e.detail !== null
-            ? (e.detail as { detail?: string }).detail
-            : typeof e.detail === "string"
-              ? e.detail
-              : null;
-        setUploadError(detail ?? "Upload failed. Please try again.");
-      } finally {
-        setIsUploading(false);
-      }
+      // Jump to page 1 + ALL filter so fresh uploads are visible immediately.
+      setPage(1);
+      setFilter("ALL");
+      // Invalidate every studio_images query; TanStack will refetch the one
+      // currently rendered and re-use cached entries for filter switches.
+      queryClient.invalidateQueries({ queryKey: ["studio", "images"] });
     },
-    [refresh],
-  );
+    onError: (err: unknown) => {
+      const e = err as { detail?: unknown };
+      const detail =
+        typeof e.detail === "object" && e.detail !== null
+          ? (e.detail as { detail?: string }).detail
+          : typeof e.detail === "string"
+            ? e.detail
+            : null;
+      setUploadError(detail ?? "Upload failed. Please try again.");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (imageId: string) => deleteImage(imageId),
+    onSuccess: (_data, imageId) => {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        next.delete(imageId);
+        return next;
+      });
+      setImageToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["studio", "images"] });
+    },
+  });
+
+  const runUpload = (files: FileList | File[]) => {
+    const arr = Array.from(files).slice(0, MAX_UPLOAD);
+    if (arr.length === 0) return;
+    uploadMutation.mutate(arr);
+  };
 
   const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) runUpload(e.target.files);
@@ -185,25 +197,15 @@ export default function MyStudioPage() {
 
   const clearSelection = () => setSelected(new Set());
 
-  // ── Delete ──────────────────────────────────────────────────────────────────
+  // ── Delete handler (kicks off the mutation) ────────────────────────────────
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!imageToDelete) return;
-    setIsDeleting(true);
-    try {
-      await deleteImage(imageToDelete.id);
-      setImages((prev) => prev.filter((i) => i.id !== imageToDelete.id));
-      setTotal((t) => Math.max(0, t - 1));
-      setSelected((prev) => {
-        const next = new Set(prev);
-        next.delete(imageToDelete.id);
-        return next;
-      });
-      setImageToDelete(null);
-    } finally {
-      setIsDeleting(false);
-    }
+    deleteMutation.mutate(imageToDelete.id);
   };
+
+  const isUploading = uploadMutation.isPending;
+  const isDeleting = deleteMutation.isPending;
 
   // ── Derived ─────────────────────────────────────────────────────────────────
 
@@ -478,6 +480,19 @@ export default function MyStudioPage() {
         })}
       </Box>
 
+      {/* Stale-while-revalidate banner: keeps previous data visible while we
+          retry in the background. Only shown when we DO have cached data and
+          the latest refetch errored — first-load errors fall through to the
+          empty-state path below. */}
+      {isRefetchError && (
+        <ErrorBanner
+          message="Couldn't refresh your library."
+          isStale={true}
+          isRetrying={listQuery.isFetching}
+          onRetry={() => listQuery.refetch()}
+        />
+      )}
+
       {/* Drag-over indicator */}
       {isDragOver && (
         <Box
@@ -498,7 +513,7 @@ export default function MyStudioPage() {
       )}
 
       {/* Content */}
-      {isLoading ? (
+      {isInitialLoad ? (
         view === "grid" ? (
           <Box
             sx={{

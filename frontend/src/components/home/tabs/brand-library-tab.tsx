@@ -1,28 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import { useAuth } from "@/components/providers/auth-provider";
+import { ErrorBanner } from "@/components/common/error-banner";
 import { LibraryItemCard } from "@/components/cards/library-item-card";
 import { fetchLibraryItems, remixLibraryItem } from "@/lib/api/brand-library";
-import type { BrandLibraryItem } from "@/types/brand-library";
+import { queryKeys } from "@/lib/query-keys";
 
 export function BrandLibraryTab() {
   const { user } = useAuth();
   const router = useRouter();
-  const [items, setItems] = useState<BrandLibraryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const isAdmin = user?.role === "brand_admin";
 
-  useEffect(() => {
-    fetchLibraryItems()
-      .then((res) => setItems(res.items))
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
-  }, []);
+  const libraryQuery = useQuery({
+    queryKey: queryKeys.brandLibrary(),
+    queryFn: () => fetchLibraryItems(),
+  });
+  const items = libraryQuery.data?.items ?? [];
+  const isLoading = libraryQuery.isPending;
+  const isRefetchError = libraryQuery.isError && libraryQuery.data !== undefined;
 
   if (isLoading) {
     return (
@@ -49,6 +49,15 @@ export function BrandLibraryTab() {
 
   return (
     <Box>
+      {isRefetchError && (
+        <ErrorBanner
+          message="Couldn't refresh the brand library."
+          compact
+          isStale={true}
+          isRetrying={libraryQuery.isFetching}
+          onRetry={() => libraryQuery.refetch()}
+        />
+      )}
       <Box sx={{ mb: 2.5, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Typography sx={{ fontSize: "16px", fontWeight: 600, color: "#1F1F1F" }}>
           Brand library

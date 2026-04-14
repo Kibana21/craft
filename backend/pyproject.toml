@@ -39,4 +39,14 @@ ignore = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
 testpaths = ["tests"]
+# Silence noise: asyncpg leaves connection-cancel coroutines unawaited when
+# the event loop closes between tests. It's a pytest-asyncio + asyncpg quirk,
+# not a real test failure. Pydantic-v2 also emits warnings about field-name
+# collisions ("copy") that we know about and have filed under tech debt.
+filterwarnings = [
+    "ignore::RuntimeWarning:_pytest.stash",
+    "ignore:.*coroutine.*was never awaited.*:RuntimeWarning",
+    "ignore:.*Field name \"copy\".*:UserWarning",
+]

@@ -14,11 +14,12 @@ it is implemented here and returns 200 even in Phase B builds.
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import get_current_user
 from app.core.database import get_db
+from app.core.rate_limit import limiter
 from app.core.rbac import require_artifact_access
 from app.models.user import User
 from app.schemas.poster import (
@@ -332,7 +333,9 @@ async def generate_composition_prompt(
     status_code=status.HTTP_202_ACCEPTED,
     summary="Dispatch a poster image generation job (Phase C)",
 )
+@limiter.limit("10/minute")
 async def generate_variants(
+    request: Request,  # noqa: ARG001 — required by slowapi to read the rate-limit key
     data: GenerateVariantsRequest,
     _current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -363,6 +366,9 @@ async def generate_variants(
             format_name=data.format.value,
         )
     except ValueError as exc:
+        # Validation error before any DB write — no rollback needed, but be
+        # defensive in case the service was mid-mutation when it raised.
+        await db.rollback()
         msg = str(exc)
         if "quota" in msg.lower() or "limit" in msg.lower():
             raise HTTPException(
@@ -374,6 +380,11 @@ async def generate_variants(
             detail={"detail": msg, "error_code": "NOT_FOUND"},
         ) from exc
     except Exception as exc:
+        # Critical: if dispatch raised AFTER mutating artifact.content (e.g.
+        # writing last_generation_job_id then failing to enqueue the Celery
+        # task), the partial write would be visible to subsequent polls.
+        # Rollback restores a consistent state.
+        await db.rollback()
         logger.exception("generate-variants dispatch failed: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -496,7 +507,9 @@ async def retry_variant(
     response_model=RefineChatResponse,
     summary="One chat refinement turn (Phase D)",
 )
+@limiter.limit("10/minute")
 async def refine_chat(
+    request: Request,  # noqa: ARG001 — required by slowapi
     data: RefineChatRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

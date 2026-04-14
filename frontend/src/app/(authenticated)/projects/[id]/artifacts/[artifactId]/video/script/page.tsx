@@ -42,6 +42,9 @@ export default function ScriptStepPage() {
   const [isDrafting, setIsDrafting] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [error, setError] = useState("");
+  // Tracks the most recent autosave failure. Surfaced inline so the user
+  // doesn't think their edits were committed when they weren't.
+  const [saveError, setSaveError] = useState<string | null>(null);
   const saveRef = useRef<((c: string) => void) | null>(null);
 
   useEffect(() => {
@@ -81,8 +84,19 @@ export default function ScriptStepPage() {
       try {
         const updated = await updateScript(sessionId, content);
         setScript(updated);
-      } catch {
-        // Silent — don't disrupt the editing experience
+        setSaveError(null);
+      } catch (err: unknown) {
+        // Surface the failure so the user knows their edit didn't persist.
+        // Previously we silently swallowed it — the editor showed "Saved"
+        // and the user moved on with unsaved changes.
+        const e = err as { detail?: unknown };
+        const detail =
+          typeof e.detail === "string"
+            ? e.detail
+            : typeof e.detail === "object" && e.detail !== null
+              ? (e.detail as { detail?: string }).detail ?? null
+              : null;
+        setSaveError(detail ?? "Couldn't save — your edits aren't persisted yet.");
       } finally {
         setIsSaving(false);
       }
@@ -203,6 +217,12 @@ export default function ScriptStepPage() {
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>
           {error}
+        </Alert>
+      )}
+
+      {saveError && (
+        <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setSaveError(null)}>
+          {saveError}
         </Alert>
       )}
 

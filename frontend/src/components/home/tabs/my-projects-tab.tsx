@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { ErrorBanner } from "@/components/common/error-banner";
 import { ProjectCard, NewProjectCard } from "@/components/cards/project-card";
 import { fetchProjects } from "@/lib/api/projects";
+import { queryKeys } from "@/lib/query-keys";
 import type { Project } from "@/types/project";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
@@ -41,20 +44,18 @@ const GRID = {
 
 export function MyProjectsTab() {
   const router = useRouter();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<"active" | "archived">("active");
   const [sort, setSort] = useState<Sort>("recent");
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
 
-  useEffect(() => {
-    setIsLoading(true);
-    fetchProjects("personal", statusFilter)
-      .then((res) => setProjects(res.items))
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
-  }, [statusFilter]);
+  const projectsQuery = useQuery({
+    queryKey: queryKeys.projects("personal", statusFilter),
+    queryFn: () => fetchProjects("personal", statusFilter),
+  });
+  const projects: Project[] = projectsQuery.data?.items ?? [];
+  const isLoading = projectsQuery.isPending;
+  const isRefetchError = projectsQuery.isError && projectsQuery.data !== undefined;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -152,6 +153,15 @@ export function MyProjectsTab() {
           </Button>
         </Box>
       </Box>
+
+      {isRefetchError && (
+        <ErrorBanner
+          message="Couldn't refresh projects."
+          isStale={true}
+          isRetrying={projectsQuery.isFetching}
+          onRetry={() => projectsQuery.refetch()}
+        />
+      )}
 
       {/* Loading skeleton */}
       {isLoading && (

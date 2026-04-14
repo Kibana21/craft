@@ -3,6 +3,8 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { MuiThemeProvider } from "@/components/providers/mui-theme-provider";
+import { QueryProvider } from "@/components/providers/query-provider";
+import { ErrorBoundary } from "@/components/common/error-boundary";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -39,7 +41,11 @@ export default function RootLayout({
       <body style={{ minHeight: "100vh", display: "flex", flexDirection: "column", margin: 0 }}>
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <MuiThemeProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <ErrorBoundary>
+              <QueryProvider>
+                <AuthProvider>{children}</AuthProvider>
+              </QueryProvider>
+            </ErrorBoundary>
           </MuiThemeProvider>
         </AppRouterCacheProvider>
       </body>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { AnalyticsFilters } from "@/components/analytics/analytics-filters";
@@ -14,43 +15,43 @@ import {
   fetchContentGaps,
   fetchActivity,
 } from "@/lib/api/analytics";
-import type { OverviewMetrics as OverviewMetricsType } from "@/types/analytics";
-import type { TopRemixedItem } from "@/types/analytics";
-import type { ContentGap } from "@/types/analytics";
-import type { ActivityDataPoint } from "@/types/analytics";
+import { queryKeys } from "@/lib/query-keys";
 
 export function AnalyticsTab() {
   const [period, setPeriod] = useState<"week" | "month" | "quarter">("week");
-  const [overview, setOverview] = useState<OverviewMetricsType | null>(null);
-  const [topRemixed, setTopRemixed] = useState<TopRemixedItem[]>([]);
-  const [gaps, setGaps] = useState<ContentGap[]>([]);
-  const [activity, setActivity] = useState<ActivityDataPoint[]>([]);
-  const [loadingOverview, setLoadingOverview] = useState(true);
-  const [loadingCharts, setLoadingCharts] = useState(true);
 
-  useEffect(() => {
-    setLoadingOverview(true);
-    fetchOverview({ period })
-      .then(setOverview)
-      .catch(() => {})
-      .finally(() => setLoadingOverview(false));
-  }, [period]);
+  const overviewQuery = useQuery({
+    queryKey: queryKeys.analyticsOverview(period),
+    queryFn: () => fetchOverview({ period }),
+  });
 
-  useEffect(() => {
-    setLoadingCharts(true);
-    Promise.all([
-      fetchTopRemixed(8),
-      fetchContentGaps(),
-      fetchActivity(period),
-    ])
-      .then(([tr, cg, act]) => {
-        setTopRemixed(tr.items);
-        setGaps(cg.gaps);
-        setActivity(act.data);
-      })
-      .catch(() => {})
-      .finally(() => setLoadingCharts(false));
-  }, [period]);
+  // Three chart queries fire in parallel; each retries/caches independently,
+  // so if one errors the others still render. Previously a single Promise.all
+  // + .catch() would wipe all three charts on any one failure.
+  const [topRemixedQuery, gapsQuery, activityQuery] = useQueries({
+    queries: [
+      {
+        queryKey: ["analytics", "top-remixed", 8] as const,
+        queryFn: () => fetchTopRemixed(8),
+      },
+      {
+        queryKey: queryKeys.analyticsContentGaps(),
+        queryFn: () => fetchContentGaps(),
+      },
+      {
+        queryKey: queryKeys.analyticsActivity(period, "day"),
+        queryFn: () => fetchActivity(period),
+      },
+    ],
+  });
+
+  const overview = overviewQuery.data ?? null;
+  const topRemixed = topRemixedQuery.data?.items ?? [];
+  const gaps = gapsQuery.data?.gaps ?? [];
+  const activity = activityQuery.data?.data ?? [];
+  const loadingOverview = overviewQuery.isPending;
+  const loadingCharts =
+    topRemixedQuery.isPending || gapsQuery.isPending || activityQuery.isPending;
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
