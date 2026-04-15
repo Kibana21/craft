@@ -54,14 +54,14 @@
 
 | Email | Role | Name |
 |---|---|---|
-| sarah@aia.com.sg | brand_admin | Sarah Lim |
-| james@aia.com.sg | brand_admin | James Tan |
-| david@aia.com.sg | district_leader | David Lee |
-| rachel@aia.com.sg | district_leader | Rachel Wong |
-| michael@aia.com.sg | agency_leader | Michael Ng |
-| priya@aia.com.sg | agency_leader | Priya Kumar |
-| maya@agent.aia.com.sg | fsc | Maya Chen |
-| alex@agent.aia.com.sg | fsc | Alex Ong |
+| sarah@example.com | brand_admin | Sarah Lim |
+| james@example.com | brand_admin | James Tan |
+| david@example.com | district_leader | David Lee |
+| rachel@example.com | district_leader | Rachel Wong |
+| michael@example.com | agency_leader | Michael Ng |
+| priya@example.com | agency_leader | Priya Kumar |
+| maya@agent.example.com | fsc | Maya Chen |
+| alex@agent.example.com | fsc | Alex Ong |
 
 Password for all: `craft2026` (hashed with bcrypt)
 
@@ -78,7 +78,7 @@ Password for all: `craft2026` (hashed with bcrypt)
 
 - `make migrate` runs migration successfully
 - `make seed` creates all test users
-- `POST /api/auth/login` with `maya@agent.aia.com.sg` / `craft2026` returns JWT with role=fsc
+- `POST /api/auth/login` with `maya@agent.example.com` / `craft2026` returns JWT with role=fsc
 - `GET /api/auth/me` with valid JWT returns user info
 - `GET /api/auth/me` without JWT returns 401
 - `GET /api/hierarchy/{leader_id}/fscs` returns mock FSC list

@@ -32,7 +32,7 @@ make frontend                 # Next dev server
 make worker                   # Celery worker for video/poster/studio queues
 ```
 
-Open <http://localhost:3000> → log in with `sarah.lim@aia.com.sg` / `craft2026`.
+Open <http://localhost:3000> → log in with `sarah.lim@example.com` / `craft2026`.
 
 > **Demo day?** Run `make backend-demo` instead of `make backend` (no `--reload`, no ECONNRESET on file save). Walk through `docs/PRE_DEMO_CHECKLIST.md` first.
 
@@ -75,13 +75,13 @@ Open <http://localhost:3000> → log in with `sarah.lim@aia.com.sg` / `craft2026
 
 | Email | Role |
 |---|---|
-| sarah.lim@aia.com.sg | BRAND_ADMIN |
-| james.tan@aia.com.sg | BRAND_ADMIN |
-| david.lee@aia.com.sg | DISTRICT_LEADER |
-| rachel.wong@aia.com.sg | DISTRICT_LEADER |
-| michael.ng@aia.com.sg | AGENCY_LEADER |
-| priya.kumar@aia.com.sg | AGENCY_LEADER |
-| maya.chen@agent.aia.com.sg (FSC-1001) | FSC |
-| alex.ong@agent.aia.com.sg (FSC-1002) | FSC |
+| sarah.lim@example.com | BRAND_ADMIN |
+| james.tan@example.com | BRAND_ADMIN |
+| david.lee@example.com | DISTRICT_LEADER |
+| rachel.wong@example.com | DISTRICT_LEADER |
+| michael.ng@example.com | AGENCY_LEADER |
+| priya.kumar@example.com | AGENCY_LEADER |
+| maya.chen@agent.example.com (FSC-1001) | FSC |
+| alex.ong@agent.example.com (FSC-1002) | FSC |
 
 Don't screenshare the source — that password is hardcoded in `backend/scripts/seed.py`.

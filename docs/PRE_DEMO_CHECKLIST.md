@@ -48,7 +48,7 @@ make migrate                   # idempotent; safe to re-run
 make seed                      # 8 test users + brand kit + compliance rules
 ```
 
-Default test login (everybody): `sarah.lim@aia.com.sg / craft2026`. (Don't screenshare the source — password is hardcoded in `scripts/seed.py`.)
+Default test login (everybody): `sarah.lim@example.com / craft2026`. (Don't screenshare the source — password is hardcoded in `scripts/seed.py`.)
 
 ---
 
@@ -74,7 +74,7 @@ Listens on `video,poster,studio,celery` queues. Without it, the user dispatches 
 
 ## 7. Smoke the golden path manually
 
-In the browser, log in as `sarah.lim@aia.com.sg`:
+In the browser, log in as `sarah.lim@example.com`:
 
 1. `/home` → see Personal Projects tab populated (seed data).
 2. Click any project → artifacts tab renders artifacts.

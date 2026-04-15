@@ -281,11 +281,11 @@ Current HEAD: `e1f2a3b4c5d6`
 
 | Email | Role |
 |---|---|
-| sarah.lim@aia.com.sg | BRAND_ADMIN |
-| james.tan@aia.com.sg | BRAND_ADMIN |
-| david.lee@aia.com.sg | DISTRICT_LEADER |
-| rachel.wong@aia.com.sg | DISTRICT_LEADER |
-| michael.ng@aia.com.sg | AGENCY_LEADER |
-| priya.kumar@aia.com.sg | AGENCY_LEADER |
-| maya.chen@agent.aia.com.sg (FSC-1001) | FSC |
-| alex.ong@agent.aia.com.sg (FSC-1002) | FSC |
+| sarah.lim@example.com | BRAND_ADMIN |
+| james.tan@example.com | BRAND_ADMIN |
+| david.lee@example.com | DISTRICT_LEADER |
+| rachel.wong@example.com | DISTRICT_LEADER |
+| michael.ng@example.com | AGENCY_LEADER |
+| priya.kumar@example.com | AGENCY_LEADER |
+| maya.chen@agent.example.com (FSC-1001) | FSC |
+| alex.ong@agent.example.com (FSC-1002) | FSC |

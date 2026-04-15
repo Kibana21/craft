@@ -9,10 +9,10 @@ import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 
 const TEST_ACCOUNTS = [
-  { email: "sarah@aia.com.sg", name: "Sarah Lim", role: "Brand Admin", initials: "SL" },
-  { email: "david@aia.com.sg", name: "David Tan", role: "District Leader", initials: "DT" },
-  { email: "michael@aia.com.sg", name: "Michael Chen", role: "Agency Leader", initials: "MC" },
-  { email: "maya@agent.aia.com.sg", name: "Maya Raj", role: "FSC · Agent", initials: "MR" },
+  { email: "sarah@example.com", name: "Sarah Lim", role: "Brand Admin", initials: "SL" },
+  { email: "david@example.com", name: "David Tan", role: "District Leader", initials: "DT" },
+  { email: "michael@example.com", name: "Michael Chen", role: "Agency Leader", initials: "MC" },
+  { email: "maya@agent.example.com", name: "Maya Raj", role: "FSC · Agent", initials: "MR" },
 ];
 
 const fontStack = "var(--font-geist-sans), -apple-system, sans-serif";
@@ -154,7 +154,7 @@ export default function LoginPage() {
             <TextField
               id="email"
               type="email"
-              placeholder="name@aia.com.sg"
+              placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

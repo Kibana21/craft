@@ -14,7 +14,7 @@ MOCK_FSCS = [
     {
         "id": "00000000-0000-0000-0000-000000000001",
         "name": "Maya Chen",
-        "email": "maya@agent.aia.com.sg",
+        "email": "maya@agent.example.com",
         "role": "fsc",
         "avatar_url": None,
         "agent_id": "FSC-1001",
@@ -22,7 +22,7 @@ MOCK_FSCS = [
     {
         "id": "00000000-0000-0000-0000-000000000002",
         "name": "Alex Ong",
-        "email": "alex@agent.aia.com.sg",
+        "email": "alex@agent.example.com",
         "role": "fsc",
         "avatar_url": None,
         "agent_id": "FSC-1002",

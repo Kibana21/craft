@@ -258,7 +258,7 @@ These are small enough to resolve during review; no need to block on them.
 
 ## Verification
 
-Run each of these manually after the merge. All require: backend running (`make backend`), worker (`make worker`), seeded DB (`make seed`), frontend (`make frontend`), logged in as `sarah.lim@aia.com.sg`.
+Run each of these manually after the merge. All require: backend running (`make backend`), worker (`make worker`), seeded DB (`make seed`), frontend (`make frontend`), logged in as `sarah.lim@example.com`.
 
 1. **Chat refinement happy path**
    - Open an existing poster at `/projects/{id}/artifacts/new-poster/generate?load=…`.

@@ -65,8 +65,8 @@ Wireframes in `.claude/specs/craft_fsc_home_fixed.html` and `.claude/specs/craft
 
 ## Verification
 
-- Login as `sarah@aia.com.sg` → dark navbar with "Creator" badge, 4 tabs
-- Login as `maya@agent.aia.com.sg` → light navbar with "Agent" badge, Quick Create strip, 3 tabs, gamification strip
+- Login as `sarah@example.com` → dark navbar with "Creator" badge, 4 tabs
+- Login as `maya@agent.example.com` → light navbar with "Agent" badge, Quick Create strip, 3 tabs, gamification strip
 - Tabs switch correctly, URL updates with `?tab=` param
 - Empty states render gracefully (no projects yet)
 - `npm run typecheck` passes
