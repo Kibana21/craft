@@ -183,6 +183,44 @@ export async function toneRewrite(params: {
   return apiClient.post<ToneRewriteResponse>("/api/ai/poster/tone-rewrite", params);
 }
 
+export type BriefImproveField = "title" | "target_audience" | "call_to_action";
+
+export async function improveBriefField(params: {
+  field: BriefImproveField;
+  title?: string;
+  campaign_objective?: CampaignObjective | "";
+  target_audience?: string;
+  tone?: PosterTone | "";
+  call_to_action?: string;
+  narrative?: string;
+}): Promise<{ value: string }> {
+  // Drop empty-string enums so the backend treats them as "unset"
+  const body: Record<string, unknown> = { ...params };
+  if (!body.campaign_objective) delete body.campaign_objective;
+  if (!body.tone) delete body.tone;
+  return apiClient.post<{ value: string }>(
+    "/api/ai/poster/improve-brief-field",
+    body,
+  );
+}
+
+export type SubjectImproveField = "appearance_keywords" | "expression_mood";
+
+export async function improveSubjectField(params: {
+  field: SubjectImproveField;
+  appearance_keywords?: string;
+  expression_mood?: string;
+  posture_framing?: PostureFraming | "";
+  brief_context?: string;
+}): Promise<{ value: string }> {
+  const body: Record<string, unknown> = { ...params };
+  if (!body.posture_framing) delete body.posture_framing;
+  return apiClient.post<{ value: string }>(
+    "/api/ai/poster/improve-subject-field",
+    body,
+  );
+}
+
 export async function classifyStructuralChange(
   message: string,
 ): Promise<ClassifyStructuralChangeResponse> {
@@ -195,9 +233,17 @@ export async function classifyStructuralChange(
 // ── Phase B/C — Composition prompt (deterministic, no LLM cost) ───────────────
 
 export async function generateCompositionPrompt(params: {
-  brief: Pick<PosterBriefContent, "narrative" | "tone">;
+  brief: Pick<
+    PosterBriefContent,
+    | "title"
+    | "campaign_objective"
+    | "target_audience"
+    | "tone"
+    | "call_to_action"
+    | "narrative"
+  >;
   subject: PosterSubjectContent;
-  copy: Pick<PosterCopyContent, "headline" | "cta_text">;
+  copy: Pick<PosterCopyContent, "headline" | "subheadline" | "body" | "cta_text">;
   composition_settings: Pick<
     PosterCompositionContent,
     "format" | "layout_template" | "visual_style" | "palette"

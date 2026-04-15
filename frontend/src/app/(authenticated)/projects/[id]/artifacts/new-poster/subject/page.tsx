@@ -15,9 +15,11 @@ import { AiAssistChip } from "@/components/poster-wizard/shared/ai-assist-chip";
 import {
   generateAppearanceParagraph,
   generateSceneDescription,
+  improveSubjectField,
   uploadReferenceImage,
   deleteReferenceImage,
 } from "@/lib/api/poster-wizard";
+import type { SubjectImproveField } from "@/lib/api/poster-wizard";
 import { updateArtifact } from "@/lib/api/artifacts";
 import { usePosterWizard } from "../layout";
 import type {
@@ -133,6 +135,29 @@ export default function PosterSubjectPage() {
   // ── AI state ─────────────────────────────────────────────────────────────────
   const [isGeneratingAppearance, setIsGeneratingAppearance] = useState(false);
   const [isGeneratingScene, setIsGeneratingScene] = useState(false);
+  const [subjectFieldLoading, setSubjectFieldLoading] = useState<SubjectImproveField | null>(null);
+
+  const handleImproveSubjectField = async (field: SubjectImproveField) => {
+    setSubjectFieldLoading(field);
+    try {
+      const { value } = await improveSubjectField({
+        field,
+        appearance_keywords: subject.human_model.appearance_keywords,
+        expression_mood: subject.human_model.expression_mood,
+        posture_framing: subject.human_model.posture_framing,
+        brief_context: brief.narrative || undefined,
+      });
+      if (field === "appearance_keywords") {
+        setSubject({ human_model: { ...subject.human_model, appearance_keywords: value } });
+      } else if (field === "expression_mood") {
+        setSubject({ human_model: { ...subject.human_model, expression_mood: value } });
+      }
+    } catch {
+      setError("AI suggestion failed. Please try again.");
+    } finally {
+      setSubjectFieldLoading(null);
+    }
+  };
 
   // ── Upload state ──────────────────────────────────────────────────────────────
   const [uploadedImages, setUploadedImages] = useState<{ id: string; url: string }[]>([]);
@@ -438,9 +463,19 @@ export default function PosterSubjectPage() {
             Human model details
           </Typography>
           <Box>
-            <Typography sx={{ mb: 0.75, fontSize: "13px", fontWeight: 600, color: "#1F1F1F" }}>
-              Appearance keywords <span style={{ color: "#D0103A" }}>*</span>
-            </Typography>
+            <Box sx={{ mb: 0.75, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography sx={{ fontSize: "13px", fontWeight: 600, color: "#1F1F1F" }}>
+                Appearance keywords <span style={{ color: "#D0103A" }}>*</span>
+              </Typography>
+              {!isLocked && (
+                <AiAssistChip
+                  onClick={() => handleImproveSubjectField("appearance_keywords")}
+                  loading={subjectFieldLoading === "appearance_keywords"}
+                >
+                  + AI
+                </AiAssistChip>
+              )}
+            </Box>
             <TextField
               fullWidth
               size="small"
@@ -454,9 +489,19 @@ export default function PosterSubjectPage() {
             />
           </Box>
           <Box>
-            <Typography sx={{ mb: 0.75, fontSize: "13px", fontWeight: 600, color: "#1F1F1F" }}>
-              Expression / mood <span style={{ color: "#D0103A" }}>*</span>
-            </Typography>
+            <Box sx={{ mb: 0.75, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography sx={{ fontSize: "13px", fontWeight: 600, color: "#1F1F1F" }}>
+                Expression / mood <span style={{ color: "#D0103A" }}>*</span>
+              </Typography>
+              {!isLocked && (
+                <AiAssistChip
+                  onClick={() => handleImproveSubjectField("expression_mood")}
+                  loading={subjectFieldLoading === "expression_mood"}
+                >
+                  + AI
+                </AiAssistChip>
+              )}
+            </Box>
             <TextField
               fullWidth
               size="small"

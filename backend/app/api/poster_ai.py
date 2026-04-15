@@ -36,6 +36,10 @@ from app.schemas.poster import (
     CopyValues,
     GenerateBriefRequest,
     GenerateBriefResponse,
+    ImproveBriefFieldRequest,
+    ImproveBriefFieldResponse,
+    ImproveSubjectFieldRequest,
+    ImproveSubjectFieldResponse,
     GenerateVariantsJobResponse,
     GenerateVariantsRequest,
     GenerateVariantsResponse,
@@ -62,6 +66,8 @@ from app.services.poster_ai_service import (
     generate_appearance_paragraph,
     generate_poster_brief,
     generate_scene_description,
+    improve_brief_field,
+    improve_subject_field,
     tone_rewrite,
 )
 from app.services.poster_image_service import dispatch_generate_variants_job
@@ -260,6 +266,76 @@ async def rewrite_tone(
 
 
 @router.post(
+    "/improve-brief-field",
+    response_model=ImproveBriefFieldResponse,
+    summary="Field-level AI assist for Step 1 brief fields",
+)
+@limiter.limit("15/minute")
+async def improve_brief_field_endpoint(
+    request: Request,  # noqa: ARG001 — slowapi reads the rate-limit key from here
+    data: ImproveBriefFieldRequest,
+    _current_user: User = Depends(get_current_user),
+) -> ImproveBriefFieldResponse:
+    """Suggest a value for one brief field using the other fields as context."""
+    try:
+        value = await improve_brief_field(
+            field=data.field,
+            title=data.title,
+            campaign_objective=(
+                data.campaign_objective.value if data.campaign_objective else None
+            ),
+            target_audience=data.target_audience,
+            tone=data.tone.value if data.tone else None,
+            call_to_action=data.call_to_action,
+            narrative=data.narrative,
+        )
+    except Exception as exc:
+        logging.getLogger(__name__).warning(
+            "improve-brief-field Gemini call failed: %s", exc
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="AI suggestion failed. Please try again.",
+        )
+
+    return ImproveBriefFieldResponse(value=value)
+
+
+@router.post(
+    "/improve-subject-field",
+    response_model=ImproveSubjectFieldResponse,
+    summary="Field-level AI assist for Step 2 human-model fields",
+)
+@limiter.limit("15/minute")
+async def improve_subject_field_endpoint(
+    request: Request,  # noqa: ARG001
+    data: ImproveSubjectFieldRequest,
+    _current_user: User = Depends(get_current_user),
+) -> ImproveSubjectFieldResponse:
+    """Suggest a value for appearance_keywords or expression_mood."""
+    try:
+        value = await improve_subject_field(
+            field=data.field,
+            appearance_keywords=data.appearance_keywords,
+            expression_mood=data.expression_mood,
+            posture_framing=(
+                data.posture_framing.value if data.posture_framing else None
+            ),
+            brief_context=data.brief_context,
+        )
+    except Exception as exc:
+        logging.getLogger(__name__).warning(
+            "improve-subject-field Gemini call failed: %s", exc
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="AI suggestion failed. Please try again.",
+        )
+
+    return ImproveSubjectFieldResponse(value=value)
+
+
+@router.post(
     "/classify-structural-change",
     response_model=ClassifyStructuralChangeResponse,
     summary="Classify whether a chat message requests a structural change",
@@ -320,6 +396,12 @@ async def generate_composition_prompt(
         palette=data.composition_settings.palette,
         style_sentence=style_sent,
         tone=data.brief.tone,
+        campaign_title=data.brief.title,
+        campaign_objective=data.brief.campaign_objective,
+        target_audience=data.brief.target_audience,
+        brief_cta=data.brief.call_to_action,
+        copy_subheadline=data.copy.subheadline,
+        copy_body=data.copy.body,
     )
     return CompositionPromptResponse(merged_prompt=merged_prompt, style_sentence=style_sentence)
 

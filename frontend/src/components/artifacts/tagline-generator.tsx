@@ -6,6 +6,7 @@ import Typography from "@mui/material/Typography";
 import ButtonBase from "@mui/material/ButtonBase";
 import TextField from "@mui/material/TextField";
 import { generateTaglines } from "@/lib/api/ai";
+import { AiAssistChip } from "@/components/poster-wizard/shared/ai-assist-chip";
 
 interface TaglineGeneratorProps {
   product: string;
@@ -46,24 +47,9 @@ export function TaglineGenerator({
         >
           Headline / Tagline
         </Typography>
-        <ButtonBase
-          onClick={handleGenerate}
-          disabled={isGenerating}
-          sx={{
-            borderRadius: "8px",
-            px: 1.5,
-            py: 0.75,
-            fontSize: "12px",
-            fontWeight: 600,
-            bgcolor: "#F7F7F7",
-            color: "#484848",
-            transition: "all 0.15s",
-            "&:hover": { bgcolor: "#EBEBEB" },
-            "&:disabled": { opacity: 0.5 },
-          }}
-        >
-          {isGenerating ? "Generating..." : "✨ Generate taglines"}
-        </ButtonBase>
+        <AiAssistChip onClick={handleGenerate} loading={isGenerating}>
+          {isGenerating ? "Generating…" : "+ AI taglines"}
+        </AiAssistChip>
       </Box>
 
       <TextField

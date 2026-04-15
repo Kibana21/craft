@@ -453,6 +453,148 @@ class PosterPromptBuilder:
             "Return only the description."
         )
 
+    # ── 3b. Field-level brief improvement ─────────────────────────────────────
+
+    @staticmethod
+    def improve_brief_field(
+        field: str,
+        *,
+        title: str = "",
+        campaign_objective: str | None = None,
+        target_audience: str = "",
+        tone: str | None = None,
+        call_to_action: str = "",
+        narrative: str = "",
+    ) -> str:
+        """Single-field AI assist for Step 1 brief fields.
+
+        `field` is one of title | target_audience | call_to_action. Other
+        fields are supplied as context so the output coheres with what the
+        user has already typed. Missing context fields are silently omitted.
+        """
+        context_lines = []
+        if title and field != "title":
+            context_lines.append(f"  Campaign title: {title}")
+        if campaign_objective:
+            context_lines.append(f"  Campaign objective: {campaign_objective}")
+        if target_audience and field != "target_audience":
+            context_lines.append(f"  Target audience: {target_audience}")
+        if tone:
+            context_lines.append(f"  Tone: {tone}")
+        if call_to_action and field != "call_to_action":
+            context_lines.append(f"  Call to action: {call_to_action}")
+        if narrative:
+            context_lines.append(f"  Narrative summary: {narrative}")
+        context_block = "\n".join(context_lines) or "  (none provided yet)"
+
+        field_specs = {
+            "title": (
+                "a concise internal campaign title (6–10 words) that reads "
+                "like a working project name, e.g. 'Life Shield 2026 Q1 Push' "
+                "or 'HealthShield Gold Family Launch'. Title case, no quotes, "
+                "no trailing punctuation."
+            ),
+            "target_audience": (
+                "a specific audience description (12–25 words) covering "
+                "life stage, occupation or income band, and one relevant "
+                "motivation. Example: 'Working parents aged 32–45 in "
+                "Singapore planning for their children's education and "
+                "long-term family security.' No second person."
+            ),
+            "call_to_action": (
+                "a short call-to-action phrase (3–7 words) using an "
+                "imperative verb. Example: 'Get your free coverage review.' "
+                "No exclamation marks, no MAS-flagged language, no "
+                "'guaranteed' claims."
+            ),
+        }
+        spec = field_specs.get(field, "a suitable value for this field")
+        current_value = {
+            "title": title,
+            "target_audience": target_audience,
+            "call_to_action": call_to_action,
+        }.get(field, "")
+        current_block = (
+            f"\n  Current value (rewrite / improve it): {current_value}"
+            if current_value
+            else ""
+        )
+
+        return (
+            "System: You are an AIA Singapore marketing content strategist "
+            "helping a user fill in a single field of a campaign brief.\n\n"
+            "Context (other fields the user has already filled):\n"
+            f"{context_block}"
+            f"{current_block}\n\n"
+            f"Task: Write {spec}\n\n"
+            "Constraints:\n"
+            '  - No MAS-flagged language (no "guaranteed", "no risk", '
+            '"best in market", etc.).\n'
+            "  - British English.\n"
+            "  - Return ONLY the value — no preface, no quotes, no bullets."
+        )
+
+    # ── 3c. Field-level subject improvement ───────────────────────────────────
+
+    @staticmethod
+    def improve_subject_field(
+        field: str,
+        *,
+        appearance_keywords: str = "",
+        expression_mood: str = "",
+        posture_framing: str | None = None,
+        brief_context: str | None = None,
+    ) -> str:
+        """Single-field AI assist for Step 2 human-model sub-form fields."""
+        context_lines = []
+        if appearance_keywords and field != "appearance_keywords":
+            context_lines.append(f"  Appearance keywords: {appearance_keywords}")
+        if expression_mood and field != "expression_mood":
+            context_lines.append(f"  Expression / mood: {expression_mood}")
+        if posture_framing:
+            context_lines.append(f"  Posture / framing: {posture_framing}")
+        if brief_context:
+            context_lines.append(f"  Brief context: {brief_context}")
+        context_block = "\n".join(context_lines) or "  (none provided yet)"
+
+        field_specs = {
+            "appearance_keywords": (
+                "a short comma-separated list (5–9 keywords) describing the "
+                "person's apparent age, ethnicity, attire, and one defining "
+                "visual trait. Example: 'South-East Asian woman, mid-30s, "
+                "warm smile, business casual, soft wavy hair'. No full "
+                "sentences."
+            ),
+            "expression_mood": (
+                "a short phrase (4–10 words) describing the subject's facial "
+                "expression and emotional mood. Example: 'Confident, hopeful, "
+                "looking toward the future'. No sentences."
+            ),
+        }
+        spec = field_specs.get(field, "a suitable value for this field")
+        current_value = {
+            "appearance_keywords": appearance_keywords,
+            "expression_mood": expression_mood,
+        }.get(field, "")
+        current_block = (
+            f"\n  Current value (rewrite / improve it): {current_value}"
+            if current_value
+            else ""
+        )
+
+        return (
+            "System: You are a visual director writing image-generation "
+            "cues for AIA Singapore marketing posters.\n\n"
+            "Context (other subject fields):\n"
+            f"{context_block}"
+            f"{current_block}\n\n"
+            f"Task: Write {spec}\n\n"
+            "Constraints:\n"
+            "  - Neutral, professional tone; no marketing language.\n"
+            "  - British English.\n"
+            "  - Return ONLY the value — no preface, no quotes."
+        )
+
     # ── 4. Copy draft all ─────────────────────────────────────────────────────
 
     @staticmethod

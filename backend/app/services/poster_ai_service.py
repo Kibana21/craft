@@ -159,6 +159,58 @@ async def copy_draft_field(
     return response.text.strip()
 
 
+async def improve_brief_field(
+    field: str,
+    *,
+    title: str = "",
+    campaign_objective: str | None = None,
+    target_audience: str = "",
+    tone: str | None = None,
+    call_to_action: str = "",
+    narrative: str = "",
+) -> str:
+    """Single-field AI improvement for Step 1 brief fields (temperature 0.4)."""
+    prompt = PosterPromptBuilder.improve_brief_field(
+        field=field,
+        title=title,
+        campaign_objective=campaign_objective,
+        target_audience=target_audience,
+        tone=tone,
+        call_to_action=call_to_action,
+        narrative=narrative,
+    )
+    model = _gemini_model()
+    response = await model.generate_content(prompt, temperature=0.4)
+    value = response.text.strip()
+    if not value:
+        raise ValueError("Empty response from Gemini")
+    return value
+
+
+async def improve_subject_field(
+    field: str,
+    *,
+    appearance_keywords: str = "",
+    expression_mood: str = "",
+    posture_framing: str | None = None,
+    brief_context: str | None = None,
+) -> str:
+    """Single-field AI improvement for Step 2 human-model fields (temperature 0.4)."""
+    prompt = PosterPromptBuilder.improve_subject_field(
+        field=field,
+        appearance_keywords=appearance_keywords,
+        expression_mood=expression_mood,
+        posture_framing=posture_framing,
+        brief_context=brief_context,
+    )
+    model = _gemini_model()
+    response = await model.generate_content(prompt, temperature=0.4)
+    value = response.text.strip()
+    if not value:
+        raise ValueError("Empty response from Gemini")
+    return value
+
+
 async def tone_rewrite(
     rewrite_tone: str,
     copy_values: dict[str, str],
@@ -265,6 +317,14 @@ def build_composition_prompt(
     style_sentence: str = "",
     tone: str = "",
     brand_tagline: str = "",
+    # Additional wizard context — injected so the merged prompt reflects
+    # everything the user set in Steps 1–3, not just narrative + headline.
+    campaign_title: str = "",
+    campaign_objective: str = "",
+    target_audience: str = "",
+    brief_cta: str = "",
+    copy_subheadline: str = "",
+    copy_body: str = "",
 ) -> tuple[str, str]:
     """Deterministic composition prompt assembly (doc 03 §Composition Assembler).
 
@@ -336,11 +396,32 @@ def build_composition_prompt(
         "No competitor branding. Professional photography or illustration quality. "
         "No embedded text — copy will be overlaid separately."
     )
+    # Campaign context block — assembled from Step 1 + Step 3 so the image
+    # generator sees the full picture (goal, audience, tone, copy body), not
+    # just the headline + narrative.
+    context_lines: list[str] = []
+    if campaign_title:
+        context_lines.append(f'Campaign title: "{campaign_title.strip()}"')
+    if campaign_objective:
+        context_lines.append(
+            f"Objective: {campaign_objective.lower().replace('_', ' ')}"
+        )
+    if target_audience:
+        context_lines.append(f"Target audience: {target_audience.strip()}")
+    if brief_cta:
+        context_lines.append(f'Primary call to action: "{brief_cta.strip()}"')
     if brief_narrative:
         # Pass the narrative in full — it's already length-bounded by the brief
         # form (60–120 words, per PRD). Trimming here drops useful context and
         # tends to end the prompt mid-sentence, which reads as a bug to users.
-        merged_prompt += f"\n\nCampaign context: {brief_narrative.strip()}"
+        context_lines.append(f"Narrative: {brief_narrative.strip()}")
+    if copy_subheadline:
+        context_lines.append(f'Subheadline: "{copy_subheadline.strip()}"')
+    if copy_body:
+        context_lines.append(f"Body copy: {copy_body.strip()}")
+
+    if context_lines:
+        merged_prompt += "\n\nCampaign context:\n  - " + "\n  - ".join(context_lines)
 
     return merged_prompt, style_sentence
 

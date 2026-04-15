@@ -9,10 +9,10 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
-import Tooltip from "@mui/material/Tooltip";
 import { fetchArtifactDetail, updateArtifact } from "@/lib/api/artifacts";
 import { draftBrief, improveBriefField } from "@/lib/api/video-sessions";
 import type { BriefImproveRequest } from "@/lib/api/video-sessions";
+import { AiAssistChip } from "@/components/poster-wizard/shared/ai-assist-chip";
 
 const TONES = [
   { value: "professional", label: "Professional" },
@@ -24,61 +24,6 @@ const TONES = [
 
 type ToneValue = (typeof TONES)[number]["value"];
 type ImprovableField = BriefImproveRequest["field"];
-
-// Sparkle icon — indicates AI can improve this field
-function SparkleIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2l2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74L12 2z" />
-      <path d="M5 17l.88 2.12L8 20l-2.12.88L5 23l-.88-2.12L2 20l2.12-.88L5 17z" opacity=".6" />
-      <path d="M19 2l.66 1.59L21.25 4l-1.59.66L19 6.25l-.66-1.59L16.75 4l1.59-.66L19 2z" opacity=".6" />
-    </svg>
-  );
-}
-
-function AIButton({
-  loading,
-  onClick,
-  tooltip,
-}: {
-  loading: boolean;
-  onClick: () => void;
-  tooltip: string;
-}) {
-  return (
-    <Tooltip title={tooltip} placement="top" arrow>
-      <Box
-        component="button"
-        onClick={onClick}
-        disabled={loading}
-        sx={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 0.5,
-          px: 1.25,
-          py: 0.4,
-          borderRadius: "9999px",
-          border: "1px solid #D0103A",
-          bgcolor: "transparent",
-          color: "#D0103A",
-          fontSize: "11px",
-          fontWeight: 600,
-          cursor: loading ? "not-allowed" : "pointer",
-          opacity: loading ? 0.6 : 1,
-          transition: "all 0.15s",
-          "&:hover:not(:disabled)": { bgcolor: "#FFF1F4" },
-        }}
-      >
-        {loading ? (
-          <CircularProgress size={10} sx={{ color: "#D0103A" }} />
-        ) : (
-          <SparkleIcon size={11} />
-        )}
-        AI
-      </Box>
-    </Tooltip>
-  );
-}
 
 const FIELD_LABELS: Record<ImprovableField, string> = {
   key_message: "Key message",
@@ -212,21 +157,20 @@ export default function BriefStepPage() {
   const FieldLabel = ({
     label,
     field,
-    tooltip,
   }: {
     label: string;
     field: ImprovableField;
-    tooltip: string;
   }) => (
-    <Box sx={{ mb: 0.75, display: "flex", alignItems: "center", gap: 1 }}>
+    <Box sx={{ mb: 0.75, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
       <Typography sx={{ fontSize: "0.875rem", fontWeight: 600, color: "#484848" }}>
         {label}
       </Typography>
-      <AIButton
+      <AiAssistChip
         loading={fieldLoading === field}
         onClick={() => handleImproveField(field)}
-        tooltip={tooltip}
-      />
+      >
+        + AI
+      </AiAssistChip>
     </Box>
   );
 
@@ -242,25 +186,14 @@ export default function BriefStepPage() {
             Set the direction for your video. All fields feed into the AI script and scene generation.
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          size="small"
-          disabled={isDraftingAll || !(sessionId ?? videoSession?.id)}
+        <AiAssistChip
           onClick={handleDraftAll}
-          startIcon={isDraftingAll ? <CircularProgress size={13} sx={{ color: "#D0103A" }} /> : <SparkleIcon size={13} />}
-          sx={{
-            flexShrink: 0,
-            textTransform: "none",
-            borderColor: "#D0103A",
-            color: "#D0103A",
-            fontWeight: 600,
-            borderRadius: 2,
-            "&:hover": { borderColor: "#A00D2E", bgcolor: "#FFF1F4" },
-            "&:disabled": { borderColor: "#E5E5E5", color: "#ABABAB" },
-          }}
+          loading={isDraftingAll}
+          disabled={!(sessionId ?? videoSession?.id)}
+          size="md"
         >
           {isDraftingAll ? "Generating…" : "AI Generate Brief"}
-        </Button>
+        </AiAssistChip>
       </Box>
 
       {error && (
@@ -287,11 +220,7 @@ export default function BriefStepPage() {
 
         {/* Key message */}
         <Box>
-          <FieldLabel
-            label="Key message"
-            field="key_message"
-            tooltip="AI rewrites this to be more compelling, using the other fields as context"
-          />
+          <FieldLabel label="Key message" field="key_message" />
           <TextField
             fullWidth
             multiline
@@ -305,11 +234,7 @@ export default function BriefStepPage() {
 
         {/* Target audience */}
         <Box>
-          <FieldLabel
-            label="Target audience"
-            field="target_audience"
-            tooltip="AI refines this to be more specific and relevant"
-          />
+          <FieldLabel label="Target audience" field="target_audience" />
           <TextField
             fullWidth
             size="small"
@@ -361,11 +286,7 @@ export default function BriefStepPage() {
 
         {/* CTA text */}
         <Box>
-          <FieldLabel
-            label="Call to action"
-            field="cta_text"
-            tooltip="AI sharpens this into a more persuasive CTA phrase"
-          />
+          <FieldLabel label="Call to action" field="cta_text" />
           <TextField
             fullWidth
             size="small"
@@ -381,15 +302,7 @@ export default function BriefStepPage() {
 
         {/* Video brief — narrative summary */}
         <Box>
-          <FieldLabel
-            label="Video brief"
-            field="video_brief"
-            tooltip={
-              videoBrief
-                ? "AI improves the existing brief using the fields above as context"
-                : "AI writes a narrative brief from the fields above"
-            }
-          />
+          <FieldLabel label="Video brief" field="video_brief" />
           <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
             A narrative summary used as context throughout script and scene generation. Leave blank to skip, or let AI build it from your inputs above.
           </Typography>

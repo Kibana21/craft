@@ -12,7 +12,8 @@ import DialogTitle from "@mui/material/DialogTitle";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { AiAssistChip } from "@/components/poster-wizard/shared/ai-assist-chip";
-import { generateBrief } from "@/lib/api/poster-wizard";
+import { generateBrief, improveBriefField } from "@/lib/api/poster-wizard";
+import type { BriefImproveField } from "@/lib/api/poster-wizard";
 import { updateArtifact } from "@/lib/api/artifacts";
 import { usePosterWizard } from "../layout";
 import type { CampaignObjective, PosterTone } from "@/types/poster-wizard";
@@ -54,8 +55,32 @@ export default function PosterBriefPage() {
   const { brief, setBrief, artifactId, isSaving, setIsSaving, getContentPayload } = usePosterWizard();
 
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [fieldLoading, setFieldLoading] = useState<BriefImproveField | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
+
+  const handleImproveField = async (field: BriefImproveField) => {
+    setFieldLoading(field);
+    setError(null);
+    try {
+      const { value } = await improveBriefField({
+        field,
+        title: brief.title,
+        campaign_objective: brief.campaign_objective,
+        target_audience: brief.target_audience,
+        tone: brief.tone,
+        call_to_action: brief.call_to_action,
+        narrative: brief.narrative,
+      });
+      if (field === "title") setBrief({ title: value });
+      else if (field === "target_audience") setBrief({ target_audience: value });
+      else if (field === "call_to_action") setBrief({ call_to_action: value });
+    } catch {
+      setError("AI suggestion failed. Please try again.");
+    } finally {
+      setFieldLoading(null);
+    }
+  };
 
   const hasNarrative = brief.narrative.trim().length > 0;
 
@@ -212,9 +237,17 @@ export default function PosterBriefPage() {
       <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
         {/* Campaign title */}
         <Box>
-          <Typography sx={{ mb: 0.75, fontSize: "13px", fontWeight: 600, color: "#1F1F1F" }}>
-            Campaign title <span style={{ color: "#D0103A" }}>*</span>
-          </Typography>
+          <Box sx={{ mb: 0.75, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Typography sx={{ fontSize: "13px", fontWeight: 600, color: "#1F1F1F" }}>
+              Campaign title <span style={{ color: "#D0103A" }}>*</span>
+            </Typography>
+            <AiAssistChip
+              onClick={() => handleImproveField("title")}
+              loading={fieldLoading === "title"}
+            >
+              + AI
+            </AiAssistChip>
+          </Box>
           <TextField
             fullWidth
             size="small"
@@ -239,9 +272,17 @@ export default function PosterBriefPage() {
 
         {/* Target audience */}
         <Box>
-          <Typography sx={{ mb: 0.75, fontSize: "13px", fontWeight: 600, color: "#1F1F1F" }}>
-            Target audience <span style={{ color: "#D0103A" }}>*</span>
-          </Typography>
+          <Box sx={{ mb: 0.75, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Typography sx={{ fontSize: "13px", fontWeight: 600, color: "#1F1F1F" }}>
+              Target audience <span style={{ color: "#D0103A" }}>*</span>
+            </Typography>
+            <AiAssistChip
+              onClick={() => handleImproveField("target_audience")}
+              loading={fieldLoading === "target_audience"}
+            >
+              + AI
+            </AiAssistChip>
+          </Box>
           <TextField
             fullWidth
             size="small"
@@ -266,9 +307,17 @@ export default function PosterBriefPage() {
 
         {/* Call to action */}
         <Box>
-          <Typography sx={{ mb: 0.75, fontSize: "13px", fontWeight: 600, color: "#1F1F1F" }}>
-            Call to action <span style={{ color: "#D0103A" }}>*</span>
-          </Typography>
+          <Box sx={{ mb: 0.75, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <Typography sx={{ fontSize: "13px", fontWeight: 600, color: "#1F1F1F" }}>
+              Call to action <span style={{ color: "#D0103A" }}>*</span>
+            </Typography>
+            <AiAssistChip
+              onClick={() => handleImproveField("call_to_action")}
+              loading={fieldLoading === "call_to_action"}
+            >
+              + AI
+            </AiAssistChip>
+          </Box>
           <TextField
             fullWidth
             size="small"

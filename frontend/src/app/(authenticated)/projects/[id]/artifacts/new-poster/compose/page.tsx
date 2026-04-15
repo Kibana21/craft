@@ -180,9 +180,21 @@ export default function PosterComposePage() {
     setError(null);
     try {
       const result = await generateCompositionPrompt({
-        brief: { narrative: brief.narrative, tone: (brief.tone as PosterTone) || "PROFESSIONAL" },
+        brief: {
+          title: brief.title,
+          campaign_objective: brief.campaign_objective,
+          target_audience: brief.target_audience,
+          tone: (brief.tone as PosterTone) || "PROFESSIONAL",
+          call_to_action: brief.call_to_action,
+          narrative: brief.narrative,
+        },
         subject,
-        copy: { headline: copy.headline, cta_text: copy.cta_text },
+        copy: {
+          headline: copy.headline,
+          subheadline: copy.subheadline,
+          body: copy.body,
+          cta_text: copy.cta_text,
+        },
         composition_settings: {
           format: composition.format as CompositionFormat,
           layout_template: composition.layout_template as LayoutTemplate,

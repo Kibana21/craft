@@ -336,6 +336,46 @@ class ToneRewriteResponse(BaseModel):
     rewritten: CopyValues
 
 
+# ── Field-level AI improvement (brief + subject) ──────────────────────────────
+
+
+class ImproveBriefFieldRequest(BaseModel):
+    """POST /api/ai/poster/improve-brief-field
+
+    Single-field AI assist on the Step 1 brief form. The field name tells the
+    service which prompt template to use; remaining fields provide context so
+    the generated value coheres with what the user has already typed.
+    """
+    field: Literal["title", "target_audience", "call_to_action"]
+    # Context — any of these may be empty strings if not yet filled
+    title: str = ""
+    campaign_objective: CampaignObjective | None = None
+    target_audience: str = ""
+    tone: Tone | None = None
+    call_to_action: str = ""
+    narrative: str = ""
+
+
+class ImproveBriefFieldResponse(BaseModel):
+    value: str
+
+
+class ImproveSubjectFieldRequest(BaseModel):
+    """POST /api/ai/poster/improve-subject-field
+
+    Single-field AI assist on the Step 2 human-model sub-form.
+    """
+    field: Literal["appearance_keywords", "expression_mood"]
+    appearance_keywords: str = ""
+    expression_mood: str = ""
+    posture_framing: PostureFraming | None = None
+    brief_context: str | None = None
+
+
+class ImproveSubjectFieldResponse(BaseModel):
+    value: str
+
+
 # ── Phase C — Image generation ────────────────────────────────────────────────
 
 
