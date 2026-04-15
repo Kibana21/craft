@@ -1,5 +1,29 @@
 // Poster Wizard AI endpoints — wraps /api/ai/poster/* and /api/compliance/check-field
 import { apiClient } from "@/lib/api-client";
+
+function backendBase(): string {
+  return (
+    process.env.NEXT_PUBLIC_API_URL ??
+    (typeof window !== "undefined" ? "" : "http://localhost:8000")
+  );
+}
+
+/**
+ * Resolve a poster variant image URL to an absolute URL pointing at the
+ * backend's /uploads mount. This avoids the Next.js dev proxy (which can
+ * hit a Node undici ↔ uvicorn keep-alive race and return ECONNRESET on
+ * /uploads/poster-variants/... requests).
+ *
+ * Handles:
+ *  - null / undefined → empty string
+ *  - absolute http(s) URL → returned unchanged (S3 / R2 case)
+ *  - leading-slash relative URL (/uploads/...) → prefixed with backend origin
+ */
+export function staticPosterUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${backendBase()}${url}`;
+}
 import type {
   PosterBriefContent,
   PosterCopyContent,

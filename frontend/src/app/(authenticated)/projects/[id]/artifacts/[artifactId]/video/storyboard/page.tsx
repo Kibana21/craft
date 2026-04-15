@@ -142,8 +142,18 @@ export default function StoryboardStepPage() {
   };
 
   const handleDelete = async (sceneId: string) => {
-    await deleteScene(sceneId);
-    if (sessionId) await loadScenes(sessionId);
+    try {
+      await deleteScene(sceneId);
+      if (sessionId) await loadScenes(sessionId);
+    } catch (err) {
+      const apiErr = err as { detail?: string; status?: number };
+      console.error("[storyboard] Scene delete failed:", apiErr.status, apiErr.detail ?? err);
+      setError(
+        apiErr.detail
+          ? `Couldn't delete scene: ${apiErr.detail}`
+          : "Couldn't delete scene. Check your connection and try again.",
+      );
+    }
   };
 
   const handleInsert = async (data: SceneInsertData) => {

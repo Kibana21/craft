@@ -19,6 +19,7 @@ import {
   upscaleVariant,
   listVariantTurns,
   restoreVariantTurn,
+  staticPosterUrl,
 } from "@/lib/api/poster-wizard";
 import { ChatPanel } from "@/components/poster-wizard/chat/chat-panel";
 import { InpaintOverlay } from "@/components/poster-wizard/chat/inpaint-overlay";
@@ -120,7 +121,7 @@ function StripTile({
       {variant.image_url ? (
         <Box
           component="img"
-          src={variant.image_url}
+          src={staticPosterUrl(variant.image_url)}
           alt={`Variant ${index + 1}`}
           sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
         />
@@ -481,7 +482,7 @@ export default function PosterGeneratePage() {
           {isInpaintMode && selectedVariant?.image_url ? (
             <Box sx={{ mb: 2 }}>
               <InpaintOverlay
-                imageUrl={selectedVariant.image_url}
+                imageUrl={staticPosterUrl(selectedVariant.image_url)}
                 onSubmit={handleInpaintSubmit}
                 onCancel={() => setIsInpaintMode(false)}
                 isLoading={isInpainting}
@@ -506,7 +507,7 @@ export default function PosterGeneratePage() {
               ) : selectedVariant?.image_url ? (
                 <Box
                   component="img"
-                  src={selectedVariant.image_url}
+                  src={staticPosterUrl(selectedVariant.image_url)}
                   alt="Selected variant"
                   sx={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
                 />
@@ -748,7 +749,7 @@ export default function PosterGeneratePage() {
                     {/* Thumbnail */}
                     <Box
                       component="img"
-                      src={turn.resulting_image_url}
+                      src={staticPosterUrl(turn.resulting_image_url)}
                       alt={`Turn ${turn.turn_index + 1}`}
                       sx={{
                         width: 72, aspectRatio: "4/5", objectFit: "cover",
