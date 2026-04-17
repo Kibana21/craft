@@ -114,7 +114,7 @@ backend/
 | `verify_token` | FastAPI dependency → decoded payload dict |
 | `get_current_user` | FastAPI dependency → `User` ORM object |
 
-Password hashing: bcrypt via passlib (12 rounds).
+Password hashing: bcrypt via passlib (12 rounds). **bcrypt is blocking** — `verify_password` runs via `asyncio.to_thread()` in `auth_service.py` to avoid blocking the async event loop.
 
 ### `app/core/rbac.py`
 
@@ -375,6 +375,10 @@ All BRAND_ADMIN only except score endpoints.
 | DELETE /documents/{id} | 204 |
 | POST /score/{artifact_id} | Trigger on-demand compliance scoring |
 | GET /score/{artifact_id} | Re-score + return latest ComplianceScoreResponse |
+| POST /rules/suggest | AI-draft a MAS-aligned rule for a given category + optional hint. Requires BRAND_ADMIN. Returns `{ rule_text }`. Raises 503 if Gemini fails. |
+| POST /check-field | Per-field inline compliance check (Phase E). Any authenticated user. Returns `{ flags, cached }`. |
+
+Compliance schemas: `CreateRuleRequest`, `UpdateRuleRequest`, `ComplianceRuleResponse` (existing). Added: `SuggestRuleRequest`: `{ category: str, hint: str | None (max 300 chars) }`. `SuggestRuleResponse`: `{ rule_text: str }`.
 
 ### `exports` — `/api/artifacts/{artifact_id}/export`
 | Method + Path | Notes |
@@ -501,6 +505,9 @@ Auth: service account key at `GOOGLE_VEO_KEY_FILE`.
 
 ### `app/services/compliance_scorer.py`
 `score_artifact(db, artifact_id)` — Gemini-based scoring against active ComplianceRules + ComplianceDocuments (RAG via LangChain + pgvector). Returns `{score, breakdown}`.
+
+### `app/services/compliance_service.py`
+`suggest_compliance_rule(category, hint)` — uses Gemini (`_gemini_model()`) to draft a single MAS-aligned rule. Uses `_CATEGORY_CONTEXT` dict to inject category-specific guidance into the prompt. Strips "Rule:" prefix echo. Raises HTTP 503 (not 500) on Gemini failure — never returns 500 for an AI blip.
 
 ### `app/services/prompt_builder.py`
 `build_merged_prompt(scene, presenter, brand_kit)` — Assembles the final prompt string for Veo scene generation.
@@ -636,13 +643,13 @@ Password for all: `craft2026`
 
 | Email | Role |
 |---|---|
-| sarah.lim@example.com | BRAND_ADMIN |
-| james.tan@example.com | BRAND_ADMIN |
-| david.lee@example.com | DISTRICT_LEADER |
-| rachel.wong@example.com | DISTRICT_LEADER |
-| michael.ng@example.com | AGENCY_LEADER |
-| priya.kumar@example.com | AGENCY_LEADER |
-| maya.chen@agent.example.com (FSC-1001) | FSC |
-| alex.ong@agent.example.com (FSC-1002) | FSC |
+| sarah@example.com | BRAND_ADMIN |
+| james@example.com | BRAND_ADMIN |
+| david@example.com | DISTRICT_LEADER |
+| rachel@example.com | DISTRICT_LEADER |
+| michael@example.com | AGENCY_LEADER |
+| priya@example.com | AGENCY_LEADER |
+| maya@agent.example.com (FSC-1001) | FSC |
+| alex@agent.example.com (FSC-1002) | FSC |
 
 Seed also creates: AIA Singapore BrandKit v1 (#D0103A / #1A1A18 / #1B9D74) + 5 compliance rules (3 ERROR, 2 WARNING).

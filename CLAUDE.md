@@ -11,7 +11,7 @@ CRAFT is an AI-powered content creation platform for AIA Singapore. Two audience
 - **Frontend:** Next.js 16 (App Router) + React 19 + TypeScript + MUI v9 + Recharts + TanStack Query v5 (server state)
 - **Backend:** FastAPI 0.115 (Python 3.12+) + SQLAlchemy 2.0 (async) + Alembic + Pydantic v2
 - **Database:** PostgreSQL with pgvector extension
-- **Auth:** Hardcoded login with JWT (HS256). Access token in `sessionStorage`; refresh token in `localStorage`. See `frontend/src/lib/auth.ts`.
+- **Auth:** Hardcoded login with JWT (HS256). Both access token and refresh token in `localStorage` (so a second tab inherits the session). See `frontend/src/lib/auth.ts`.
 - **AI:** Google Gemini (`gemini-2.5-flash`) for text + `gemini-2.5-flash-image` for image generation. Google Veo (`veo-3.1-generate-001`) via Vertex AI for video. LangChain + pgvector for compliance RAG.
 - **Video rendering:** Scene-by-scene Veo generation → ffmpeg concat → MP4. Celery worker on `"video"` queue.
 - **Export rendering:** Pillow (PNG/JPG compositing) + ffmpeg-python (MP4 reels).
@@ -177,7 +177,7 @@ Cards: `border: "1px solid #E8EAED"`, `borderRadius: "16px"`, white background.
 | `uploads` | POST /photo, /image |
 | `brand_kit` | GET/PATCH /; POST /logo, /font |
 | `brand_library` | Browse + publish + review + remix |
-| `compliance` | Rules CRUD; Documents CRUD; POST/GET /score/{artifact_id} |
+| `compliance` | Rules CRUD + **POST /rules/suggest** (AI-draft a rule via Gemini); Documents CRUD; POST/GET /score/{artifact_id}; POST /check-field (per-field inline) |
 | `exports` | POST /artifacts/{id}/export; GET /{id}/status, /{id}/download |
 | `comments` | GET/POST /artifacts/{id}/comments |
 | `notifications` | GET /; POST /{id}/read |
@@ -224,7 +224,7 @@ Cards: `border: "1px solid #E8EAED"`, `borderRadius: "16px"`, white background.
 /brand-kit                                      # Brand colors, fonts, logo upload
 /brand-library                                  # Browse & remix approved content
 /brand-library/[id]                             # Library item detail
-/compliance/rules                               # Admin: manage compliance rules
+/compliance/rules                               # Admin: manage compliance rules — TanStack Query, filter bar (status + category pills), stats strip, edit-rule dialog, AI draft button (Gemini), freeSolo category Autocomplete
 /compliance/documents                           # Admin: upload MAS documents
 /compliance/review                              # Review queue (stub — deferred)
 /leaderboard                                    # Points, streaks, leaderboard
@@ -240,7 +240,7 @@ Cards: `border: "1px solid #E8EAED"`, `borderRadius: "16px"`, white background.
 - **Full video wizard** (Brief → Presenter → Script → Storyboard → Veo generation via Celery)
 - Brand kit (colors, fonts, logos)
 - Brand library (submit → review → publish → remix workflow)
-- Compliance engine (rules CRUD, document upload, Gemini scoring, RAG via pgvector)
+- Compliance engine (rules CRUD + AI-draft suggestions, document upload, Gemini scoring, RAG via pgvector; compliance/rules page has filter bar, edit dialog, stats strip)
 - Export pipeline (PNG/JPG via Pillow, MP4 via ffmpeg, S3/local)
 - Gamification (points log in PostgreSQL, streaks, Redis leaderboard)
 - Analytics (overview metrics, activity trends, content gaps, top remixed)
@@ -281,11 +281,11 @@ Current HEAD: `e1f2a3b4c5d6`
 
 | Email | Role |
 |---|---|
-| sarah.lim@example.com | BRAND_ADMIN |
-| james.tan@example.com | BRAND_ADMIN |
-| david.lee@example.com | DISTRICT_LEADER |
-| rachel.wong@example.com | DISTRICT_LEADER |
-| michael.ng@example.com | AGENCY_LEADER |
-| priya.kumar@example.com | AGENCY_LEADER |
-| maya.chen@agent.example.com (FSC-1001) | FSC |
-| alex.ong@agent.example.com (FSC-1002) | FSC |
+| sarah@example.com | BRAND_ADMIN |
+| james@example.com | BRAND_ADMIN |
+| david@example.com | DISTRICT_LEADER |
+| rachel@example.com | DISTRICT_LEADER |
+| michael@example.com | AGENCY_LEADER |
+| priya@example.com | AGENCY_LEADER |
+| maya@agent.example.com (FSC-1001) | FSC |
+| alex@agent.example.com (FSC-1002) | FSC |

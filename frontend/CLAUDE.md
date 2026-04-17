@@ -30,10 +30,10 @@ frontend/src/
 │   └── (authenticated)/            # Protected route group
 │       ├── layout.tsx              # Auth guard + nav rendering
 │       ├── home/page.tsx           # Creator/Agent home (tabs)
-│       ├── brand-kit/page.tsx
+│       ├── brand-kit/page.tsx          # Brand colors, fonts, logo upload — no edit mode toggle; save bar appears contextually only when color changes are unsaved; fonts/logos save immediately on upload
 │       ├── brand-library/
 │       ├── leaderboard/page.tsx
-│       ├── compliance/rules|documents|review/
+│       ├── compliance/rules|documents|review/  # rules: TanStack Query (rulesQuery, createMutation, toggleMutation, editMutation), filter bar (status + category pills), stats strip, edit-rule dialog + AI draft button, CategoryAutocomplete (freeSolo)
 │       └── projects/
 │           ├── new/page.tsx        # 5-step project creation wizard
 │           ├── [id]/page.tsx       # Project detail
@@ -276,6 +276,8 @@ const deleteMutation = useMutation({
 ### Query-key factory (`src/lib/query-keys.ts`)
 
 Always use the factory instead of hard-coding `["projects", ...]` arrays at call sites. Centralises:
+
+`complianceRules()` — key for the full rules list (`["compliance", "rules"]`). `complianceDocuments()` — key for documents list (`["compliance", "documents"]`).
 - Type-safety (factory signatures document what a key takes).
 - Invalidation correctness (mutations can reference the same helpers).
 - Dev-tools readability.
@@ -400,6 +402,7 @@ uploadDocument(data) → ComplianceDocument
 deleteDocument(id) → void
 scoreArtifact(artifactId) → ComplianceScore
 fetchScoreBreakdown(artifactId) → ComplianceScore
+suggestRule(category, hint?) → { rule_text: string }   // AI-draft via POST /rules/suggest
 ```
 
 ### `ai.ts`
