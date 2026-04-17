@@ -384,6 +384,10 @@ async def generate_composition_prompt(
         tone=data.brief.tone,
     )
 
+    template_zones_raw = None
+    if data.template_zones:
+        template_zones_raw = [z.model_dump() for z in data.template_zones]
+
     merged_prompt, style_sentence = build_composition_prompt(
         brief_narrative=data.brief.narrative,
         subject_type=subject_type,
@@ -402,6 +406,7 @@ async def generate_composition_prompt(
         brief_cta=data.brief.call_to_action,
         copy_subheadline=data.copy.subheadline,
         copy_body=data.copy.body,
+        template_zones=template_zones_raw,
     )
     return CompositionPromptResponse(merged_prompt=merged_prompt, style_sentence=style_sentence)
 

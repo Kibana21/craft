@@ -379,12 +379,21 @@ class ImproveSubjectFieldResponse(BaseModel):
 # ── Phase C — Image generation ────────────────────────────────────────────────
 
 
+class TemplateZoneInput(BaseModel):
+    name: str
+    x: int
+    y: int
+    width: int
+    height: int
+
+
 class CompositionPromptRequest(BaseModel):
     """POST /api/ai/poster/generate-composition-prompt"""
     brief: BriefContent
     subject: SubjectContent
     copy: CopyValues
     composition_settings: CompositionSettings
+    template_zones: list[TemplateZoneInput] | None = None
 
 
 class CompositionPromptResponse(BaseModel):

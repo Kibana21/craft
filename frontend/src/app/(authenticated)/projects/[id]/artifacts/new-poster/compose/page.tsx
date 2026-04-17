@@ -7,10 +7,14 @@ import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import { useQuery } from "@tanstack/react-query";
 import { AiAssistChip } from "@/components/poster-wizard/shared/ai-assist-chip";
 import { generateCompositionPrompt } from "@/lib/api/poster-wizard";
+import { fetchTemplates } from "@/lib/api/brand-kit";
+import { queryKeys } from "@/lib/query-keys";
 import { usePosterWizard } from "../layout";
 import { updateArtifact } from "@/lib/api/artifacts";
+import type { BrandKitTemplate } from "@/types/brand-kit";
 import type { CompositionFormat, LayoutTemplate, PosterTone, VisualStyle } from "@/types/poster-wizard";
 
 // ── Options ───────────────────────────────────────────────────────────────────
@@ -101,6 +105,12 @@ export default function PosterComposePage() {
 
   const [error, setError] = useState<string | null>(null);
   const [isAssembling, setIsAssembling] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<BrandKitTemplate | null>(null);
+
+  const templatesQuery = useQuery({
+    queryKey: queryKeys.brandKitTemplates(),
+    queryFn: fetchTemplates,
+  });
 
   const promptReady =
     composition.merged_prompt.trim().length > 0 && !composition.merged_prompt_stale;
@@ -201,6 +211,7 @@ export default function PosterComposePage() {
           visual_style: composition.visual_style as VisualStyle,
           palette: composition.palette,
         },
+        template_zones: selectedTemplate?.zones ?? undefined,
       });
       setComposition({
         merged_prompt: result.merged_prompt,
@@ -299,6 +310,48 @@ export default function PosterComposePage() {
           </Typography>
           <ChipSelector options={LAYOUTS} value={composition.layout_template} onChange={(v) => setComposition({ layout_template: v })} />
         </Box>
+
+        {/* Zone template (from Brand Kit) */}
+        {(templatesQuery.data?.length ?? 0) > 0 && (
+          <Box>
+            <Typography sx={{ mb: 1, fontSize: "13px", fontWeight: 600, color: "#1F1F1F" }}>
+              Zone template
+            </Typography>
+            <Box sx={{ display: "flex", gap: 1.5, overflowX: "auto", pb: 0.5 }}>
+              {templatesQuery.data!.map((t) => {
+                const isSel = selectedTemplate?.id === t.id;
+                return (
+                  <Box
+                    key={t.id}
+                    component="button"
+                    onClick={() => setSelectedTemplate(isSel ? null : t)}
+                    sx={{
+                      px: 2,
+                      py: 0.75,
+                      borderRadius: 9999,
+                      border: "1.5px solid",
+                      borderColor: isSel ? "#D0103A" : "#E5E5E5",
+                      bgcolor: isSel ? "#D0103A" : "#FFFFFF",
+                      color: isSel ? "#FFFFFF" : "#484848",
+                      fontSize: "0.8125rem",
+                      fontWeight: isSel ? 600 : 500,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
+                      transition: "all 0.15s",
+                      "&:hover": { borderColor: "#D0103A", bgcolor: isSel ? "#A00D2E" : "#FFF1F4" },
+                    }}
+                  >
+                    {t.name}
+                  </Box>
+                );
+              })}
+            </Box>
+            <Typography sx={{ mt: 0.5, fontSize: 11, color: "#9E9E9E" }}>
+              Optional — selects a compositing zone layout from your Brand Kit. AI scene fills the creative zone; other elements are composited.
+            </Typography>
+          </Box>
+        )}
 
         {/* Visual style */}
         <Box>

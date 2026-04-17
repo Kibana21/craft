@@ -116,15 +116,32 @@ async def seed() -> None:
         result = await session.execute(select(BrandKit))
         if result.scalar_one_or_none() is None:
             brand_kit = BrandKit(
-                name="AIA Singapore — Brand Kit v1",
+                name="Brand Kit v1",
                 primary_color="#D0103A",
                 secondary_color="#1A1A18",
                 accent_color="#1B9D74",
                 fonts={
                     "heading": "Inter",
                     "body": "Inter",
-                    "accent": "Inter",
+                    "disclaimer": "Inter",
+                    "disclaimer_inherited": True,
                 },
+                color_names={
+                    "primary_name": "Brand Red",
+                    "secondary_name": "Deep Charcoal",
+                    "accent_name": "Teal Green",
+                    "primary_usage": "Poster backgrounds, CTA buttons, title cards",
+                    "secondary_usage": "Body copy, overlay backgrounds, dark sections",
+                    "accent_usage": "Callout badges, icon highlights, video end-cards",
+                },
+                zone_roles={
+                    "poster_background": "primary",
+                    "cta_fill": "primary",
+                    "disclaimer_strip": "secondary",
+                    "badge_callout": "accent",
+                    "headline_text": "white",
+                },
+                is_active=True,
                 version=1,
             )
             session.add(brand_kit)

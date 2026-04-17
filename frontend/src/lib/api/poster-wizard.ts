@@ -272,6 +272,7 @@ export async function generateCompositionPrompt(params: {
     PosterCompositionContent,
     "format" | "layout_template" | "visual_style" | "palette"
   >;
+  template_zones?: { name: string; x: number; y: number; width: number; height: number }[];
 }): Promise<CompositionPromptResponse> {
   return apiClient.post<CompositionPromptResponse>(
     "/api/ai/poster/generate-composition-prompt",

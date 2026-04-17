@@ -120,7 +120,7 @@ async def create_project(
     brand_kit_id = data.brand_kit_id
     if brand_kit_id is None:
         result = await db.execute(
-            select(BrandKit).order_by(BrandKit.created_at.desc()).limit(1)
+            select(BrandKit).where(BrandKit.is_active == True).limit(1)  # noqa: E712
         )
         brand_kit = result.scalar_one_or_none()
         if brand_kit:

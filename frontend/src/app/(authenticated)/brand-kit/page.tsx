@@ -1,129 +1,201 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import Tab from "@mui/material/Tab";
+import Tabs from "@mui/material/Tabs";
+import Typography from "@mui/material/Typography";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/providers/auth-provider";
-import { BrandPreview } from "@/components/brand-kit/brand-preview";
-import { ColorPicker } from "@/components/brand-kit/color-picker";
-import { FontUpload } from "@/components/brand-kit/font-upload";
-import { LogoUpload } from "@/components/brand-kit/logo-upload";
+import { ColoursTab } from "@/components/brand-kit/tabs/colours-tab";
+import { TypographyTab } from "@/components/brand-kit/tabs/typography-tab";
+import { LogoVaultTab } from "@/components/brand-kit/tabs/logo-vault-tab";
+import { TemplatesTab } from "@/components/brand-kit/tabs/templates-tab";
+import { LivePreviewTab } from "@/components/brand-kit/tabs/live-preview-tab";
+import { VersionHistoryTab } from "@/components/brand-kit/tabs/version-history-tab";
 import {
   fetchBrandKit,
   updateBrandKit,
   uploadFont,
   uploadLogo,
 } from "@/lib/api/brand-kit";
-import type { BrandKit } from "@/types/brand-kit";
+import { queryKeys } from "@/lib/query-keys";
+import type { BrandKit, ColorNames, ZoneRoles, ZoneColorRole } from "@/types/brand-kit";
+
+const TABS = [
+  { key: "colours", label: "Colours" },
+  { key: "typography", label: "Typography" },
+  { key: "logo-vault", label: "Logos" },
+  { key: "templates", label: "Templates" },
+  { key: "live-preview", label: "Live Preview" },
+  { key: "version-history", label: "Version History" },
+];
 
 export default function BrandKitPage() {
   const { user } = useAuth();
   const router = useRouter();
-
-  const [kit, setKit] = useState<BrandKit | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [savedAt, setSavedAt] = useState<Date | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  // Local edits (colors only — logos/fonts save immediately on upload)
-  const [primaryColor, setPrimaryColor] = useState("");
-  const [secondaryColor, setSecondaryColor] = useState("");
-  const [accentColor, setAccentColor] = useState("");
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
 
   const isAdmin = user?.role === "brand_admin";
+  const activeTab = searchParams.get("tab") || "colours";
+  const activeIndex = TABS.findIndex((t) => t.key === activeTab);
+
+  const kitQuery = useQuery({
+    queryKey: queryKeys.brandKit(),
+    queryFn: fetchBrandKit,
+    // Backend may be mid-restart (uvicorn --reload). Retry more aggressively
+    // so transient startup failures are invisible; only extended outages
+    // surface the manual Retry button.
+    retry: 5,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
+    // Auto-retry every 8 s while in error state so the page self-heals once
+    // the backend is ready, without needing a manual Retry click.
+    refetchInterval: (query) =>
+      query.state.status === "error" && !query.state.data ? 8000 : false,
+  });
+
+  const kit = kitQuery.data;
+
+  const DEFAULT_ZONE_ROLES: ZoneRoles = {
+    poster_background: "primary",
+    cta_fill: "primary",
+    disclaimer_strip: "secondary",
+    badge_callout: "accent",
+    headline_text: "white",
+  };
+
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [draftColors, setDraftColors] = useState({ primary: "", secondary: "", accent: "" });
+  const [draftColorNames, setDraftColorNames] = useState<ColorNames>({});
+  const [draftZoneRoles, setDraftZoneRoles] = useState<ZoneRoles>(DEFAULT_ZONE_ROLES);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchBrandKit()
-      .then((data) => {
-        setKit(data);
-        setPrimaryColor(data.primary_color);
-        setSecondaryColor(data.secondary_color);
-        setAccentColor(data.accent_color);
-      })
-      .catch(() => setError("Failed to load brand kit"))
-      .finally(() => setIsLoading(false));
+    if (kit) {
+      setDraftColors({
+        primary: kit.primary_color,
+        secondary: kit.secondary_color,
+        accent: kit.accent_color,
+      });
+      setDraftColorNames(kit.color_names || {});
+      setDraftZoneRoles({ ...DEFAULT_ZONE_ROLES, ...(kit.zone_roles || {}) });
+    }
+  }, [kit]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hasChanges =
+    kit != null &&
+    (draftColors.primary !== kit.primary_color ||
+      draftColors.secondary !== kit.secondary_color ||
+      draftColors.accent !== kit.accent_color ||
+      JSON.stringify(draftColorNames) !== JSON.stringify(kit.color_names || {}) ||
+      JSON.stringify(draftZoneRoles) !== JSON.stringify({ ...DEFAULT_ZONE_ROLES, ...(kit.zone_roles || {}) }));
+
+  useEffect(() => {
+    if (!isEditMode || !hasChanges) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isEditMode, hasChanges]);
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      updateBrandKit({
+        primary_color: draftColors.primary,
+        secondary_color: draftColors.secondary,
+        accent_color: draftColors.accent,
+        color_names: draftColorNames,
+        zone_roles: draftZoneRoles,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.brandKit() });
+      setIsEditMode(false);
+      setError(null);
+    },
+    onError: () => setError("Failed to save changes"),
+  });
+
+  const handleTabChange = (_: React.SyntheticEvent, newIndex: number) => {
+    router.push(`/brand-kit?tab=${TABS[newIndex].key}`, { scroll: false });
+  };
+
+  const handleEnterEdit = () => {
+    if (!kit) return;
+    setDraftColors({
+      primary: kit.primary_color,
+      secondary: kit.secondary_color,
+      accent: kit.accent_color,
+    });
+    setDraftColorNames(kit.color_names || {});
+    setDraftZoneRoles({ ...DEFAULT_ZONE_ROLES, ...(kit.zone_roles || {}) });
+    setIsEditMode(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (kit) {
+      setDraftColors({
+        primary: kit.primary_color,
+        secondary: kit.secondary_color,
+        accent: kit.accent_color,
+      });
+      setDraftColorNames(kit.color_names || {});
+      setDraftZoneRoles({ ...DEFAULT_ZONE_ROLES, ...(kit.zone_roles || {}) });
+    }
+    setIsEditMode(false);
+    setError(null);
+  };
+
+  const handleZoneRoleChange = useCallback((zone: keyof ZoneRoles, role: ZoneColorRole) => {
+    setDraftZoneRoles((prev) => ({ ...prev, [zone]: role }));
   }, []);
 
-  // Live preview — merge local edits into kit object
-  const previewKit: BrandKit | null = kit
-    ? {
-        ...kit,
-        primary_color: primaryColor || kit.primary_color,
-        secondary_color: secondaryColor || kit.secondary_color,
-        accent_color: accentColor || kit.accent_color,
-      }
-    : null;
+  const handleColorChange = useCallback((role: "primary" | "secondary" | "accent", hex: string) => {
+    setDraftColors((prev) => ({ ...prev, [role]: hex }));
+  }, []);
 
-  const hasColorChanges =
-    kit &&
-    (primaryColor !== kit.primary_color ||
-      secondaryColor !== kit.secondary_color ||
-      accentColor !== kit.accent_color);
+  const handleColorNameChange = useCallback((field: keyof ColorNames, value: string) => {
+    setDraftColorNames((prev) => ({ ...prev, [field]: value }));
+  }, []);
 
-  async function handleSaveColors() {
-    if (!hasColorChanges) return;
-    setIsSaving(true);
+  const handleLogoUpload = async (file: File, variant: "primary" | "secondary") => {
     setError(null);
     try {
-      const updated = await updateBrandKit({
-        primary_color: primaryColor,
-        secondary_color: secondaryColor,
-        accent_color: accentColor,
-      });
-      setKit(updated);
-      setSavedAt(new Date());
-    } catch {
-      setError("Failed to save colors");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  async function handleLogoUpload(file: File, variant: "primary" | "secondary") {
-    setError(null);
-    try {
-      const updated = await uploadLogo(file, variant);
-      setKit(updated);
-      setSavedAt(new Date());
+      await uploadLogo(file, variant);
+      queryClient.invalidateQueries({ queryKey: queryKeys.brandKit() });
     } catch {
       setError("Failed to upload logo");
     }
-  }
+  };
 
-  async function handleFontUpload(file: File, slot: "heading" | "body" | "accent") {
+  const handleFontUpload = async (file: File, slot: "heading" | "body" | "disclaimer") => {
     setError(null);
     try {
-      const updated = await uploadFont(file, slot);
-      setKit(updated);
-      setSavedAt(new Date());
+      await uploadFont(file, slot);
+      queryClient.invalidateQueries({ queryKey: queryKeys.brandKit() });
     } catch {
       setError("Failed to upload font");
     }
-  }
+  };
 
-  if (isLoading) {
+  const previewKit: BrandKit | null = kit
+    ? {
+        ...kit,
+        primary_color: draftColors.primary || kit.primary_color,
+        secondary_color: draftColors.secondary || kit.secondary_color,
+        accent_color: draftColors.accent || kit.accent_color,
+        color_names: draftColorNames,
+      }
+    : null;
+
+  if (kitQuery.isPending) {
     return (
-      <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 4 }}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {[1, 2, 3].map((i) => (
-            <Box
-              key={i}
-              sx={{
-                height: 80,
-                borderRadius: "12px",
-                backgroundColor: "#F7F7F7",
-                "@keyframes pulse": {
-                  "0%, 100%": { opacity: 1 },
-                  "50%": { opacity: 0.4 },
-                },
-                animation: "pulse 1.5s ease-in-out infinite",
-              }}
-            />
-          ))}
-        </Box>
+      <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 4, display: "flex", justifyContent: "center", pt: 12 }}>
+        <CircularProgress size={32} sx={{ color: "#D0103A" }} />
       </Box>
     );
   }
@@ -131,9 +203,19 @@ export default function BrandKitPage() {
   if (!kit || !previewKit) {
     return (
       <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 4 }}>
-        <Typography sx={{ fontSize: 14, color: "#717171" }}>
-          Brand kit not available.
+        <Typography sx={{ fontSize: 14, color: "#717171", mb: 1.5 }}>
+          {kitQuery.isError ? "Could not load brand kit." : "Brand kit not available."}
         </Typography>
+        {kitQuery.isError && (
+          <Button
+            onClick={() => kitQuery.refetch()}
+            variant="outlined"
+            disableElevation
+            sx={{ borderRadius: 9999, textTransform: "none", fontSize: 13, borderColor: "#E8EAED", color: "#1F1F1F" }}
+          >
+            {kitQuery.isFetching ? "Retrying…" : "Retry"}
+          </Button>
+        )}
       </Box>
     );
   }
@@ -141,47 +223,95 @@ export default function BrandKitPage() {
   return (
     <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 4 }}>
       {/* Header */}
-      <Box
-        sx={{
-          mb: 5,
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-        }}
-      >
+      <Box sx={{ mb: 4, display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <Box>
-          <Typography
-            component="h1"
-            sx={{ fontSize: 28, fontWeight: 700, color: "#1F1F1F" }}
-          >
-            Brand Kit
-          </Typography>
-          <Typography sx={{ mt: 0.5, fontSize: 16, color: "#5F6368" }}>
-            {isAdmin
-              ? "Manage AIA brand assets — logos, colors, and typography"
-              : "View the current AIA brand kit used across all content"}
-          </Typography>
-        </Box>
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 0.5 }}>
-          <Box
-            component="span"
-            sx={{
-              borderRadius: 9999,
-              backgroundColor: "#F7F7F7",
-              px: 1.5,
-              py: 0.5,
-              fontSize: 12,
-              color: "#717171",
-            }}
-          >
-            Version {kit.version}
-          </Box>
-          {savedAt && (
-            <Typography sx={{ fontSize: 12, color: "#1B9D74" }}>
-              Saved {savedAt.toLocaleTimeString()}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Typography component="h1" sx={{ fontSize: 28, fontWeight: 700, color: "#1F1F1F" }}>
+              Brand Kit
             </Typography>
-          )}
+            <Box
+              sx={{
+                px: 1.25,
+                py: 0.25,
+                borderRadius: 9999,
+                backgroundColor: "#E8F5E9",
+                fontSize: 12,
+                fontWeight: 600,
+                color: "#188038",
+              }}
+            >
+              Active
+            </Box>
+          </Box>
+          <Typography sx={{ mt: 0.5, fontSize: 14, color: "#5F6368" }}>
+            {kit.name} · v{kit.version}
+            {kit.activated_by_info && ` · Last updated by ${kit.activated_by_info.name}`}
+            {kit.activated_at &&
+              `, ${new Date(kit.activated_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`}
+          </Typography>
         </Box>
+
+        {isAdmin && (
+          <Box sx={{ display: "flex", gap: 1.5 }}>
+            {isEditMode ? (
+              <>
+                <Button
+                  onClick={handleCancelEdit}
+                  variant="outlined"
+                  disableElevation
+                  sx={{
+                    borderRadius: 9999,
+                    textTransform: "none",
+                    fontSize: 14,
+                    borderColor: "#E8EAED",
+                    color: "#5F6368",
+                    "&:hover": { borderColor: "#DADCE0", backgroundColor: "transparent" },
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => saveMutation.mutate()}
+                  disabled={!hasChanges || saveMutation.isPending}
+                  disableElevation
+                  variant="contained"
+                  startIcon={
+                    saveMutation.isPending ? (
+                      <CircularProgress size={14} sx={{ color: "white" }} />
+                    ) : undefined
+                  }
+                  sx={{
+                    borderRadius: 9999,
+                    textTransform: "none",
+                    fontSize: 14,
+                    fontWeight: 600,
+                    backgroundColor: "#1F1F1F",
+                    "&:hover": { backgroundColor: "#333" },
+                    "&:disabled": { opacity: 0.4 },
+                  }}
+                >
+                  {saveMutation.isPending ? "Saving…" : "Save changes"}
+                </Button>
+              </>
+            ) : (
+              <Button
+                onClick={handleEnterEdit}
+                variant="outlined"
+                disableElevation
+                sx={{
+                  borderRadius: 9999,
+                  textTransform: "none",
+                  fontSize: 14,
+                  borderColor: "#E8EAED",
+                  color: "#1F1F1F",
+                  "&:hover": { borderColor: "#DADCE0", backgroundColor: "transparent" },
+                }}
+              >
+                Edit kit
+              </Button>
+            )}
+          </Box>
+        )}
       </Box>
 
       {error && (
@@ -200,151 +330,47 @@ export default function BrandKitPage() {
         </Box>
       )}
 
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", lg: "1fr 280px" },
-          gap: 4,
-        }}
+      {/* Tabs */}
+      <Tabs
+        value={activeIndex === -1 ? 0 : activeIndex}
+        onChange={handleTabChange}
+        sx={{ mb: 4 }}
       >
-        {/* Left: settings */}
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          {/* Logos */}
-          <Box component="section">
-            <Typography
-              component="h2"
-              sx={{ mb: 2.5, fontSize: 16, fontWeight: 600, color: "#1F1F1F" }}
-            >
-              Logos
-            </Typography>
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-                gap: 2.5,
-              }}
-            >
-              <LogoUpload
-                label="Primary logo"
-                currentUrl={kit.logo_url}
-                onUpload={(file) => handleLogoUpload(file, "primary")}
-                disabled={!isAdmin}
-              />
-              <LogoUpload
-                label="Secondary logo (optional)"
-                currentUrl={kit.secondary_logo_url}
-                onUpload={(file) => handleLogoUpload(file, "secondary")}
-                disabled={!isAdmin}
-              />
-            </Box>
-          </Box>
+        {TABS.map((t) => (
+          <Tab key={t.key} label={t.label} disableRipple />
+        ))}
+      </Tabs>
 
-          {/* Colors */}
-          <Box component="section">
-            <Typography
-              component="h2"
-              sx={{ mb: 2.5, fontSize: 16, fontWeight: 600, color: "#1F1F1F" }}
-            >
-              Brand colors
-            </Typography>
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr 1fr" },
-                gap: 2.5,
-              }}
-            >
-              <ColorPicker
-                label="Primary"
-                value={primaryColor}
-                onChange={setPrimaryColor}
-                disabled={!isAdmin}
-              />
-              <ColorPicker
-                label="Secondary"
-                value={secondaryColor}
-                onChange={setSecondaryColor}
-                disabled={!isAdmin}
-              />
-              <ColorPicker
-                label="Accent"
-                value={accentColor}
-                onChange={setAccentColor}
-                disabled={!isAdmin}
-              />
-            </Box>
-            {isAdmin && (
-              <Box sx={{ mt: 2, display: "flex", alignItems: "center", gap: 1.5 }}>
-                <Button
-                  onClick={handleSaveColors}
-                  disabled={!hasColorChanges || isSaving}
-                  disableElevation
-                  variant="contained"
-                  sx={{
-                    borderRadius: 9999,
-                    textTransform: "none",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    px: 2.5,
-                    py: 1.25,
-                    backgroundColor: "#D0103A",
-                    "&:hover": { backgroundColor: "#B80E33" },
-                    "&:disabled": { opacity: 0.4, cursor: "not-allowed" },
-                  }}
-                >
-                  {isSaving ? "Saving…" : "Save colors"}
-                </Button>
-                {hasColorChanges && (
-                  <Button
-                    onClick={() => {
-                      setPrimaryColor(kit.primary_color);
-                      setSecondaryColor(kit.secondary_color);
-                      setAccentColor(kit.accent_color);
-                    }}
-                    variant="text"
-                    disableElevation
-                    sx={{
-                      borderRadius: 9999,
-                      textTransform: "none",
-                      fontSize: 14,
-                      color: "#717171",
-                      "&:hover": { color: "#1F1F1F", backgroundColor: "transparent" },
-                    }}
-                  >
-                    Discard changes
-                  </Button>
-                )}
-              </Box>
-            )}
-          </Box>
-
-          {/* Fonts */}
-          <Box component="section">
-            <Typography
-              component="h2"
-              sx={{ mb: 2.5, fontSize: 16, fontWeight: 600, color: "#1F1F1F" }}
-            >
-              Typography
-            </Typography>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-              {(["heading", "body", "accent"] as const).map((slot) => (
-                <FontUpload
-                  key={slot}
-                  slot={slot}
-                  currentFontName={kit.fonts?.[slot]}
-                  onUpload={(file) => handleFontUpload(file, slot)}
-                  disabled={!isAdmin}
-                />
-              ))}
-            </Box>
-          </Box>
-        </Box>
-
-        {/* Right: live preview */}
-        <Box sx={{ position: { lg: "sticky" }, top: { lg: 96 }, alignSelf: { lg: "flex-start" } }}>
-          <BrandPreview brandKit={previewKit} />
-        </Box>
-      </Box>
+      {/* Tab panels */}
+      {activeTab === "colours" && (
+        <ColoursTab
+          kit={previewKit}
+          draftColors={draftColors}
+          draftColorNames={draftColorNames}
+          draftZoneRoles={draftZoneRoles}
+          isEditMode={isEditMode}
+          onColorChange={handleColorChange}
+          onColorNameChange={handleColorNameChange}
+          onZoneRoleChange={handleZoneRoleChange}
+        />
+      )}
+      {activeTab === "typography" && (
+        <TypographyTab
+          kit={kit}
+          isEditMode={isEditMode}
+          onFontUpload={handleFontUpload}
+        />
+      )}
+      {activeTab === "logo-vault" && (
+        <LogoVaultTab
+          kit={kit}
+          isEditMode={isEditMode}
+          onLogoUpload={handleLogoUpload}
+        />
+      )}
+      {activeTab === "templates" && <TemplatesTab isEditMode={isEditMode} />}
+      {activeTab === "live-preview" && <LivePreviewTab kit={previewKit} />}
+      {activeTab === "version-history" && <VersionHistoryTab />}
     </Box>
   );
 }

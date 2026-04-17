@@ -1,0 +1,606 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .bk-root { background: var(--color-background-primary); padding: 0; }
+  .bk-header { padding: 20px 24px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .bk-header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .bk-title { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
+  .bk-subtitle { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
+  .bk-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: var(--color-background-success); color: var(--color-text-success); font-weight: 500; }
+  .bk-tabs { display: flex; gap: 0; }
+  .bk-tab { font-size: 13px; padding: 10px 16px; color: var(--color-text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.15s; white-space: nowrap; }
+  .bk-tab:hover { color: var(--color-text-primary); }
+  .bk-tab.active { color: var(--color-text-primary); border-bottom-color: var(--color-text-primary); font-weight: 500; }
+  .bk-body { padding: 24px; }
+  .section-label { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 16px 20px; margin-bottom: 16px; }
+  .card-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 4px; }
+  .card-sub { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 14px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .col { flex: 1; min-width: 0; }
+  /* Colour swatches */
+  .swatch-block { display: flex; flex-direction: column; gap: 8px; }
+  .swatch-row { display: flex; align-items: center; gap: 10px; }
+  .swatch-circle { width: 36px; height: 36px; border-radius: 50%; border: 0.5px solid var(--color-border-tertiary); flex-shrink: 0; cursor: pointer; transition: transform 0.1s; }
+  .swatch-circle:hover { transform: scale(1.08); }
+  .swatch-info { flex: 1; }
+  .swatch-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+  .swatch-hex { font-size: 12px; font-family: var(--font-mono); color: var(--color-text-secondary); }
+  .swatch-usage { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+  .tints-row { display: flex; gap: 4px; margin-top: 6px; }
+  .tint { width: 20px; height: 20px; border-radius: 4px; border: 0.5px solid var(--color-border-tertiary); }
+  /* Font slots */
+  .font-card { display: flex; flex-direction: column; gap: 6px; }
+  .font-preview { font-size: 22px; font-weight: 500; color: var(--color-text-primary); line-height: 1.2; padding: 10px 0 4px; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 6px; }
+  .font-meta-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .font-tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: var(--color-background-secondary); color: var(--color-text-secondary); }
+  .upload-zone { border: 0.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.15s; }
+  .upload-zone:hover { background: var(--color-background-secondary); }
+  .upload-icon { width: 32px; height: 32px; border-radius: var(--border-radius-md); background: var(--color-background-secondary); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .upload-text { font-size: 13px; color: var(--color-text-secondary); }
+  .upload-hint { font-size: 11px; color: var(--color-text-tertiary); }
+  /* Logo vault */
+  .logo-slot { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+  .logo-preview { height: 90px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+  .logo-preview.light { background: #ffffff; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .logo-preview.dark { background: #1a1a1a; }
+  .logo-svg { width: 100px; }
+  .logo-footer { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; }
+  .logo-filename { font-size: 12px; color: var(--color-text-secondary); font-family: var(--font-mono); }
+  .toggle-btn { font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); cursor: pointer; }
+  .toggle-btn:hover { background: var(--color-background-secondary); }
+  .clearspace { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11px; color: var(--color-text-tertiary); }
+  /* Templates */
+  .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .tmpl-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); overflow: hidden; cursor: pointer; transition: border-color 0.15s; }
+  .tmpl-card:hover { border-color: var(--color-border-primary); }
+  .tmpl-card.selected { border: 2px solid var(--color-border-info); }
+  .tmpl-canvas { height: 110px; background: var(--color-background-secondary); position: relative; display: flex; align-items: stretch; }
+  .tmpl-zone { position: absolute; border: 1px dashed; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 500; letter-spacing: 0.04em; }
+  .zone-creative { background: rgba(55,138,221,0.08); border-color: rgba(55,138,221,0.4); color: #378ADD; }
+  .zone-logo { background: rgba(99,153,34,0.1); border-color: rgba(99,153,34,0.5); color: #639922; }
+  .zone-headline { background: rgba(186,117,23,0.08); border-color: rgba(186,117,23,0.4); color: #BA7517; }
+  .zone-body { background: rgba(153,60,29,0.06); border-color: rgba(153,60,29,0.3); color: #993C1D; }
+  .zone-disclaimer { background: rgba(136,135,128,0.1); border-color: rgba(136,135,128,0.4); color: #5F5E5A; }
+  .tmpl-label { padding: 8px 10px; font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
+  .tmpl-zones { padding: 0 10px 8px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .zone-pill { font-size: 10px; padding: 1px 6px; border-radius: 3px; }
+  /* Live preview */
+  .preview-canvas { width: 100%; aspect-ratio: 4/5; max-width: 260px; border-radius: var(--border-radius-lg); overflow: hidden; border: 0.5px solid var(--color-border-tertiary); position: relative; background: #E2000F; }
+  .preview-scene { position: absolute; inset: 0; background: linear-gradient(135deg, #E2000F 0%, #a80000 100%); }
+  .preview-image-area { position: absolute; top: 0; right: 0; width: 55%; height: 70%; background: rgba(0,0,0,0.15); border-bottom-left-radius: 40px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: rgba(255,255,255,0.4); }
+  .preview-logo { position: absolute; top: 14px; left: 14px; background: white; border-radius: 6px; padding: 4px 8px; display: flex; align-items: center; gap: 4px; }
+  .preview-logo-dot { width: 12px; height: 12px; background: #E2000F; border-radius: 2px; }
+  .preview-logo-text { font-size: 10px; font-weight: 700; color: #E2000F; letter-spacing: 0.05em; }
+  .preview-headline { position: absolute; bottom: 72px; left: 14px; right: 14px; font-size: 16px; font-weight: 600; color: white; line-height: 1.3; }
+  .preview-body { position: absolute; bottom: 42px; left: 14px; right: 14px; font-size: 10px; color: rgba(255,255,255,0.75); line-height: 1.4; }
+  .preview-cta { position: absolute; bottom: 14px; left: 14px; background: white; border-radius: 4px; padding: 5px 12px; font-size: 10px; font-weight: 600; color: #E2000F; }
+  .preview-disclaimer { position: absolute; bottom: 4px; left: 0; right: 0; font-size: 7px; color: rgba(255,255,255,0.45); text-align: center; }
+  /* Version history */
+  .version-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .version-row:last-child { border-bottom: none; }
+  .version-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-border-secondary); flex-shrink: 0; }
+  .version-dot.active { background: #639922; }
+  .version-info { flex: 1; }
+  .version-name { font-size: 13px; color: var(--color-text-primary); }
+  .version-meta { font-size: 11px; color: var(--color-text-tertiary); }
+  .restore-btn { font-size: 11px; padding: 4px 10px; border-radius: 4px; border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); cursor: pointer; }
+  .restore-btn:hover { background: var(--color-background-secondary); }
+  .active-badge { font-size: 10px; padding: 2px 8px; background: var(--color-background-success); color: var(--color-text-success); border-radius: 20px; }
+  .edit-btn { font-size: 12px; padding: 5px 14px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-primary); cursor: pointer; font-weight: 500; }
+  .edit-btn:hover { background: var(--color-background-secondary); }
+  .save-btn { font-size: 12px; padding: 5px 14px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-primary); background: var(--color-text-primary); color: var(--color-background-primary); cursor: pointer; font-weight: 500; }
+</style>
+
+<div class="bk-root">
+  <div class="bk-header">
+    <div class="bk-header-top">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="bk-title">Brand Kit</div>
+          <span class="bk-badge">Active</span>
+        </div>
+        <div class="bk-subtitle">AIA Singapore · v3 · Last updated by Sarah Tan, 12 Apr 2026</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="edit-btn">Edit kit</button>
+        <button class="save-btn">Save changes</button>
+      </div>
+    </div>
+    <div class="bk-tabs">
+      <div class="bk-tab active" onclick="switchTab('colours',this)">Colours</div>
+      <div class="bk-tab" onclick="switchTab('typography',this)">Typography</div>
+      <div class="bk-tab" onclick="switchTab('logos',this)">Logo vault</div>
+      <div class="bk-tab" onclick="switchTab('templates',this)">Poster templates</div>
+      <div class="bk-tab" onclick="switchTab('preview',this)">Live preview</div>
+      <div class="bk-tab" onclick="switchTab('versions',this)">Version history</div>
+    </div>
+  </div>
+
+  <div class="bk-body">
+
+    <!-- COLOURS TAB -->
+    <div id="tab-colours">
+      <div class="row" style="align-items:flex-start">
+        <div class="col">
+          <div class="section-label">Brand colours</div>
+          <div class="card">
+            <div class="card-title">Primary</div>
+            <div class="card-sub">Used for backgrounds, primary CTAs, key brand moments</div>
+            <div class="swatch-row">
+              <div class="swatch-circle" style="background:#E2000F" title="Click to copy"></div>
+              <div class="swatch-info">
+                <div class="swatch-name">AIA Red</div>
+                <div class="swatch-hex">#E2000F</div>
+                <div class="swatch-usage">Poster backgrounds · CTA buttons · Title cards</div>
+              </div>
+            </div>
+            <div class="tints-row" style="margin-top:10px">
+              <div class="tint" style="background:rgba(226,0,15,0.1)" title="10%"></div>
+              <div class="tint" style="background:rgba(226,0,15,0.25)" title="25%"></div>
+              <div class="tint" style="background:rgba(226,0,15,0.5)" title="50%"></div>
+              <div class="tint" style="background:rgba(226,0,15,0.75)" title="75%"></div>
+              <div class="tint" style="background:#E2000F" title="100%"></div>
+              <span style="font-size:11px;color:var(--color-text-tertiary);margin-left:4px;align-self:center">Derived tints for compositing</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Secondary</div>
+            <div class="card-sub">Used for subheadings, borders, supporting UI elements</div>
+            <div class="swatch-row">
+              <div class="swatch-circle" style="background:#1A1A2E"></div>
+              <div class="swatch-info">
+                <div class="swatch-name">Deep Navy</div>
+                <div class="swatch-hex">#1A1A2E</div>
+                <div class="swatch-usage">Body copy · Overlay backgrounds · Dark sections</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Accent</div>
+            <div class="card-sub">Used for highlights, badges, progress indicators</div>
+            <div class="swatch-row">
+              <div class="swatch-circle" style="background:#F5A623"></div>
+              <div class="swatch-info">
+                <div class="swatch-name">Warm Gold</div>
+                <div class="swatch-hex">#F5A623</div>
+                <div class="swatch-usage">Callout badges · Icon highlights · Video end-cards</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="section-label">Compliance guidance</div>
+          <div class="card" style="background:var(--color-background-secondary)">
+            <div style="font-size:13px;color:var(--color-text-primary);font-weight:500;margin-bottom:8px">How these colours are applied</div>
+            <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.7">
+              <div style="margin-bottom:6px">· AI generation receives <strong>mood direction</strong> only — not hex codes</div>
+              <div style="margin-bottom:6px">· Exact hex values are applied by the <strong>compositing layer</strong> after generation</div>
+              <div style="margin-bottom:6px">· Derived tints are used as overlay washes on AI-generated scenes</div>
+              <div>· Primary colour feeds the poster background; Accent feeds CTA button fill</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Text on brand colours</div>
+            <div class="card-sub">Contrast-safe pairings for the compositor</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="width:80px;height:28px;background:#E2000F;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:white;font-weight:500">White text</div>
+                <span style="font-size:11px;color:var(--color-text-secondary)">On Primary — headlines, CTAs</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="width:80px;height:28px;background:#1A1A2E;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:white;font-weight:500">White text</div>
+                <span style="font-size:11px;color:var(--color-text-secondary)">On Secondary — body copy</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="width:80px;height:28px;background:#F5A623;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#412402;font-weight:500">Dark text</div>
+                <span style="font-size:11px;color:var(--color-text-secondary)">On Accent — badges only</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TYPOGRAPHY TAB -->
+    <div id="tab-typography" style="display:none">
+      <div class="section-label">Font slots</div>
+      <div class="row">
+        <div class="col">
+          <div class="card">
+            <div class="card-title">Heading font</div>
+            <div class="card-sub">Poster titles, video title cards, WhatsApp card headers</div>
+            <div class="font-preview" style="font-size:26px">Protect what matters</div>
+            <div class="font-meta-row">
+              <span class="font-tag">AIA Headline Bold</span>
+              <span class="font-tag">72px / 56px / 40px</span>
+              <span class="font-tag">.woff2 uploaded</span>
+            </div>
+            <div class="upload-zone" style="margin-top:12px">
+              <div class="upload-icon">↑</div>
+              <div><div class="upload-text">Replace font file</div><div class="upload-hint">.woff2 or .ttf · Max 2MB</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card">
+            <div class="card-title">Body font</div>
+            <div class="card-sub">Supporting copy, sublines, bullet points on posters</div>
+            <div class="font-preview" style="font-size:15px;font-weight:400">Your future. Your family. Secured with AIA.</div>
+            <div class="font-meta-row">
+              <span class="font-tag">AIA Body Regular</span>
+              <span class="font-tag">18px / 14px / 12px</span>
+              <span class="font-tag">.woff2 uploaded</span>
+            </div>
+            <div class="upload-zone" style="margin-top:12px">
+              <div class="upload-icon">↑</div>
+              <div><div class="upload-text">Replace font file</div><div class="upload-hint">.woff2 or .ttf · Max 2MB</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card">
+            <div class="card-title">Disclaimer font</div>
+            <div class="card-sub">MAS-required disclaimers at bottom of every asset</div>
+            <div class="font-preview" style="font-size:10px;font-weight:400;color:var(--color-text-secondary)">This advertisement has not been reviewed by MAS. Protected up to specified limits by SDIC.</div>
+            <div class="font-meta-row">
+              <span class="font-tag">AIA Body Regular</span>
+              <span class="font-tag">8px fixed</span>
+              <span class="font-tag">Inherited from Body</span>
+            </div>
+            <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:10px;padding:8px;background:var(--color-background-secondary);border-radius:var(--border-radius-md)">Disclaimer font size is fixed at 8px minimum to satisfy MAS legibility requirements. Cannot be overridden by project settings.</div>
+          </div>
+        </div>
+      </div>
+      <div class="section-label" style="margin-top:8px">Size scale reference</div>
+      <div class="card">
+        <div class="card-sub" style="margin-bottom:12px">How the compositor selects font size by template zone and format</div>
+        <table style="width:100%;font-size:12px;border-collapse:collapse">
+          <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
+            <td style="padding:6px 8px;color:var(--color-text-secondary);font-weight:500">Zone</td>
+            <td style="padding:6px 8px;color:var(--color-text-secondary)">1080×1080</td>
+            <td style="padding:6px 8px;color:var(--color-text-secondary)">1080×1920</td>
+            <td style="padding:6px 8px;color:var(--color-text-secondary)">WhatsApp card</td>
+          </tr>
+          <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
+            <td style="padding:6px 8px;color:var(--color-text-primary)">Headline</td>
+            <td style="padding:6px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">72px</td>
+            <td style="padding:6px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">80px</td>
+            <td style="padding:6px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">40px</td>
+          </tr>
+          <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
+            <td style="padding:6px 8px;color:var(--color-text-primary)">Body</td>
+            <td style="padding:6px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">28px</td>
+            <td style="padding:6px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">32px</td>
+            <td style="padding:6px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">18px</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 8px;color:var(--color-text-primary)">Disclaimer</td>
+            <td style="padding:6px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">18px</td>
+            <td style="padding:6px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">18px</td>
+            <td style="padding:6px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">14px</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- LOGOS TAB -->
+    <div id="tab-logos" style="display:none">
+      <div class="section-label">Logo files</div>
+      <div class="row">
+        <div class="col">
+          <div class="card">
+            <div class="card-title">Primary logo</div>
+            <div class="card-sub">Full lockup — used on posters, video title cards</div>
+            <div class="logo-slot" id="logo-primary">
+              <div class="logo-preview light" id="logo-bg-primary">
+                <svg class="logo-svg" viewBox="0 0 120 40" fill="none">
+                  <rect width="36" height="36" rx="4" fill="#E2000F" y="2"/>
+                  <text x="10" y="27" font-size="22" font-weight="800" fill="white" font-family="Arial">A</text>
+                  <text x="44" y="26" font-size="16" font-weight="700" fill="#1A1A2E" font-family="Arial">AIA</text>
+                  <text x="44" y="36" font-size="7" fill="#888" font-family="Arial">Singapore</text>
+                </svg>
+              </div>
+              <div class="logo-footer">
+                <span class="logo-filename">aia-logo-primary.svg</span>
+                <button class="toggle-btn" onclick="toggleLogoBg('primary')">Toggle bg</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;margin-top:10px;font-size:12px;color:var(--color-text-secondary)">
+              <span>Min width: <strong style="color:var(--color-text-primary)">120px</strong></span>
+              <span>Clear space: <strong style="color:var(--color-text-primary)">16px</strong></span>
+              <span>Format: <strong style="color:var(--color-text-primary)">SVG</strong></span>
+            </div>
+            <div class="upload-zone" style="margin-top:12px">
+              <div class="upload-icon">↑</div>
+              <div><div class="upload-text">Replace logo</div><div class="upload-hint">SVG preferred · PNG fallback · Max 500KB</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card">
+            <div class="card-title">Secondary logo</div>
+            <div class="card-sub">Icon mark only — used on WhatsApp cards, small formats</div>
+            <div class="logo-slot" id="logo-secondary">
+              <div class="logo-preview light" id="logo-bg-secondary">
+                <svg width="50" height="50" viewBox="0 0 50 50" fill="none">
+                  <rect width="50" height="50" rx="8" fill="#E2000F"/>
+                  <text x="10" y="38" font-size="32" font-weight="800" fill="white" font-family="Arial">A</text>
+                </svg>
+              </div>
+              <div class="logo-footer">
+                <span class="logo-filename">aia-logo-icon.svg</span>
+                <button class="toggle-btn" onclick="toggleLogoBg('secondary')">Toggle bg</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px;margin-top:10px;font-size:12px;color:var(--color-text-secondary)">
+              <span>Min width: <strong style="color:var(--color-text-primary)">40px</strong></span>
+              <span>Clear space: <strong style="color:var(--color-text-primary)">8px</strong></span>
+              <span>Format: <strong style="color:var(--color-text-primary)">SVG</strong></span>
+            </div>
+            <div class="upload-zone" style="margin-top:12px">
+              <div class="upload-icon">↑</div>
+              <div><div class="upload-text">Replace icon mark</div><div class="upload-hint">SVG preferred · PNG fallback · Max 500KB</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card" style="background:var(--color-background-secondary)">
+            <div class="card-title">Compositing rules</div>
+            <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.8;margin-top:8px">
+              <div style="margin-bottom:6px">· Logo is <strong>never</strong> generated by AI — always composited from this vault</div>
+              <div style="margin-bottom:6px">· Clear space is enforced programmatically — no text or imagery enters the padding ring</div>
+              <div style="margin-bottom:6px">· Primary logo is used when the poster has ≥ 180px width available in the logo zone</div>
+              <div style="margin-bottom:6px">· Secondary icon mark is used for WhatsApp cards and narrow zones</div>
+              <div>· SVG format ensures pixel-perfect rendering at any export resolution</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEMPLATES TAB -->
+    <div id="tab-templates" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="section-label" style="margin:0">Poster layout templates</div>
+        <button class="edit-btn" onclick="sendPrompt('Help me design a new poster template layout for CRAFT with zone coordinates')">+ New template ↗</button>
+      </div>
+      <div class="template-grid">
+
+        <div class="tmpl-card selected" onclick="selectTemplate(this)">
+          <div class="tmpl-canvas">
+            <div class="tmpl-zone zone-creative" style="left:0;top:0;width:55%;height:100%">SCENE</div>
+            <div class="tmpl-zone zone-logo" style="right:4%;top:5%;width:38%;height:14%">LOGO</div>
+            <div class="tmpl-zone zone-headline" style="right:4%;top:22%;width:38%;height:30%">HEAD</div>
+            <div class="tmpl-zone zone-body" style="right:4%;top:55%;width:38%;height:25%">BODY</div>
+            <div class="tmpl-zone zone-disclaimer" style="left:0;bottom:0;width:100%;height:8%">DISC.</div>
+          </div>
+          <div class="tmpl-label">Hero — Subject left</div>
+          <div class="tmpl-zones">
+            <span class="zone-pill zone-creative">scene</span>
+            <span class="zone-pill zone-logo">logo</span>
+            <span class="zone-pill zone-headline">head</span>
+            <span class="zone-pill zone-disclaimer">disc</span>
+          </div>
+        </div>
+
+        <div class="tmpl-card" onclick="selectTemplate(this)">
+          <div class="tmpl-canvas">
+            <div class="tmpl-zone zone-creative" style="left:0;top:0;width:100%;height:55%">SCENE</div>
+            <div class="tmpl-zone zone-logo" style="left:4%;top:3%;width:25%;height:12%">LOGO</div>
+            <div class="tmpl-zone zone-headline" style="left:4%;top:58%;width:90%;height:20%">HEADLINE</div>
+            <div class="tmpl-zone zone-body" style="left:4%;top:80%;width:90%;height:12%">BODY</div>
+            <div class="tmpl-zone zone-disclaimer" style="left:0;bottom:0;width:100%;height:5%">DISC.</div>
+          </div>
+          <div class="tmpl-label">Full bleed top</div>
+          <div class="tmpl-zones">
+            <span class="zone-pill zone-creative">scene</span>
+            <span class="zone-pill zone-logo">logo</span>
+            <span class="zone-pill zone-headline">head</span>
+          </div>
+        </div>
+
+        <div class="tmpl-card" onclick="selectTemplate(this)">
+          <div class="tmpl-canvas">
+            <div class="tmpl-zone zone-creative" style="left:40%;top:0;width:60%;height:100%">SCENE</div>
+            <div class="tmpl-zone zone-logo" style="left:4%;top:5%;width:30%;height:14%">LOGO</div>
+            <div class="tmpl-zone zone-headline" style="left:4%;top:22%;width:33%;height:35%">HEAD</div>
+            <div class="tmpl-zone zone-body" style="left:4%;top:60%;width:33%;height:20%">BODY</div>
+            <div class="tmpl-zone zone-disclaimer" style="left:0;bottom:0;width:100%;height:8%">DISC.</div>
+          </div>
+          <div class="tmpl-label">Hero — Subject right</div>
+          <div class="tmpl-zones">
+            <span class="zone-pill zone-creative">scene</span>
+            <span class="zone-pill zone-logo">logo</span>
+            <span class="zone-pill zone-body">body</span>
+          </div>
+        </div>
+
+        <div class="tmpl-card" onclick="selectTemplate(this)">
+          <div class="tmpl-canvas">
+            <div class="tmpl-zone zone-headline" style="left:4%;top:5%;width:90%;height:20%">HEADLINE</div>
+            <div class="tmpl-zone zone-creative" style="left:4%;top:28%;width:90%;height:42%">SCENE</div>
+            <div class="tmpl-zone zone-body" style="left:4%;top:73%;width:55%;height:18%">BODY</div>
+            <div class="tmpl-zone zone-logo" style="right:4%;top:74%;width:32%;height:16%">LOGO</div>
+            <div class="tmpl-zone zone-disclaimer" style="left:0;bottom:0;width:100%;height:5%">DISC.</div>
+          </div>
+          <div class="tmpl-label">Editorial top title</div>
+          <div class="tmpl-zones">
+            <span class="zone-pill zone-headline">head</span>
+            <span class="zone-pill zone-creative">scene</span>
+            <span class="zone-pill zone-logo">logo</span>
+          </div>
+        </div>
+
+        <div class="tmpl-card" onclick="selectTemplate(this)">
+          <div class="tmpl-canvas" style="background:var(--color-background-secondary);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px">
+            <div style="width:28px;height:28px;border:0.5px dashed var(--color-border-secondary);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--color-text-tertiary)">+</div>
+            <span style="font-size:11px;color:var(--color-text-tertiary)">New layout</span>
+          </div>
+          <div class="tmpl-label" style="color:var(--color-text-secondary)">Custom template</div>
+        </div>
+
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-title">Zone coordinate reference — Hero (Subject left)</div>
+        <div class="card-sub">These coordinates are read by the compositing layer at render time</div>
+        <table style="width:100%;font-size:12px;border-collapse:collapse">
+          <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
+            <td style="padding:5px 8px;color:var(--color-text-secondary);font-weight:500">Zone</td>
+            <td style="padding:5px 8px;color:var(--color-text-secondary)">x</td>
+            <td style="padding:5px 8px;color:var(--color-text-secondary)">y</td>
+            <td style="padding:5px 8px;color:var(--color-text-secondary)">width</td>
+            <td style="padding:5px 8px;color:var(--color-text-secondary)">height</td>
+          </tr>
+          <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
+            <td style="padding:5px 8px"><span class="zone-pill zone-creative" style="padding:2px 6px;border-radius:3px">creative</span></td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">0</td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">0</td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">594</td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">1080</td>
+          </tr>
+          <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
+            <td style="padding:5px 8px"><span class="zone-pill zone-logo" style="padding:2px 6px;border-radius:3px">logo</span></td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">650</td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">54</td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">380</td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">120</td>
+          </tr>
+          <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
+            <td style="padding:5px 8px"><span class="zone-pill zone-headline" style="padding:2px 6px;border-radius:3px">headline</span></td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">620</td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">240</td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">420</td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">320</td>
+          </tr>
+          <tr>
+            <td style="padding:5px 8px"><span class="zone-pill zone-disclaimer" style="padding:2px 6px;border-radius:3px">disclaimer</span></td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">0</td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">1006</td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">1080</td>
+            <td style="padding:5px 8px;font-family:var(--font-mono);color:var(--color-text-secondary)">74</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- LIVE PREVIEW TAB -->
+    <div id="tab-preview" style="display:none">
+      <div class="row" style="align-items:flex-start">
+        <div class="col" style="max-width:280px;flex:0 0 auto">
+          <div class="section-label">Composite preview</div>
+          <div class="preview-canvas">
+            <div class="preview-scene"></div>
+            <div class="preview-image-area">AI scene zone</div>
+            <div class="preview-logo">
+              <div class="preview-logo-dot"></div>
+              <div class="preview-logo-text">AIA</div>
+            </div>
+            <div class="preview-headline">Protect what matters most</div>
+            <div class="preview-body">Life coverage starting from $8/month. MAS-regulated.</div>
+            <div class="preview-cta">Learn more</div>
+            <div class="preview-disclaimer">This ad has not been reviewed by MAS. Protected by SDIC.</div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--color-text-tertiary);line-height:1.6">
+            Live render using active kit. AI scene zone shows where Gemini-generated imagery will be placed. All other elements are composited from Brand Kit values.
+          </div>
+        </div>
+        <div class="col">
+          <div class="section-label">What this preview validates</div>
+          <div class="card" style="margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <div style="width:8px;height:8px;border-radius:50%;background:#639922;flex-shrink:0"></div>
+              <div class="card-title" style="margin:0">Colour accuracy</div>
+            </div>
+            <div style="font-size:12px;color:var(--color-text-secondary)">Background is exact Primary hex (#E2000F), not an AI approximation. CTA button uses Primary. Disclaimer uses Secondary.</div>
+          </div>
+          <div class="card" style="margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <div style="width:8px;height:8px;border-radius:50%;background:#639922;flex-shrink:0"></div>
+              <div class="card-title" style="margin:0">Logo placement</div>
+            </div>
+            <div style="font-size:12px;color:var(--color-text-secondary)">Logo is composited at the template zone coordinates. Clear space ring is enforced. The AI scene does not bleed into this area.</div>
+          </div>
+          <div class="card" style="margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <div style="width:8px;height:8px;border-radius:50%;background:#639922;flex-shrink:0"></div>
+              <div class="card-title" style="margin:0">Typography rendering</div>
+            </div>
+            <div style="font-size:12px;color:var(--color-text-secondary)">Headline uses uploaded AIA Headline Bold at 72px. Body uses AIA Body Regular. Disclaimer is capped at 18px per MAS rules.</div>
+          </div>
+          <div class="card">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <div style="width:8px;height:8px;border-radius:50%;background:#BA7517;flex-shrink:0"></div>
+              <div class="card-title" style="margin:0">AI scene zone</div>
+            </div>
+            <div style="font-size:12px;color:var(--color-text-secondary)">Shown as a placeholder. Actual Gemini output fills this region. Verify the zone dimensions leave enough space for the creative without crowding the text zones.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VERSION HISTORY TAB -->
+    <div id="tab-versions" style="display:none">
+      <div class="section-label">Kit versions</div>
+      <div class="card">
+        <div class="version-row">
+          <div class="version-dot active"></div>
+          <div class="version-info">
+            <div class="version-name">v3 — Q2 2026 refresh</div>
+            <div class="version-meta">Activated by Sarah Tan · 12 Apr 2026 · Headline font updated, accent colour changed to Warm Gold</div>
+          </div>
+          <span class="active-badge">Active</span>
+        </div>
+        <div class="version-row">
+          <div class="version-dot"></div>
+          <div class="version-info">
+            <div class="version-name">v2 — 2025 annual rebrand</div>
+            <div class="version-meta">Activated by Sarah Tan · 3 Jan 2025 · Logo vault updated, secondary colour revised</div>
+          </div>
+          <button class="restore-btn">Restore</button>
+        </div>
+        <div class="version-row">
+          <div class="version-dot"></div>
+          <div class="version-info">
+            <div class="version-name">v1 — Initial kit</div>
+            <div class="version-meta">Activated by Admin · 15 Jun 2024 · Platform launch kit</div>
+          </div>
+          <button class="restore-btn">Restore</button>
+        </div>
+      </div>
+      <div class="card" style="background:var(--color-background-secondary)">
+        <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px">How versioning works</div>
+        <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.8">
+          <div>· One kit is active at a time across the entire organisation</div>
+          <div>· Restoring a past version immediately applies it to all new projects and artifact generations</div>
+          <div>· Existing published artifacts retain the kit version they were generated under</div>
+          <div>· Brand Admins are notified by email when a kit is activated or restored</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function switchTab(name, el) {
+    ['colours','typography','logos','templates','preview','versions'].forEach(t => {
+      document.getElementById('tab-' + t).style.display = t === name ? '' : 'none';
+    });
+    document.querySelectorAll('.bk-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  const logoBgs = { primary: 'light', secondary: 'light' };
+  function toggleLogoBg(id) {
+    const el = document.getElementById('logo-bg-' + id);
+    logoBgs[id] = logoBgs[id] === 'light' ? 'dark' : 'light';
+    el.className = 'logo-preview ' + logoBgs[id];
+  }
+
+  function selectTemplate(el) {
+    document.querySelectorAll('.tmpl-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+</script>

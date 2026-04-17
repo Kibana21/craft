@@ -325,6 +325,7 @@ def build_composition_prompt(
     brief_cta: str = "",
     copy_subheadline: str = "",
     copy_body: str = "",
+    template_zones: list[dict] | None = None,
 ) -> tuple[str, str]:
     """Deterministic composition prompt assembly (doc 03 §Composition Assembler).
 
@@ -422,6 +423,19 @@ def build_composition_prompt(
 
     if context_lines:
         merged_prompt += "\n\nCampaign context:\n  - " + "\n  - ".join(context_lines)
+
+    if template_zones:
+        zone_lines = []
+        for z in template_zones:
+            zone_lines.append(
+                f"  - {z['name']}: ({z['x']},{z['y']}) to ({z['x']+z['width']},{z['y']+z['height']})"
+            )
+        merged_prompt += (
+            "\n\nLAYOUT TEMPLATE:\n"
+            'The AI-generated scene must fill the "creative" zone only.\n'
+            "Do NOT place any text, logos, or UI elements — those are composited separately.\n"
+            "Zone coordinates (on 1080x1080 canvas):\n" + "\n".join(zone_lines)
+        )
 
     return merged_prompt, style_sentence
 

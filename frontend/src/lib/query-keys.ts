@@ -36,6 +36,11 @@ export const queryKeys = {
     ["studio", "run-status", runId] as const,
   studioRecentRuns: () => ["studio", "recent-runs"] as const,
 
+  // Brand Kit
+  brandKit: () => ["brand-kit"] as const,
+  brandKitVersions: () => ["brand-kit", "versions"] as const,
+  brandKitTemplates: () => ["brand-kit", "templates"] as const,
+
   // Auth
   currentUser: () => ["auth", "me"] as const,
 } as const;
@@ -46,4 +51,5 @@ export const invalidationGroups = {
   projectTree: (projectId: string) => ["project", projectId] as const,
   allStudio: ["studio"] as const,
   allBrandLibrary: ["brand-library"] as const,
+  allBrandKit: ["brand-kit"] as const,
 } as const;

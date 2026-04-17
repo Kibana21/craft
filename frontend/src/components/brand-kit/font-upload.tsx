@@ -1,12 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 
 interface FontUploadProps {
-  slot: "heading" | "body" | "accent";
+  slot: "heading" | "body" | "disclaimer" | "accent";
   currentFontName: string | undefined;
   onUpload: (file: File) => Promise<void>;
   disabled?: boolean;
@@ -24,14 +24,30 @@ const SAMPLE_FONT_SX: Record<string, object> = {
   accent: { fontSize: "0.875rem", fontStyle: "italic" },
 };
 
+function trimFontName(name: string): string {
+  // Remove extension, replace UUID-like names with a clean display
+  const withoutExt = name.replace(/\.[^.]+$/, "");
+  // If it looks like a UUID (hex + dashes, 32+ chars), just show the extension hint
+  if (/^[0-9a-f]{8,}/i.test(withoutExt) && withoutExt.length > 20) return name;
+  return withoutExt;
+}
+
 export function FontUpload({ slot, currentFontName, onUpload, disabled }: FontUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+
+  useEffect(() => {
+    if (!justSaved) return;
+    const t = setTimeout(() => setJustSaved(false), 3000);
+    return () => clearTimeout(t);
+  }, [justSaved]);
 
   async function handleFile(file: File) {
     setIsUploading(true);
     try {
       await onUpload(file);
+      setJustSaved(true);
     } finally {
       setIsUploading(false);
     }
@@ -64,12 +80,9 @@ export function FontUpload({ slot, currentFontName, onUpload, disabled }: FontUp
 
         {currentFontName ? (
           <Typography
-            sx={{
-              color: "#222222",
-              ...SAMPLE_FONT_SX[slot],
-            }}
+            sx={{ fontSize: "0.875rem", fontWeight: 500, color: "#222222", wordBreak: "break-all" }}
           >
-            {currentFontName.replace(/\.[^.]+$/, "")}
+            {trimFontName(currentFontName)}
           </Typography>
         ) : (
           <Typography sx={{ fontSize: "0.875rem", color: "#AAAAAA" }}>
@@ -80,9 +93,15 @@ export function FontUpload({ slot, currentFontName, onUpload, disabled }: FontUp
         <Typography sx={{ mt: 0.25, fontSize: "0.75rem", color: "#717171" }}>
           The quick brown fox jumps over the lazy dog
         </Typography>
+
+        {justSaved && (
+          <Typography sx={{ mt: 0.5, fontSize: "0.75rem", color: "#188038", fontWeight: 600 }}>
+            Saved automatically
+          </Typography>
+        )}
       </Box>
 
-      <Box>
+      <Box sx={{ flexShrink: 0, ml: 1.5 }}>
         <input
           ref={inputRef}
           type="file"
@@ -91,7 +110,10 @@ export function FontUpload({ slot, currentFontName, onUpload, disabled }: FontUp
           disabled={disabled}
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) handleFile(file);
+            if (file) {
+              handleFile(file);
+              e.target.value = "";
+            }
           }}
         />
         <Button
@@ -109,16 +131,10 @@ export function FontUpload({ slot, currentFontName, onUpload, disabled }: FontUp
             textTransform: "none",
             px: 2,
             py: 1,
+            whiteSpace: "nowrap",
             transition: "border-color 0.15s, color 0.15s",
-            "&:hover": {
-              borderColor: "#222222",
-              color: "#222222",
-              bgcolor: "#FFFFFF",
-            },
-            "&:disabled": {
-              cursor: "not-allowed",
-              opacity: 0.5,
-            },
+            "&:hover": { borderColor: "#222222", color: "#222222", bgcolor: "#FFFFFF" },
+            "&:disabled": { cursor: "not-allowed", opacity: 0.5 },
           }}
         >
           {isUploading ? "Uploading…" : currentFontName ? "Replace" : "Upload"}
