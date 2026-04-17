@@ -10,7 +10,7 @@ interface ColourCardProps {
   hex: string;
   name: string;
   usage: string;
-  isEditMode: boolean;
+  isAdmin: boolean;
   showTints?: boolean;
   onHexChange: (hex: string) => void;
   onNameChange: (name: string) => void;
@@ -24,7 +24,7 @@ export function ColourCard({
   hex,
   name,
   usage,
-  isEditMode,
+  isAdmin,
   showTints,
   onHexChange,
   onNameChange,
@@ -53,7 +53,7 @@ export function ColourCard({
           }}
         />
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          {isEditMode ? (
+          {isAdmin ? (
             <TextField
               value={name}
               onChange={(e) => onNameChange(e.target.value)}
@@ -67,7 +67,7 @@ export function ColourCard({
             <Typography sx={{ fontSize: 15, fontWeight: 600 }}>{name || role}</Typography>
           )}
 
-          {isEditMode ? (
+          {isAdmin ? (
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
               <Box
                 component="input"
@@ -112,7 +112,7 @@ export function ColourCard({
         </Box>
       </Box>
 
-      {isEditMode ? (
+      {isAdmin ? (
         <TextField
           value={usage}
           onChange={(e) => onUsageChange(e.target.value)}

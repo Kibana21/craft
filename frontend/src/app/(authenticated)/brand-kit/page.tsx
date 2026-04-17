@@ -68,7 +68,6 @@ export default function BrandKitPage() {
     headline_text: "white",
   };
 
-  const [isEditMode, setIsEditMode] = useState(false);
   const [draftColors, setDraftColors] = useState({ primary: "", secondary: "", accent: "" });
   const [draftColorNames, setDraftColorNames] = useState<ColorNames>({});
   const [draftZoneRoles, setDraftZoneRoles] = useState<ZoneRoles>(DEFAULT_ZONE_ROLES);
@@ -95,13 +94,13 @@ export default function BrandKitPage() {
       JSON.stringify(draftZoneRoles) !== JSON.stringify({ ...DEFAULT_ZONE_ROLES, ...(kit.zone_roles || {}) }));
 
   useEffect(() => {
-    if (!isEditMode || !hasChanges) return;
+    if (!hasChanges) return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [isEditMode, hasChanges]);
+  }, [hasChanges]);
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -114,7 +113,6 @@ export default function BrandKitPage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.brandKit() });
-      setIsEditMode(false);
       setError(null);
     },
     onError: () => setError("Failed to save changes"),
@@ -124,19 +122,7 @@ export default function BrandKitPage() {
     router.push(`/brand-kit?tab=${TABS[newIndex].key}`, { scroll: false });
   };
 
-  const handleEnterEdit = () => {
-    if (!kit) return;
-    setDraftColors({
-      primary: kit.primary_color,
-      secondary: kit.secondary_color,
-      accent: kit.accent_color,
-    });
-    setDraftColorNames(kit.color_names || {});
-    setDraftZoneRoles({ ...DEFAULT_ZONE_ROLES, ...(kit.zone_roles || {}) });
-    setIsEditMode(true);
-  };
-
-  const handleCancelEdit = () => {
+  const handleDiscardChanges = () => {
     if (kit) {
       setDraftColors({
         primary: kit.primary_color,
@@ -146,7 +132,6 @@ export default function BrandKitPage() {
       setDraftColorNames(kit.color_names || {});
       setDraftZoneRoles({ ...DEFAULT_ZONE_ROLES, ...(kit.zone_roles || {}) });
     }
-    setIsEditMode(false);
     setError(null);
   };
 
@@ -251,65 +236,46 @@ export default function BrandKitPage() {
           </Typography>
         </Box>
 
-        {isAdmin && (
-          <Box sx={{ display: "flex", gap: 1.5 }}>
-            {isEditMode ? (
-              <>
-                <Button
-                  onClick={handleCancelEdit}
-                  variant="outlined"
-                  disableElevation
-                  sx={{
-                    borderRadius: 9999,
-                    textTransform: "none",
-                    fontSize: 14,
-                    borderColor: "#E8EAED",
-                    color: "#5F6368",
-                    "&:hover": { borderColor: "#DADCE0", backgroundColor: "transparent" },
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => saveMutation.mutate()}
-                  disabled={!hasChanges || saveMutation.isPending}
-                  disableElevation
-                  variant="contained"
-                  startIcon={
-                    saveMutation.isPending ? (
-                      <CircularProgress size={14} sx={{ color: "white" }} />
-                    ) : undefined
-                  }
-                  sx={{
-                    borderRadius: 9999,
-                    textTransform: "none",
-                    fontSize: 14,
-                    fontWeight: 600,
-                    backgroundColor: "#1F1F1F",
-                    "&:hover": { backgroundColor: "#333" },
-                    "&:disabled": { opacity: 0.4 },
-                  }}
-                >
-                  {saveMutation.isPending ? "Saving…" : "Save changes"}
-                </Button>
-              </>
-            ) : (
-              <Button
-                onClick={handleEnterEdit}
-                variant="outlined"
-                disableElevation
-                sx={{
-                  borderRadius: 9999,
-                  textTransform: "none",
-                  fontSize: 14,
-                  borderColor: "#E8EAED",
-                  color: "#1F1F1F",
-                  "&:hover": { borderColor: "#DADCE0", backgroundColor: "transparent" },
-                }}
-              >
-                Edit kit
-              </Button>
-            )}
+        {isAdmin && hasChanges && (
+          <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+            <Typography sx={{ fontSize: 13, color: "#5F6368" }}>Unsaved changes</Typography>
+            <Button
+              onClick={handleDiscardChanges}
+              variant="outlined"
+              disableElevation
+              sx={{
+                borderRadius: 9999,
+                textTransform: "none",
+                fontSize: 14,
+                borderColor: "#E8EAED",
+                color: "#5F6368",
+                "&:hover": { borderColor: "#DADCE0", backgroundColor: "transparent" },
+              }}
+            >
+              Discard
+            </Button>
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+              disableElevation
+              variant="contained"
+              startIcon={
+                saveMutation.isPending ? (
+                  <CircularProgress size={14} sx={{ color: "white" }} />
+                ) : undefined
+              }
+              sx={{
+                borderRadius: 9999,
+                textTransform: "none",
+                fontSize: 14,
+                fontWeight: 600,
+                backgroundColor: "#1F1F1F",
+                "&:hover": { backgroundColor: "#333" },
+                "&:disabled": { opacity: 0.4 },
+              }}
+            >
+              {saveMutation.isPending ? "Saving…" : "Save changes"}
+            </Button>
           </Box>
         )}
       </Box>
@@ -348,7 +314,7 @@ export default function BrandKitPage() {
           draftColors={draftColors}
           draftColorNames={draftColorNames}
           draftZoneRoles={draftZoneRoles}
-          isEditMode={isEditMode}
+          isAdmin={isAdmin}
           onColorChange={handleColorChange}
           onColorNameChange={handleColorNameChange}
           onZoneRoleChange={handleZoneRoleChange}
@@ -357,18 +323,18 @@ export default function BrandKitPage() {
       {activeTab === "typography" && (
         <TypographyTab
           kit={kit}
-          isEditMode={isEditMode}
+          isAdmin={isAdmin}
           onFontUpload={handleFontUpload}
         />
       )}
       {activeTab === "logo-vault" && (
         <LogoVaultTab
           kit={kit}
-          isEditMode={isEditMode}
+          isAdmin={isAdmin}
           onLogoUpload={handleLogoUpload}
         />
       )}
-      {activeTab === "templates" && <TemplatesTab isEditMode={isEditMode} />}
+      {activeTab === "templates" && <TemplatesTab isAdmin={isAdmin} />}
       {activeTab === "live-preview" && <LivePreviewTab kit={previewKit} />}
       {activeTab === "version-history" && <VersionHistoryTab />}
     </Box>

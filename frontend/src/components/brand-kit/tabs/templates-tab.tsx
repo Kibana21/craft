@@ -19,7 +19,7 @@ import { ZoneTable } from "../zone-table";
 import type { BrandKitTemplate, TemplateZone } from "@/types/brand-kit";
 
 interface TemplatesTabProps {
-  isEditMode: boolean;
+  isAdmin: boolean;
 }
 
 const DEFAULT_ZONES: TemplateZone[] = [
@@ -408,7 +408,7 @@ function EditTemplateDialog({ template, onClose, onSaved }: EditTemplateDialogPr
   );
 }
 
-export function TemplatesTab({ isEditMode }: TemplatesTabProps) {
+export function TemplatesTab({ isAdmin }: TemplatesTabProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<BrandKitTemplate | null>(null);
@@ -427,7 +427,7 @@ export function TemplatesTab({ isEditMode }: TemplatesTabProps) {
   const selected = templates.find((t) => t.id === selectedId) ?? (templates.length > 0 ? templates[0] : null);
 
   function openDialog() {
-    if (isEditMode) setDialogOpen(true);
+    if (isAdmin) setDialogOpen(true);
   }
 
   function handleCreated() {
@@ -479,7 +479,7 @@ export function TemplatesTab({ isEditMode }: TemplatesTabProps) {
         <Typography sx={{ fontSize: 16, fontWeight: 600, color: "#1F1F1F" }}>
           Poster layout templates
         </Typography>
-        {isEditMode && (
+        {isAdmin && (
           <Box
             component="button"
             onClick={openDialog}
@@ -534,9 +534,9 @@ export function TemplatesTab({ isEditMode }: TemplatesTabProps) {
             alignItems: "center",
             justifyContent: "center",
             aspectRatio: "1 / 1",
-            cursor: isEditMode ? "pointer" : "default",
-            opacity: isEditMode ? 1 : 0.5,
-            "&:hover": isEditMode ? { borderColor: "#D0103A", "& .new-layout-text": { color: "#D0103A" } } : {},
+            cursor: isAdmin ? "pointer" : "default",
+            opacity: isAdmin ? 1 : 0.5,
+            "&:hover": isAdmin ? { borderColor: "#D0103A", "& .new-layout-text": { color: "#D0103A" } } : {},
           }}
         >
           <Typography className="new-layout-text" sx={{ fontSize: 24, color: "#9E9E9E", mb: 0.5, transition: "color 0.15s" }}>+</Typography>
@@ -550,7 +550,7 @@ export function TemplatesTab({ isEditMode }: TemplatesTabProps) {
             <Typography sx={{ fontSize: 14, fontWeight: 600, color: "#1F1F1F" }}>
               Zone coordinates — {selected.name}
             </Typography>
-            {isEditMode && (
+            {isAdmin && (
               <Box
                 component="button"
                 onClick={() => setEditingTemplate(selected)}

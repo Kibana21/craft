@@ -6,7 +6,7 @@ import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Collapse from "@mui/material/Collapse";
 import Typography from "@mui/material/Typography";
-import type { BrandKitVersionSummary } from "@/types/brand-kit";
+import type { BrandKitVersionSummary, ZoneColorRole, ZoneRoles } from "@/types/brand-kit";
 
 interface VersionCardProps {
   version: BrandKitVersionSummary;
@@ -14,23 +14,77 @@ interface VersionCardProps {
   isRestoring: boolean;
 }
 
-function ColorSwatch({ color, label }: { color: string; label: string }) {
+const SECTION_LABEL_SX = {
+  fontSize: 10,
+  fontWeight: 700,
+  color: "#9E9E9E",
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.07em",
+  mb: 1,
+};
+
+const ZONE_LABELS: Record<keyof ZoneRoles, string> = {
+  poster_background: "Poster bg",
+  cta_fill: "CTA fill",
+  disclaimer_strip: "Disclaimer strip",
+  badge_callout: "Badge",
+  headline_text: "Headline text",
+};
+
+const ROLE_LABEL: Record<ZoneColorRole, string> = {
+  primary: "Primary",
+  secondary: "Secondary",
+  accent: "Accent",
+  white: "White",
+};
+
+function Swatch({ color, name, hex }: { color: string; name?: string; hex: string }) {
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
       <Box
         sx={{
-          width: 24,
-          height: 24,
-          borderRadius: "6px",
+          width: 20,
+          height: 20,
+          borderRadius: "5px",
           backgroundColor: color,
           border: "1px solid rgba(0,0,0,0.08)",
           flexShrink: 0,
         }}
       />
       <Box>
-        <Typography sx={{ fontSize: 11, color: "#9E9E9E", lineHeight: 1 }}>{label}</Typography>
-        <Typography sx={{ fontSize: 12, fontFamily: "monospace", color: "#1F1F1F" }}>{color}</Typography>
+        {name && (
+          <Typography sx={{ fontSize: 11, fontWeight: 500, color: "#1F1F1F", lineHeight: 1.1 }}>
+            {name}
+          </Typography>
+        )}
+        <Typography sx={{ fontSize: 11, fontFamily: "monospace", color: "#9E9E9E", lineHeight: 1.2 }}>
+          {hex}
+        </Typography>
       </Box>
+    </Box>
+  );
+}
+
+function LogoThumb({ url, label }: { url: string; label: string }) {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const resolved = url.startsWith("http") ? url : `${apiUrl}${url}`;
+  return (
+    <Box>
+      <Typography sx={{ fontSize: 11, color: "#9E9E9E", mb: 0.5 }}>{label}</Typography>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={resolved}
+        alt={label}
+        style={{
+          maxHeight: 32,
+          maxWidth: 100,
+          objectFit: "contain",
+          display: "block",
+          backgroundColor: "#F7F7F7",
+          borderRadius: 4,
+          padding: 4,
+        }}
+      />
     </Box>
   );
 }
@@ -38,7 +92,6 @@ function ColorSwatch({ color, label }: { color: string; label: string }) {
 export function VersionCard({ version, onRestore, isRestoring }: VersionCardProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const isActive = version.is_active;
-  const dotColor = isActive ? "#188038" : "#9E9E9E";
 
   const formattedDate = version.activated_at
     ? new Date(version.activated_at).toLocaleDateString("en-GB", {
@@ -52,6 +105,10 @@ export function VersionCard({ version, onRestore, isRestoring }: VersionCardProp
   const headingFont = fonts.heading as string | undefined;
   const bodyFont = fonts.body as string | undefined;
   const disclaimerFont = fonts.disclaimer as string | undefined;
+  const cn = version.color_names ?? {};
+  const zr = version.zone_roles ?? {};
+  const hasLogos = !!(version.logo_url || version.secondary_logo_url);
+  const hasZones = Object.keys(zr).length > 0;
 
   return (
     <Box
@@ -71,7 +128,7 @@ export function VersionCard({ version, onRestore, isRestoring }: VersionCardProp
               width: 10,
               height: 10,
               borderRadius: "50%",
-              backgroundColor: dotColor,
+              backgroundColor: isActive ? "#188038" : "#9E9E9E",
               mt: 0.6,
               flexShrink: 0,
             }}
@@ -98,7 +155,6 @@ export function VersionCard({ version, onRestore, isRestoring }: VersionCardProp
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0 }}>
-          {/* Preview toggle */}
           {!isActive && (
             <Box
               component="button"
@@ -169,63 +225,119 @@ export function VersionCard({ version, onRestore, isRestoring }: VersionCardProp
           sx={{
             px: 2,
             pb: 2,
-            pt: 0.5,
+            pt: 1.5,
             borderTop: "1px solid #F0F0F0",
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-            gap: 2,
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" },
+            gap: 2.5,
           }}
         >
-          {/* Colours */}
+          {/* Col 1: Colours */}
           <Box>
-            <Typography sx={{ fontSize: 11, fontWeight: 600, color: "#9E9E9E", mb: 1, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Colours
-            </Typography>
+            <Typography sx={SECTION_LABEL_SX}>Colours</Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <Swatch
+                color={version.primary_color}
+                name={cn.primary_name || "Primary"}
+                hex={version.primary_color}
+              />
+              <Swatch
+                color={version.secondary_color}
+                name={cn.secondary_name || "Secondary"}
+                hex={version.secondary_color}
+              />
+              <Swatch
+                color={version.accent_color}
+                name={cn.accent_name || "Accent"}
+                hex={version.accent_color}
+              />
+            </Box>
+
+            {/* Zone assignments */}
+            {hasZones && (
+              <Box sx={{ mt: 2 }}>
+                <Typography sx={SECTION_LABEL_SX}>Zone assignments</Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                  {(Object.keys(ZONE_LABELS) as (keyof ZoneRoles)[]).map((key) => {
+                    const role = zr[key] as ZoneColorRole | undefined;
+                    if (!role) return null;
+                    const swatchColor =
+                      role === "primary" ? version.primary_color :
+                      role === "secondary" ? version.secondary_color :
+                      role === "accent" ? version.accent_color : "#FFFFFF";
+                    return (
+                      <Box key={key} sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <Typography sx={{ fontSize: 11, color: "#5F6368" }}>{ZONE_LABELS[key]}</Typography>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                          <Box
+                            sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              backgroundColor: swatchColor,
+                              border: role === "white" ? "1px solid #E8EAED" : "none",
+                            }}
+                          />
+                          <Typography sx={{ fontSize: 11, color: "#1F1F1F" }}>{ROLE_LABEL[role]}</Typography>
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
+            )}
+          </Box>
+
+          {/* Col 2: Typography */}
+          <Box>
+            <Typography sx={SECTION_LABEL_SX}>Typography</Typography>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
-              <ColorSwatch color={version.primary_color} label="Primary" />
-              <ColorSwatch color={version.secondary_color} label="Secondary" />
-              <ColorSwatch color={version.accent_color} label="Accent" />
+              {headingFont ? (
+                <Box>
+                  <Typography sx={{ fontSize: 10, color: "#9E9E9E" }}>Heading</Typography>
+                  <Typography sx={{ fontSize: 12, color: "#1F1F1F", fontWeight: 500 }}>{headingFont}</Typography>
+                </Box>
+              ) : (
+                <Box>
+                  <Typography sx={{ fontSize: 10, color: "#9E9E9E" }}>Heading</Typography>
+                  <Typography sx={{ fontSize: 12, color: "#BDBDBD" }}>Not uploaded</Typography>
+                </Box>
+              )}
+              {bodyFont ? (
+                <Box>
+                  <Typography sx={{ fontSize: 10, color: "#9E9E9E" }}>Body</Typography>
+                  <Typography sx={{ fontSize: 12, color: "#1F1F1F", fontWeight: 500 }}>{bodyFont}</Typography>
+                </Box>
+              ) : (
+                <Box>
+                  <Typography sx={{ fontSize: 10, color: "#9E9E9E" }}>Body</Typography>
+                  <Typography sx={{ fontSize: 12, color: "#BDBDBD" }}>Not uploaded</Typography>
+                </Box>
+              )}
+              {disclaimerFont ? (
+                <Box>
+                  <Typography sx={{ fontSize: 10, color: "#9E9E9E" }}>Disclaimer</Typography>
+                  <Typography sx={{ fontSize: 12, color: "#1F1F1F", fontWeight: 500 }}>{disclaimerFont}</Typography>
+                </Box>
+              ) : (
+                <Box>
+                  <Typography sx={{ fontSize: 10, color: "#9E9E9E" }}>Disclaimer</Typography>
+                  <Typography sx={{ fontSize: 12, color: "#BDBDBD" }}>Not uploaded</Typography>
+                </Box>
+              )}
             </Box>
           </Box>
 
-          {/* Fonts + Logo */}
+          {/* Col 3: Logos */}
           <Box>
-            <Typography sx={{ fontSize: 11, fontWeight: 600, color: "#9E9E9E", mb: 1, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Fonts
-            </Typography>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-              {headingFont && (
-                <Typography sx={{ fontSize: 12, color: "#1F1F1F" }}>
-                  <span style={{ color: "#9E9E9E" }}>Heading · </span>{headingFont}
-                </Typography>
-              )}
-              {bodyFont && (
-                <Typography sx={{ fontSize: 12, color: "#1F1F1F" }}>
-                  <span style={{ color: "#9E9E9E" }}>Body · </span>{bodyFont}
-                </Typography>
-              )}
-              {disclaimerFont && (
-                <Typography sx={{ fontSize: 12, color: "#1F1F1F" }}>
-                  <span style={{ color: "#9E9E9E" }}>Disclaimer · </span>{disclaimerFont}
-                </Typography>
-              )}
-              {!headingFont && !bodyFont && !disclaimerFont && (
-                <Typography sx={{ fontSize: 12, color: "#9E9E9E" }}>No fonts uploaded</Typography>
-              )}
-            </Box>
-
-            {version.logo_url && (
-              <Box sx={{ mt: 1.5 }}>
-                <Typography sx={{ fontSize: 11, fontWeight: 600, color: "#9E9E9E", mb: 0.75, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                  Logo
-                </Typography>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={version.logo_url}
-                  alt="Logo"
-                  style={{ maxHeight: 40, maxWidth: 120, objectFit: "contain" }}
-                />
+            <Typography sx={SECTION_LABEL_SX}>Logos</Typography>
+            {hasLogos ? (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                {version.logo_url && <LogoThumb url={version.logo_url} label="Primary" />}
+                {version.secondary_logo_url && <LogoThumb url={version.secondary_logo_url} label="Secondary" />}
               </Box>
+            ) : (
+              <Typography sx={{ fontSize: 12, color: "#BDBDBD" }}>No logos uploaded</Typography>
             )}
           </Box>
         </Box>

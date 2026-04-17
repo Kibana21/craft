@@ -71,7 +71,10 @@ export interface BrandKitVersionSummary {
   secondary_color: string;
   accent_color: string;
   logo_url: string | null;
+  secondary_logo_url: string | null;
   fonts: FontsConfig | null;
+  color_names: ColorNames | null;
+  zone_roles: ZoneRoles | null;
 }
 
 export interface TemplateZone {

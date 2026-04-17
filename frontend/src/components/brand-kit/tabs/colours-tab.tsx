@@ -11,7 +11,7 @@ interface ColoursTabProps {
   draftColors: { primary: string; secondary: string; accent: string };
   draftColorNames: ColorNames;
   draftZoneRoles: ZoneRoles;
-  isEditMode: boolean;
+  isAdmin: boolean;
   onColorChange: (role: "primary" | "secondary" | "accent", hex: string) => void;
   onColorNameChange: (field: keyof ColorNames, value: string) => void;
   onZoneRoleChange: (zone: keyof ZoneRoles, role: ZoneColorRole) => void;
@@ -44,7 +44,7 @@ export function ColoursTab({
   draftColors,
   draftColorNames,
   draftZoneRoles,
-  isEditMode,
+  isAdmin,
   onColorChange,
   onColorNameChange,
   onZoneRoleChange,
@@ -59,7 +59,7 @@ export function ColoursTab({
           hex={draftColors.primary}
           name={cn.primary_name || ""}
           usage={cn.primary_usage || ""}
-          isEditMode={isEditMode}
+          isAdmin={isAdmin}
           showTints
           onHexChange={(hex) => onColorChange("primary", hex)}
           onNameChange={(v) => onColorNameChange("primary_name", v)}
@@ -70,7 +70,7 @@ export function ColoursTab({
           hex={draftColors.secondary}
           name={cn.secondary_name || ""}
           usage={cn.secondary_usage || ""}
-          isEditMode={isEditMode}
+          isAdmin={isAdmin}
           onHexChange={(hex) => onColorChange("secondary", hex)}
           onNameChange={(v) => onColorNameChange("secondary_name", v)}
           onUsageChange={(v) => onColorNameChange("secondary_usage", v)}
@@ -80,7 +80,7 @@ export function ColoursTab({
           hex={draftColors.accent}
           name={cn.accent_name || ""}
           usage={cn.accent_usage || ""}
-          isEditMode={isEditMode}
+          isAdmin={isAdmin}
           onHexChange={(hex) => onColorChange("accent", hex)}
           onNameChange={(v) => onColorNameChange("accent_name", v)}
           onUsageChange={(v) => onColorNameChange("accent_usage", v)}
@@ -96,7 +96,7 @@ export function ColoursTab({
             </Typography>
           </Box>
           {/* Read-mode: compact table with header */}
-          {!isEditMode && (
+          {!isAdmin && (
             <Box sx={{ px: 2.5 }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", py: 1, borderBottom: "1px solid #F0F0F0" }}>
                 <Typography sx={{ fontSize: 11, fontWeight: 600, color: "#9E9E9E", textTransform: "uppercase", letterSpacing: 0.5 }}>
@@ -147,7 +147,7 @@ export function ColoursTab({
           )}
 
           {/* Edit-mode: stacked label + pill row per zone */}
-          {isEditMode && (
+          {isAdmin && (
             <Box sx={{ px: 2.5, py: 1 }}>
               {ZONE_ROWS.map(({ label, key }, i) => {
                 const role: ZoneColorRole = draftZoneRoles[key] ?? "primary";

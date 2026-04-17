@@ -11,11 +11,11 @@ interface LogoCardProps {
   subLabel: string;
   currentUrl: string | null;
   specs: string;
-  isEditMode: boolean;
+  isAdmin: boolean;
   onUpload: (file: File) => Promise<void>;
 }
 
-export function LogoCard({ label, subLabel, currentUrl, specs, isEditMode, onUpload }: LogoCardProps) {
+export function LogoCard({ label, subLabel, currentUrl, specs, isAdmin, onUpload }: LogoCardProps) {
   const [darkBg, setDarkBg] = useState(false);
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -95,7 +95,7 @@ export function LogoCard({ label, subLabel, currentUrl, specs, isEditMode, onUpl
 
       <Typography sx={{ mt: 1.5, fontSize: 11, color: "#9E9E9E" }}>{specs}</Typography>
 
-      {isEditMode && (
+      {isAdmin && (
         <Box sx={{ mt: "auto", pt: 2 }}>
           <LogoUpload
             label={`Replace ${label.toLowerCase()}`}

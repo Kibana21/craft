@@ -167,7 +167,10 @@ async def list_versions(db: AsyncSession) -> list[dict]:
             "secondary_color": kit.secondary_color,
             "accent_color": kit.accent_color,
             "logo_url": kit.logo_url,
+            "secondary_logo_url": kit.secondary_logo_url,
             "fonts": kit.fonts,
+            "color_names": kit.color_names,
+            "zone_roles": kit.zone_roles,
         })
     return versions
 

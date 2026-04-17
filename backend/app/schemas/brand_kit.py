@@ -66,7 +66,10 @@ class BrandKitVersionSummary(BaseModel):
     secondary_color: str
     accent_color: str
     logo_url: str | None = None
+    secondary_logo_url: str | None = None
     fonts: dict[str, Any] | None = None
+    color_names: dict | None = None
+    zone_roles: dict | None = None
 
     model_config = {"from_attributes": True}
 

@@ -1,38 +1,55 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchRules, createRule, updateRule, type ComplianceRule } from "@/lib/api/compliance";
+import { queryKeys } from "@/lib/query-keys";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
-import Select from "@mui/material/Select";
+import CircularProgress from "@mui/material/CircularProgress";
 import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
 import Skeleton from "@mui/material/Skeleton";
+import Switch from "@mui/material/Switch";
+import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
+import Typography from "@mui/material/Typography";
 
 export default function ComplianceRulesPage() {
-  const [rules, setRules] = useState<ComplianceRule[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
-  const [newRule, setNewRule] = useState<{ rule_text: string; category: string; severity: "error" | "warning" }>({ rule_text: "", category: "disclaimer_required", severity: "error" });
+  const [newRule, setNewRule] = useState<{
+    rule_text: string;
+    category: string;
+    severity: "error" | "warning";
+  }>({ rule_text: "", category: "disclaimer_required", severity: "error" });
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const loadRules = () => {
-    fetchRules().then(setRules).finally(() => setIsLoading(false));
-  };
+  const rulesQuery = useQuery({
+    queryKey: queryKeys.complianceRules(),
+    queryFn: () => fetchRules(),
+  });
 
-  useEffect(() => { loadRules(); }, []);
+  const createMutation = useMutation({
+    mutationFn: () => createRule(newRule),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.complianceRules() });
+      setNewRule({ rule_text: "", category: "disclaimer_required", severity: "error" });
+      setShowForm(false);
+      setFormError(null);
+    },
+    onError: () => setFormError("Failed to save rule. Please try again."),
+  });
 
-  const handleCreate = async () => {
-    await createRule(newRule);
-    setNewRule({ rule_text: "", category: "disclaimer_required", severity: "error" });
-    setShowForm(false);
-    loadRules();
-  };
+  const toggleMutation = useMutation({
+    mutationFn: (rule: ComplianceRule) =>
+      updateRule(rule.id, { is_active: !rule.is_active }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.complianceRules() });
+    },
+  });
 
-  const handleToggle = async (rule: ComplianceRule) => {
-    await updateRule(rule.id, { is_active: !rule.is_active });
-    loadRules();
-  };
+  const rules = rulesQuery.data ?? [];
 
   return (
     <Box sx={{ mx: "auto", maxWidth: 1200, px: 3, py: 4 }}>
@@ -47,7 +64,7 @@ export default function ComplianceRulesPage() {
           </Typography>
         </Box>
         <Button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => { setShowForm(!showForm); setFormError(null); }}
           disableElevation
           sx={{
             borderRadius: 9999,
@@ -143,9 +160,14 @@ export default function ComplianceRulesPage() {
                 ))}
               </Box>
               <Button
-                onClick={handleCreate}
-                disabled={newRule.rule_text.length < 10}
+                onClick={() => createMutation.mutate()}
+                disabled={newRule.rule_text.length < 10 || createMutation.isPending}
                 disableElevation
+                startIcon={
+                  createMutation.isPending ? (
+                    <CircularProgress size={14} sx={{ color: "#fff" }} />
+                  ) : undefined
+                }
                 sx={{
                   borderRadius: 9999,
                   textTransform: "none",
@@ -157,22 +179,44 @@ export default function ComplianceRulesPage() {
                   "&.Mui-disabled": { opacity: 0.4, color: "#fff", bgcolor: "#188038" },
                 }}
               >
-                Save rule
+                {createMutation.isPending ? "Saving…" : "Save rule"}
               </Button>
             </Box>
+            {formError && (
+              <Typography sx={{ fontSize: 13, color: "#D0103A" }}>{formError}</Typography>
+            )}
           </Box>
         </Box>
       )}
 
       {/* Rules list */}
-      {isLoading ? (
+      {rulesQuery.isPending ? (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} variant="rounded" height={80} sx={{ borderRadius: "16px" }} />
           ))}
         </Box>
+      ) : rulesQuery.isError && !rulesQuery.data ? (
+        <Box sx={{ py: 4, textAlign: "center" }}>
+          <Typography sx={{ fontSize: 14, color: "#5F6368", mb: 1.5 }}>
+            Could not load compliance rules.
+          </Typography>
+          <Button
+            onClick={() => rulesQuery.refetch()}
+            variant="outlined"
+            disableElevation
+            sx={{ borderRadius: 9999, textTransform: "none", fontSize: 13, borderColor: "#E8EAED", color: "#1F1F1F" }}
+          >
+            {rulesQuery.isFetching ? "Retrying…" : "Retry"}
+          </Button>
+        </Box>
       ) : (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {rules.length === 0 && (
+            <Typography sx={{ fontSize: 14, color: "#9E9E9E", py: 4, textAlign: "center" }}>
+              No compliance rules yet. Add one above.
+            </Typography>
+          )}
           {rules.map((rule) => (
             <Box
               key={rule.id}
@@ -226,7 +270,7 @@ export default function ComplianceRulesPage() {
                       color: "#5F6368",
                     }}
                   >
-                    {rule.category.replace("_", " ")}
+                    {rule.category.replace(/_/g, " ")}
                   </Box>
                   <Box
                     component="span"
@@ -246,33 +290,29 @@ export default function ComplianceRulesPage() {
                 </Box>
               </Box>
 
-              {/* Toggle button */}
-              <Button
-                onClick={() => handleToggle(rule)}
-                disableElevation
-                size="small"
-                sx={{
-                  borderRadius: 9999,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  fontSize: "0.75rem",
-                  px: 1.5,
-                  py: 0.75,
-                  ...(rule.is_active
-                    ? {
-                        bgcolor: "#F8F9FA",
-                        color: "#5F6368",
-                        "&:hover": { bgcolor: "#FCE8E6", color: "#C5221F" },
-                      }
-                    : {
-                        bgcolor: "#E6F4EA",
-                        color: "#188038",
-                        "&:hover": { bgcolor: "#D4EDD9" },
-                      }),
-                }}
-              >
-                {rule.is_active ? "Deactivate" : "Activate"}
-              </Button>
+              {/* Active toggle */}
+              <Tooltip title={rule.is_active ? "Click to deactivate" : "Click to activate"} placement="left">
+                <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.25, flexShrink: 0 }}>
+                  {toggleMutation.isPending && toggleMutation.variables?.id === rule.id ? (
+                    <Box sx={{ width: 36, display: "flex", justifyContent: "center", py: 1 }}>
+                      <CircularProgress size={16} sx={{ color: "#9E9E9E" }} />
+                    </Box>
+                  ) : (
+                    <Switch
+                      checked={rule.is_active}
+                      onChange={() => toggleMutation.mutate(rule)}
+                      size="small"
+                      sx={{
+                        "& .MuiSwitch-switchBase.Mui-checked": { color: "#188038" },
+                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: "#188038" },
+                      }}
+                    />
+                  )}
+                  <Typography sx={{ fontSize: 10, color: rule.is_active ? "#188038" : "#9E9E9E", fontWeight: 600, lineHeight: 1 }}>
+                    {rule.is_active ? "On" : "Off"}
+                  </Typography>
+                </Box>
+              </Tooltip>
             </Box>
           ))}
         </Box>

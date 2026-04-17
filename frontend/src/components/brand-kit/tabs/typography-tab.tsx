@@ -12,7 +12,7 @@ import type { BrandKit } from "@/types/brand-kit";
 
 interface TypographyTabProps {
   kit: BrandKit;
-  isEditMode: boolean;
+  isAdmin: boolean;
   onFontUpload: (file: File, slot: "heading" | "body" | "disclaimer") => Promise<void>;
 }
 
@@ -22,30 +22,11 @@ const SIZE_SCALE = [
   { zone: "Disclaimer", "1080x1080": "18px", "1080x1920": "18px", whatsapp: "14px" },
 ];
 
-export function TypographyTab({ kit, isEditMode, onFontUpload }: TypographyTabProps) {
+export function TypographyTab({ kit, isAdmin, onFontUpload }: TypographyTabProps) {
   const fonts = kit.fonts || {};
 
   return (
     <Box>
-      {isEditMode && (
-        <Box
-          sx={{
-            mb: 2.5,
-            px: 2,
-            py: 1.25,
-            borderRadius: "10px",
-            backgroundColor: "#F0F4FF",
-            border: "1px solid #D0E0FF",
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-          }}
-        >
-          <Typography sx={{ fontSize: 13, color: "#1A56DB" }}>
-            Font uploads save automatically — no need to click &ldquo;Save changes&rdquo;.
-          </Typography>
-        </Box>
-      )}
       <Box
         sx={{
           display: "grid",
@@ -59,7 +40,7 @@ export function TypographyTab({ kit, isEditMode, onFontUpload }: TypographyTabPr
             slot={slot}
             fontName={fonts[slot] as string | undefined}
             fontUrl={fonts[`${slot}_url`] as string | undefined}
-            isEditMode={isEditMode}
+            isAdmin={isAdmin}
             onUpload={(file) => onFontUpload(file, slot)}
           />
         ))}

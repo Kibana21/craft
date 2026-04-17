@@ -32,11 +32,11 @@ interface FontSlotCardProps {
   slot: "heading" | "body" | "disclaimer";
   fontName: string | undefined;
   fontUrl: string | undefined;
-  isEditMode: boolean;
+  isAdmin: boolean;
   onUpload: (file: File) => Promise<void>;
 }
 
-export function FontSlotCard({ slot, fontName, fontUrl, isEditMode, onUpload }: FontSlotCardProps) {
+export function FontSlotCard({ slot, fontName, fontUrl, isAdmin, onUpload }: FontSlotCardProps) {
   const config = SLOT_CONFIG[slot];
 
   return (
@@ -122,7 +122,7 @@ export function FontSlotCard({ slot, fontName, fontUrl, isEditMode, onUpload }: 
         </Box>
       )}
 
-      {isEditMode && (
+      {isAdmin && (
         <Box sx={{ mt: 2 }}>
           <FontUpload
             slot={slot}

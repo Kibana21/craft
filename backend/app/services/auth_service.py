@@ -1,3 +1,5 @@
+import asyncio
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,7 +16,11 @@ async def authenticate_user(
     if user is None:
         return None
 
-    if not verify_password(password, user.hashed_password):
+    # bcrypt is CPU-bound and synchronous — run it in a thread pool so it
+    # doesn't block the asyncio event loop (especially critical at cold start
+    # when lifespan tasks are competing for the loop).
+    password_ok = await asyncio.to_thread(verify_password, password, user.hashed_password)
+    if not password_ok:
         return None
 
     return user

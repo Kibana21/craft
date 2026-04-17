@@ -7,7 +7,7 @@ import type { BrandKit } from "@/types/brand-kit";
 
 interface LogoVaultTabProps {
   kit: BrandKit;
-  isEditMode: boolean;
+  isAdmin: boolean;
   onLogoUpload: (file: File, variant: "primary" | "secondary") => Promise<void>;
 }
 
@@ -19,7 +19,7 @@ const COMPOSITING_RULES = [
   "SVG format ensures pixel-perfect rendering at any export resolution",
 ];
 
-export function LogoVaultTab({ kit, isEditMode, onLogoUpload }: LogoVaultTabProps) {
+export function LogoVaultTab({ kit, isAdmin, onLogoUpload }: LogoVaultTabProps) {
   return (
     <Box
       sx={{
@@ -33,7 +33,7 @@ export function LogoVaultTab({ kit, isEditMode, onLogoUpload }: LogoVaultTabProp
         subLabel="Full lockup — used on posters, video title cards"
         currentUrl={kit.logo_url}
         specs="Min width 120px · Clear space 16px · Format: SVG"
-        isEditMode={isEditMode}
+        isAdmin={isAdmin}
         onUpload={(file) => onLogoUpload(file, "primary")}
       />
       <LogoCard
@@ -41,7 +41,7 @@ export function LogoVaultTab({ kit, isEditMode, onLogoUpload }: LogoVaultTabProp
         subLabel="Icon mark only — used on WhatsApp cards, small formats"
         currentUrl={kit.secondary_logo_url}
         specs="Min width 40px · Clear space 8px · Format: SVG"
-        isEditMode={isEditMode}
+        isAdmin={isAdmin}
         onUpload={(file) => onLogoUpload(file, "secondary")}
       />
       <Box

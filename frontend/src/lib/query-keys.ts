@@ -41,6 +41,10 @@ export const queryKeys = {
   brandKitVersions: () => ["brand-kit", "versions"] as const,
   brandKitTemplates: () => ["brand-kit", "templates"] as const,
 
+  // Compliance
+  complianceRules: () => ["compliance", "rules"] as const,
+  complianceDocuments: () => ["compliance", "documents"] as const,
+
   // Auth
   currentUser: () => ["auth", "me"] as const,
 } as const;
