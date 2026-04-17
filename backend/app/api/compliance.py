@@ -16,6 +16,8 @@ from app.schemas.compliance import (
     CreateRuleRequest,
     UpdateRuleRequest,
     ComplianceRuleResponse,
+    SuggestRuleRequest,
+    SuggestRuleResponse,
     UploadDocumentRequest,
     ComplianceDocumentResponse,
     ComplianceScoreResponse,
@@ -27,6 +29,7 @@ from app.services.compliance_service import (
     upload_document,
     list_documents,
     delete_document,
+    suggest_compliance_rule,
 )
 from app.services.compliance_scorer import score_artifact
 from app.services.field_compliance_service import (
@@ -72,6 +75,16 @@ async def update_compliance_rule(
     rule = await update_rule(db, rule_id, data)
     await invalidate_field_compliance_cache(redis_client)
     return ComplianceRuleResponse.model_validate(rule)
+
+
+@router.post("/rules/suggest", response_model=SuggestRuleResponse)
+async def suggest_rule(
+    data: SuggestRuleRequest,
+    _current_user: User = Depends(require_brand_admin),
+) -> SuggestRuleResponse:
+    """AI-draft a compliance rule for the given category and optional hint."""
+    rule_text = await suggest_compliance_rule(data.category, data.hint)
+    return SuggestRuleResponse(rule_text=rule_text)
 
 
 # ── Documents ─────────────────────────────────────────────────────────────────

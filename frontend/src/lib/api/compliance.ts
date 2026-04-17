@@ -74,6 +74,10 @@ export async function deleteDocument(id: string): Promise<void> {
   return apiClient.delete(`/api/compliance/documents/${id}`);
 }
 
+export async function suggestRule(category: string, hint?: string): Promise<{ rule_text: string }> {
+  return apiClient.post<{ rule_text: string }>("/api/compliance/rules/suggest", { category, hint: hint || null });
+}
+
 export async function scoreArtifact(artifactId: string): Promise<ComplianceScore> {
   return apiClient.post<ComplianceScore>(`/api/compliance/score/${artifactId}`);
 }

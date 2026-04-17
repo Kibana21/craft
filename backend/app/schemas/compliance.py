@@ -95,3 +95,12 @@ class ComplianceFlagResponse(BaseModel):
 class CheckFieldResponse(BaseModel):
     flags: list[ComplianceFlagResponse]
     cached: bool
+
+
+class SuggestRuleRequest(BaseModel):
+    category: str = Field(min_length=1)
+    hint: str | None = Field(None, max_length=300)
+
+
+class SuggestRuleResponse(BaseModel):
+    rule_text: str
