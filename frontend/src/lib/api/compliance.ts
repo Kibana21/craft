@@ -14,7 +14,16 @@ export interface ComplianceDocument {
   title: string;
   document_type: string;
   chunk_index: number;
+  content_preview: string;
+  source_document_id: string | null;
+  file_url: string | null;
+  original_filename: string | null;
+  file_size: number | null;
   created_at: string;
+}
+
+export interface ComplianceDocumentDetail extends ComplianceDocument {
+  content: string;
 }
 
 export interface ComplianceScore {
@@ -68,6 +77,22 @@ export async function uploadDocument(data: {
   document_type: string;
 }): Promise<ComplianceDocument> {
   return apiClient.post<ComplianceDocument>("/api/compliance/documents", data);
+}
+
+export async function uploadDocumentFile(
+  file: File,
+  title: string,
+  document_type: string,
+): Promise<ComplianceDocument> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("title", title);
+  formData.append("document_type", document_type);
+  return apiClient.upload<ComplianceDocument>("/api/compliance/documents/upload-file", formData);
+}
+
+export async function fetchDocumentDetail(id: string): Promise<ComplianceDocumentDetail> {
+  return apiClient.get<ComplianceDocumentDetail>(`/api/compliance/documents/${id}`);
 }
 
 export async function deleteDocument(id: string): Promise<void> {

@@ -70,7 +70,7 @@ class ApiClient {
   private async request<T>(
     path: string,
     options: RequestInit = {},
-    isRetry = false,
+    flags: { networkRetried?: boolean; authRetried?: boolean } = {},
   ): Promise<T> {
     const token = this.getToken();
     const headers: HeadersInit = {
@@ -82,20 +82,29 @@ class ApiClient {
       (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      ...options,
-      headers,
-      credentials: "include",
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        ...options,
+        headers,
+        credentials: "include",
+      });
+    } catch {
+      // Stale keep-alive connections produce ERR_EMPTY_RESPONSE / TypeError.
+      // Retry once — the browser opens a fresh connection on the second attempt.
+      if (!flags.networkRetried) {
+        return this.request<T>(path, options, { ...flags, networkRetried: true });
+      }
+      throw { detail: "Network error — check your connection and try again.", status: 0 } as ApiError;
+    }
 
     if (response.status === 401) {
-      // First-attempt 401 → try a refresh and replay ONCE. If refresh
-      // succeeds, the replay uses the new access token. If refresh fails
-      // (or this WAS the retry already), redirect to login.
-      if (!isRetry) {
+      // Try a token refresh once. If refresh succeeds, replay with the new
+      // access token. If refresh fails (or already retried), redirect to login.
+      if (!flags.authRetried) {
         const ok = await tryRefresh();
         if (ok) {
-          return this.request<T>(path, options, /* isRetry */ true);
+          return this.request<T>(path, options, { ...flags, authRetried: true });
         }
       }
       if (typeof window !== "undefined") {
@@ -141,33 +150,38 @@ class ApiClient {
     return this.request<T>(path, { method: "DELETE" });
   }
 
-  async upload<T>(path: string, formData: FormData): Promise<T> {
+  async upload<T>(
+    path: string,
+    formData: FormData,
+    flags: { networkRetried?: boolean; authRetried?: boolean } = {},
+  ): Promise<T> {
     const token = this.getToken();
     const headers: Record<string, string> = {};
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      method: "POST",
-      headers,
-      body: formData,
-      credentials: "include",
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        method: "POST",
+        headers,
+        body: formData,
+        credentials: "include",
+      });
+    } catch {
+      if (!flags.networkRetried) {
+        return this.upload<T>(path, formData, { ...flags, networkRetried: true });
+      }
+      throw { detail: "Network error — check your connection and try again.", status: 0 } as ApiError;
+    }
 
     if (response.status === 401) {
-      const ok = await tryRefresh();
-      if (ok) {
-        // Retry once with the new token.
-        const newToken = this.getToken();
-        if (newToken) headers["Authorization"] = `Bearer ${newToken}`;
-        const retry = await fetch(`${this.baseUrl}${path}`, {
-          method: "POST",
-          headers,
-          body: formData,
-          credentials: "include",
-        });
-        if (retry.ok) return retry.json();
+      if (!flags.authRetried) {
+        const ok = await tryRefresh();
+        if (ok) {
+          return this.upload<T>(path, formData, { ...flags, authRetried: true });
+        }
       }
       if (typeof window !== "undefined") {
         clearTokens();

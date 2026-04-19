@@ -40,8 +40,28 @@ class UploadDocumentRequest(BaseModel):
 class ComplianceDocumentResponse(BaseModel):
     id: uuid.UUID
     title: str
+    content_preview: str
     document_type: DocumentType
     chunk_index: int
+    source_document_id: uuid.UUID | None = None
+    file_url: str | None = None
+    original_filename: str | None = None
+    file_size: int | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ComplianceDocumentDetailResponse(BaseModel):
+    id: uuid.UUID
+    title: str
+    content: str
+    document_type: DocumentType
+    chunk_index: int
+    source_document_id: uuid.UUID | None = None
+    file_url: str | None = None
+    original_filename: str | None = None
+    file_size: int | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -68,9 +68,22 @@ async def upload_document(
     return doc
 
 
+async def get_document(db: AsyncSession, doc_id: uuid.UUID) -> ComplianceDocument:
+    doc = (
+        await db.execute(
+            select(ComplianceDocument).where(ComplianceDocument.id == doc_id)
+        )
+    ).scalar_one_or_none()
+    if doc is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    return doc
+
+
 async def list_documents(db: AsyncSession) -> list[ComplianceDocument]:
     result = await db.execute(
-        select(ComplianceDocument).order_by(ComplianceDocument.created_at.desc())
+        select(ComplianceDocument)
+        .where(ComplianceDocument.source_document_id.is_(None))
+        .order_by(ComplianceDocument.created_at.desc())
     )
     return list(result.scalars().all())
 

@@ -23,6 +23,18 @@ class ComplianceDocument(BaseModel):
     source_document_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), nullable=True
     )
+    file_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    original_filename: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    file_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    @property
+    def content_preview(self) -> str:
+        if not self.content:
+            return ""
+        preview = self.content[:200]
+        for prefix in ("# ", "## ", "### ", "#### "):
+            preview = preview.replace(prefix, "")
+        return preview.replace("**", "").replace("*", "")
 
     __table_args__ = (
         Index("idx_compliance_documents_type", "document_type"),

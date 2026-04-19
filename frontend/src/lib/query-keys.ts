@@ -44,6 +44,8 @@ export const queryKeys = {
   // Compliance
   complianceRules: () => ["compliance", "rules"] as const,
   complianceDocuments: () => ["compliance", "documents"] as const,
+  complianceDocumentDetail: (docId: string) =>
+    ["compliance", "document", docId] as const,
 
   // Auth
   currentUser: () => ["auth", "me"] as const,

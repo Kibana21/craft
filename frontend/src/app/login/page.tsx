@@ -30,8 +30,13 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await login(email, password);
-    } catch {
-      setError("Couldn't sign in. Check your email and password.");
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      if (status === 0 || !status) {
+        setError("Unable to reach the server. Please check your connection and try again.");
+      } else {
+        setError("Couldn't sign in. Check your email and password.");
+      }
     } finally {
       setIsLoading(false);
     }
